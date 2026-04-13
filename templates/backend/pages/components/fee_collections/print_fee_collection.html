@@ -1,0 +1,327 @@
+{% extends 'backend/home/base.html' %}
+
+{% block title %}   {{ student.full_name|capitalize }} Fee Collection | School Management{% endblock %}
+
+{% block content %}
+
+<!-- [ Page Header ] -->
+<div class="page-header">
+    <div class="page-header-left d-flex align-items-center">
+        <div class="page-header-title">
+            <h5 class="m-b-10">Fee Collection Invoice</h5>
+        </div>
+        <ul class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Home</a></li>
+            <li class="breadcrumb-item">Student Fee Collection</li>
+        </ul>
+    </div>
+</div>
+
+<style>
+    @media print {
+    body * {
+        visibility: hidden;
+    }
+    @media print {
+    .card-header h2 {
+        display: none !important;
+    }
+}
+
+
+    .invoice-container,
+    .invoice-container * {
+        visibility: visible;
+    }
+
+    .invoice-container {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+    }
+
+    /* ❌ Hide header buttons */
+    .printBTN,
+    .file-download,
+    .page-header,
+    .breadcrumb,
+    .card-header .avatar-text {
+        display: none !important;
+    }
+}
+
+</style>
+<!-- [ Main Content ] -->
+<div class="main-content container-lg">
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="card invoice-container">
+                <div class="card-header">
+                    <h2 class="invoice-preview-title fs-16 fw-700 text-center mb-0 mb-sm-1">
+    Invoice Preview
+</h2>
+
+                    <div class="d-flex align-items-center justify-content-center">
+                        <a href="javascript:void(0)" class="d-flex me-1 printBTN">
+                            <div class="avatar-text avatar-md" data-bs-toggle="tooltip" data-bs-trigger="hover" title="Print Invoice">
+                                <i class="feather feather-printer"></i>
+                            </div>
+                        </a>
+                        <a href="javascript:void(0)" class="d-flex me-1 file-download">
+                            <div class="avatar-text avatar-md" data-bs-toggle="tooltip" data-bs-trigger="hover" title="Download Invoice">
+                                <i class="feather feather-download"></i>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+                
+
+                <div class="card-body p-0">
+
+                    <div class="px-4 pt-4">
+                        <div class="d-sm-flex align-items-center justify-content-between">
+                            <div class="card-header d-flex justify-content-between align-items-center py-3 px-4">
+    <!-- Left: Logo + School/Branch Name -->
+ <div class="d-flex align-items-center justify-content-between">
+
+    <!-- Left: Logo -->
+    <div>
+        <img 
+            src="{{ url_for('static', filename=g.site_logo.sub_logo) if g.site_logo and g.site_logo.sub_logo else url_for('static', filename='backend/uploads/images/no_image.jpg') }}" 
+            style="width: 90px; height: 90px; object-fit: contain;"
+            alt="Logo"
+        />
+
+
+    </div>
+
+    <!-- Right: School Info -->
+    <div class="text-start">
+        <h3 class="fw-bold text-uppercase mb-1">
+            {% if current_user.role.value == 'branch_admin' %}
+                {{ current_user.branch.name if current_user.branch else 'N/A' }}
+            {% else %}
+                {{ current_user.school.name if current_user.school else 'N/A' }}
+            {% endif %}
+        </h3>
+
+        <div class="text-muted" style="font-size: 13px; line-height: 1.5;">
+            <div>
+                {% if current_user.role.value == 'branch_admin' %}
+                    {{ current_user.branch.address if current_user.branch else 'N/A' }}
+                {% else %}
+                    {{ current_user.school.address if current_user.school else 'N/A' }}
+                {% endif %}
+            </div>
+            <div>
+                Phone: 
+                {% if current_user.role.value == 'branch_admin' %}
+                    {{ current_user.branch.phone if current_user.branch else 'N/A' }}
+                {% else %}
+                    {{ current_user.school.phone if current_user.school else 'N/A' }}
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+</div>
+
+    <!-- Right: Invoice Info -->
+    
+</div>
+                       
+
+
+                            <div class="lh-lg pt-3 pt-sm-0">
+                                <h2 class="fs-4 fw-bold text-primary">Invoice</h2>
+                                <div>
+                                    <span class="fw-bold text-dark">Invoice:</span>
+                                    <span class="fw-bold text-primary">#{{ fee_record.id }}</span>
+                                </div>
+                                <div>
+                                    <span class="fw-bold text-dark">Due Date:</span>
+                                    <span class="text-muted">{{ fee_record.payment_date.strftime('%d %b, %Y') if fee_record.payment_date else 'N/A' }}</span>
+                                </div>
+                                <div>
+                                    <span class="fw-bold text-dark">Issued Date:</span>
+                                    <span class="text-muted">{{ fee_record.created_at.strftime('%d %b, %Y') }}</span>
+                                </div>
+                            </div>
+                            
+                        </div>
+                    </div>
+
+                    <hr class="border-dashed">
+
+                    <div class="px-4 py-sm-5">
+                        <div class="d-sm-flex gap-4 justify-content-center">
+                          <div class="text-sm-end">
+                            <h2 class="fs-16 fw-bold text-dark mb-3">Invoiced To:</h2>
+                            <address class="text-muted lh-lg">
+                                {{ student.full_name }}<br>
+                                Roll No: {{ student.roll_no or 'N/A' }}<br>
+                                
+                                {% if student.class_ %}
+                                    Class: {{ student.class_.name }}
+                                    {% if student.section_rel %}
+                                        - Section: {{ student.section_rel.name }}
+                                    {% endif %}
+                                    <br>
+                                {% else %}
+                                    Class: N/A<br>
+                                {% endif %}
+                                Gender: {{ student.gender|capitalize or 'N/A' }}<br>
+                                <!-- {{ student.address or 'Address N/A' }}<br> -->
+                                <!-- {{ student.country or 'Country N/A' }} -->
+                            </address>
+                        </div>
+
+                            <div class="border-end border-end-dashed border-gray-500 d-none d-sm-block"></div>
+                            <div class="mt-4 mt-sm-0">
+                                <h2 class="fs-16 fw-bold text-dark mb-3">Payment Details:</h2>
+                                <div class="text-muted lh-lg">
+                                    <div>
+                                        <span class="text-muted">Total Due:</span>
+                                        <span class="fw-bold text-dark">${{ '%.2f' % fee_record.amount_due }}</span>
+                                    </div>
+                                    <div>
+                                        <span class="text-muted">Amount Paid:</span>
+                                        <span class="fw-bold text-success">${{ '%.2f' % fee_record.amount_paid }}</span>
+                                    </div>
+                                    <div>
+                                        <span class="text-muted">Remaining Balance:</span>
+                                        <span class="fw-bold text-warning">${{ '%.2f' % (fee_record.amount_due - fee_record.amount_paid) }}</span>
+                                    </div>
+                                    <div>
+                                        <span class="text-muted">Payment Status:</span>
+                                        <span class="fw-bold text-dark">{{ fee_record.payment_status }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr class="border-dashed mb-0">
+<div class="table-responsive">
+    <table class="table table-bordered text-center align-middle">
+        <thead class="table-light">
+            <tr>
+                <th>Service</th>
+                <th>Num</th>
+                <th>Description</th>
+                <th>Charge (Deyn)</th>
+                <th>Receipt (Bixis)</th>
+                <th>Balance</th>
+            </tr>
+        </thead>
+        <tbody>
+
+        {% for invoice in invoices %}
+        <tr>
+            <td class="fw-bold">Student Fee</td>
+            <td class="text-muted">{{ invoice.invoice_number }}</td>
+            <td>{{ invoice.type }}</td>
+            
+            <td class="text-danger fw-semibold">
+                {{ '%.2f' % (invoice.amount_due or 0) }}
+            </td>
+
+            <td class="text-success fw-semibold">
+                {{ '%.2f' % (invoice.amount_paid or 0) }}
+            </td>
+
+            <td class="fw-bold text-primary">
+                {{ '%.2f' % (invoice.balance or 0) }}
+            </td>
+        </tr>
+        {% endfor %}
+
+        {% if previous_balance and previous_balance > 0 %}
+        <tr>
+            <td colspan="5" class="text-end fw-bold text-muted">Previous Arrears (Recharge):</td>
+            <td class="fw-bold bg-light text-muted">
+                {{ '%.2f' % previous_balance }}
+            </td>
+        </tr>
+        {% endif %}
+
+        <tr>
+            <td colspan="5" class="text-end fw-bold">Current Sub-Total:</td>
+            <td class="fw-bold bg-light">
+                {{ '%.2f' % total_fee }}
+            </td>
+        </tr>
+
+        <tr>
+            <td colspan="5" class="text-end fw-bold">Remaining Balance:</td>
+            <td class="fw-bold bg-light text-warning">
+                {{ '%.2f' % remaining_balance }}
+            </td>
+        </tr>
+
+        <tr>
+            <td colspan="5" class="text-end fw-bold">Grand Total Balance:</td>
+            <td class="fw-bold bg-dark text-white">
+                {{ '%.2f' % current_balance }}
+            </td>
+        </tr>
+
+        </tbody>
+    </table>
+</div>
+
+<style>
+    /* Nashqadda rasiidhka */
+    .bg-dark { background-color: #1a1a1a !important; }
+    .text-white { color: #ffffff !important; }
+    .table thead th { border-bottom: 2px solid #333; }
+    .text-primary { color: #0d6efd !important; }
+    .text-warning { color: #ffc107 !important; }
+</style>
+
+
+                    <hr class="border-dashed mt-0">
+
+                    <div class="px-4 pt-4 d-sm-flex align-items-center justify-content-between">
+                        <div class="mb-5 mb-sm-0">
+                            <h6 class="fs-13 fw-bold mb-3">Terms & Condition :</h6>
+                            <ul class="list-unstyled lh-lg fs-12">
+                            <li>We sincerely thank you, {{ student.full_name|capitalize }}, for your payment.</li>
+                            </ul>
+                        </div>
+                      <!-- Account Manager / Signature -->
+                        <div class="px-4 pt-4 d-flex align-items-center justify-content-between">
+                            <div></div> <!-- Optional left side empty -->
+                            <div class="text-center">
+                            <!-- Signature / Sign Logo -->
+                            <img 
+                                src="{{ url_for('static', filename=g.site_logo.sign_logo) if g.site_logo and g.site_logo.sign_logo else url_for('static', filename='backend/uploads/images/no_image.jpg') }}" 
+                                class="img-fluid wd-100" 
+                                alt="Signature Logo"
+                            />
+
+                            
+                                <h6 class="fs-13 fw-bold mt-2">Account Manager</h6>
+                                <p class="fs-11 fw-semibold text-muted">{{ current_user.fullname }}, 
+                                    <br> {{ current_user.phone if current_user.phone else 'N/A' }}</p>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+@media print {
+    body * { visibility: hidden; }
+    .invoice-container, .invoice-container * { visibility: visible; }
+    .invoice-container { position: absolute; top:0; left:0; width:100%; }
+    .card-header .btn { display: none; }
+}
+</style>
+
+{% endblock %}

@@ -1,0 +1,87 @@
+{% extends 'backend/home/base.html' %}
+
+{% block title %}Dhamaan Natiijooyinka Imtixaanka{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+    <div class="page-header-left d-flex align-items-center">
+        <div class="page-header-title">
+            <h5 class="m-b-10">Exam Results</h5>
+        </div>
+        <ul class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Home</a></li>
+            <li class="breadcrumb-item">All Exam Results</li>
+        </ul>
+    </div>
+</div>
+
+<div class="main-content p-4">
+    
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <form action="{{ url_for('main.all_exam_results') }}" method="GET" id="yearFilterForm">
+                <label class="form-label fw-bold">Sifee Sanad Dugsiyeedka:</label>
+                <select name="academic_year_id" class="form-select shadow-sm rounded-pill" onchange="document.getElementById('yearFilterForm').submit()">
+                    <option value="">-- Dhamaan Sanadaha --</option>
+                    {% for year in years %}
+                        <option value="{{ year.id }}" {% if selected_year == year.id %}selected{% endif %}>
+                            {{ year.year_name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </form>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-light">
+                        <tr>
+                            <th class="ps-4">Magaca Imtixaanka</th>
+                            <th>Sanadka (Year)</th>
+                            <th>Term</th>
+                            <th>Status</th>
+                            <th class="text-end pe-4">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for exam in exams %}
+                        <tr>
+                            <td class="ps-4 fw-bold text-dark">{{ exam.exam_name }}</td>
+                            <td><span class="badge bg-light text-dark border">{{ exam.academic_year.year_name }}</span></td>
+                            <td>{{ exam.term.term_name if exam.term else 'N/A' }}</td>
+                            <td>
+                                <span class="badge {% if exam.status == 'published' %}bg-soft-success text-success{% else %}bg-soft-warning text-warning{% endif %}">
+                                    {{ exam.status|capitalize }}
+                                </span>
+                            </td>
+                            <td class="text-end pe-4">
+                                <a href="{{ url_for('main.view_exam_results', exam_id=exam.id) }}" class="btn btn-primary btn-sm rounded-pill px-3">
+                                    View Results
+                                </a>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="5" class="text-center py-5 text-muted">
+                                <i class="feather-info d-block fs-1 mb-2"></i>
+                                Ma jiraan imtixaanno laga helay sanadkan ama laguu oggol yahay.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .bg-soft-success { background-color: rgba(40, 167, 69, 0.1); }
+    .bg-soft-warning { background-color: rgba(255, 193, 7, 0.1); }
+</style>
+
+{% endblock %}

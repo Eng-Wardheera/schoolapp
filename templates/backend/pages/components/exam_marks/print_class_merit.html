@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Class Merit Report - {{ selected_class.name }}</title>
+    <style>
+        /* BASE SETTINGS */
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            margin: 0; 
+            padding: 0; 
+            background-color: #f5f5f5; 
+            color: #333;
+        }
+
+        @media print {
+            body { background: white; padding: 0; }
+            .no-print { display: none !important; }
+            .student-page { 
+                page-break-after: always;
+                border: none !important;
+                margin: 0 !important;
+                padding: 5mm !important; /* Wax yar ayaa la yareeyay booska print-ka */
+                box-shadow: none !important;
+            }
+            @page { size: A4 landscape; margin: 5mm; }
+        }
+
+        .student-page {
+            background: #fff;
+            width: 287mm; 
+            min-height: 200mm;
+            margin: 20px auto;
+            padding: 10mm;
+            border: 2px solid #2e7d32;
+            box-sizing: border-box;
+            position: relative;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+
+        /* HEADER LOGO FULL WIDTH */
+        .top-full-logo { 
+            width: 100%; 
+            margin-bottom: 10px; 
+        }
+        .top-full-logo img { 
+            width: 100%; /* Waxay buuxinaysaa ballaca container-ka */
+            height: auto; /* Cabirka sare si otomaatig ah ayuu u raacayaa ballaca */
+            max-height: 150px; /* Waxaad ku xaddidi kartaa dhererka haddii logadu aad u weyn tahay */
+            display: block;
+            object-fit: contain; /* Waxay ilaalinaysaa tayada sawirka */
+        }
+
+        .school-info-header { text-align: center; margin-bottom: 5px; }
+        .school-info-header h2 { margin: 5px 0; color: #2e7d32; font-size: 24px; text-transform: uppercase; }
+        .header-line { height: 4px; background-color: #2e7d32; margin: 10px 0; width: 100%; }
+
+        .report-title-box {
+            background: #f9f9f9;
+            border-top: 2px solid #333;
+            border-bottom: 2px solid #333;
+            text-align: center;
+            padding: 8px;
+            margin: 15px 0;
+            font-weight: bold;
+            font-size: 16px;
+            text-transform: uppercase;
+        }
+
+        /* TABLE STYLES */
+        table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
+        th { background: #2e7d32; color: white; padding: 10px; border: 1px solid #1b5e20; text-transform: uppercase; font-size: 12px; }
+        td { padding: 12px; border: 1px solid #ccc; text-align: center; font-size: 14px; }
+        
+        .student-info-row { 
+            text-align: left; 
+            background: #e8f5e9; 
+            padding: 12px; 
+            font-size: 18px; 
+            margin-bottom: 15px; 
+            border-left: 6px solid #2e7d32; 
+            font-weight: bold;
+        }
+        
+        .cumulative-cell { background-color: #f1f8e9; font-weight: bold; }
+        .fail-mark { color: #d32f2f; font-weight: bold; }
+        .pass-mark { color: #2e7d32; font-weight: bold; }
+
+        /* FOOTER SIGNATURES */
+        .footer-sigs { 
+            display: flex; 
+            justify-content: space-around; 
+            margin-top: 40px; 
+        }
+        .sig-box { width: 25%; text-align: center; }
+        .sig-line { border-top: 2px solid #333; margin-bottom: 5px; }
+        .sig-text { font-size: 13px; font-weight: bold; }
+
+        .printed-info {
+            margin-top: 20px;
+            font-size: 10px;
+            text-align: center;
+            color: #888;
+            border-top: 1px dashed #ccc;
+            padding-top: 8px;
+        }
+
+        .no-print-btn { background: #2e7d32; color: white; padding: 12px 30px; border: none; cursor: pointer; font-weight: bold; border-radius: 5px; margin: 20px; }
+    </style>
+</head>
+<body>
+
+    <div class="no-print" style="text-align: center;">
+        <button class="no-print-btn" onclick="window.print()">🖨️ PRINT ALL STUDENT REPORTS</button>
+    </div>
+
+    {% for item in class_report_data %}
+    <div class="student-page">
+        
+        <div class="top-full-logo">
+            <img src="{% if g.site_logo and g.site_logo.main_logo %}{{ url_for('static', filename=g.site_logo.main_logo) }}{% elif school and school.logo %}{{ url_for('static', filename=school.logo) }}{% else %}{{ url_for('static', filename='backend/uploads/images/no_image.jpg') }}{% endif %}" alt="School Banner">
+        </div>
+
+        <div class="school-info-header">
+            <h2>{{ school.name | upper }}</h2>
+            <p><strong>Academic Year:</strong> {{ active_year.year_name }} | <strong>Class:</strong> {{ selected_class.name }}</p>
+        </div>
+
+        <div class="header-line"></div>
+
+        <div class="report-title-box">
+            Annual Cumulative Subject Performance Report
+        </div>
+
+        <div class="student-info-row">
+            <span>STUDENT: {{ item.student.full_name | upper }}</span>
+            <span style="float: right;">CLASS RANK: {{ loop.index }} / {{ class_report_data|length }}</span>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th style="text-align: left; width: 35%;">Subject Name</th>
+                    <th width="15%;">Marks Obtained</th>
+                    <th width="15%;">Total Possible</th>
+                    <th width="15%;">Percentage</th>
+                    <th width="10%;">Grade</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for sub_res in item.subjects %}
+                <tr>
+                    <td style="text-align: left; font-weight: bold;">{{ sub_res.subject_name }}</td>
+                    <td>{{ sub_res.obtained }}</td>
+                    <td>{{ sub_res.possible }}</td>
+                    <td class="{{ 'fail-mark' if sub_res.avg < 50 else '' }}">
+                        {{ sub_res.avg }}%
+                    </td>
+                    <td><strong>{{ sub_res.grade }}</strong></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            <tfoot>
+                <tr class="cumulative-cell">
+                    <td style="text-align: right;">OVERALL PERFORMANCE:</td>
+                    <td>{{ item.grand_total | int }}</td>
+                    <td>{{ item.total_out_of | int }}</td>
+                    <td class="{{ 'fail-mark' if item.final_avg < 50 else 'pass-mark' }}">
+                        {{ item.final_avg }}%
+                    </td>
+                    <td>{{ item.final_grade }}</td>
+                </tr>
+            </tfoot>
+        </table>
+
+        <div style="font-size: 11px; margin-top: 10px; font-style: italic; color: #555;">
+            * Note: This report reflects the combined scores from all published exams during the {{ active_year.year_name }} academic session.
+        </div>
+
+        <div class="footer-sigs">
+            <div class="sig-box">
+                <div class="sig-line"></div>
+                <div class="sig-text">Class Teacher</div>
+            </div>
+            <div class="sig-box">
+                <div class="sig-line"></div>
+                <div class="sig-text">Academic Director</div>
+            </div>
+            <div class="sig-box">
+                {% if g.site_logo and g.site_logo.sign_logo %}
+                    <img src="{{ url_for('static', filename=g.site_logo.sign_logo) }}" style="height: 40px; margin-bottom: -10px;">
+                {% endif %}
+                <div class="sig-line"></div>
+                <div class="sig-text">Principal & School Stamp</div>
+            </div>
+        </div>
+
+        <div class="printed-info">
+            Printed by: {{ current_user.username | upper }} 
+            | Date: {{ now_eat.strftime('%d %b, %Y %I:%M %p') }} 
+            | System Generated Official Document
+        </div>
+
+    </div>
+    {% endfor %}
+
+</body>
+</html>

@@ -1,0 +1,113 @@
+{% extends 'backend/home/base.html' %}
+
+{% block title %}{{ "Edit" if subject else "Add" }} Subject | School Management{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+    <div class="page-header-left d-flex align-items-center">
+        <div class="page-header-title">
+            <h5>Subjects</h5>
+        </div>
+        <ul class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="{{ url_for('main.dashboard') }}">Home</a>
+            </li>
+            <li class="breadcrumb-item">{{ "Edit" if subject else "Add" }} Subject</li>
+        </ul>
+    </div>
+</div>
+
+<div class="main-content">
+    <div class="row">
+        <div class="col-lg-8">
+            <form method="POST">
+                {{ form.hidden_tag() }}
+
+                <div class="card">
+                    <div class="card-header"><h5>{{ "Edit" if subject else "Add" }} Subject</h5></div>
+                    <div class="card-body">
+
+                        <!-- SUBJECT NAME -->
+                        <div class="mb-4">
+                            {{ form.name.label(class="fw-semibold") }}
+                            {{ form.name(class="form-control", placeholder="Enter Subject Name") }}
+                            {% for error in form.name.errors %}
+                                <div class="text-danger small">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <!-- AUTO CODE -->
+                        <!-- <div class="mb-4">
+                            {{ form.code.label(class="fw-semibold") }}
+                            {{ form.code(class="form-control", readonly=True) }}
+                            {% for error in form.code.errors %}
+                                <div class="text-danger small">{{ error }}</div>
+                            {% endfor %}
+                        </div> -->
+                        <!-- SUBJECT NAME -->
+
+                        <!-- HIDDEN SUBJECT CODE -->
+                        {{ form.code(type="hidden") }}
+
+
+                        <!-- School & Branch hidden for school/branch admin -->
+                        <!-- {% if current_user.role.value not in ['school_admin', 'branch_admin'] %}
+                            <div class="mb-4">{{ form.school_id(class="form-select") }}</div>
+                            <div class="mb-4">{{ form.branch_id(class="form-select") }}</div>
+                        {% else %}
+                            {{ form.school_id(type="hidden") }}
+                            {{ form.branch_id(type="hidden") }}
+                        {% endif %} -->
+
+                    </div>
+
+                    <div class="card-footer text-center">
+                        <button type="submit" class="btn btn-{{ "success" if subject else "primary" }}">
+                            {{ "Update Subject" if subject else "Save Subject" }}
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const nameInput = document.querySelector('input[name="name"]');
+    const codeInput = document.querySelector('input[name="code"]');
+
+    // Backend-ka ayaa bixinaya user role iyo magacyada
+    const userRole = "{{ current_user.role.value }}";
+    const schoolName = "{{ current_user.school.name }}";
+    const branchName = "{{ current_user.branch.name if current_user.branch else '' }}";
+
+    function generatePrefix(name) {
+        let cleaned = name.toUpperCase().replace(/[AEIOU]/g, '');
+        if (cleaned.length < 3) cleaned = name.toUpperCase().replace(/[^A-Z]/g, '');
+        return cleaned.substring(0, 3).padEnd(3, 'X');
+    }
+
+    function updateCode() {
+        if (nameInput.value.trim() === "") {
+            codeInput.value = "";
+            return;
+        }
+
+        let prefix = schoolName;  // default school
+
+        if (userRole === 'branch_admin' && branchName) {
+            prefix = branchName; // branch admin: use branch name
+        }
+
+        prefix = generatePrefix(prefix);
+        codeInput.value = prefix + "001"; // live preview; backend generates final unique code
+    }
+
+    nameInput.addEventListener("input", updateCode);
+    updateCode();
+});
+</script>
+
+{% endblock %}

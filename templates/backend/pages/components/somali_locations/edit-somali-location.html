@@ -1,0 +1,110 @@
+{% extends 'backend/home/base.html' %}
+
+{% block title %}Edit Somalia Location | School System{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+    <div class="page-header-left d-flex align-items-center">
+        <div class="page-header-title">
+            <h5 class="m-b-10">Somalia Locations</h5>
+        </div>
+
+        <ul class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Home</a></li>
+            <li class="breadcrumb-item">Edit Location</li>
+        </ul>
+    </div>
+</div>
+
+<div class="main-content">
+    <div class="row">
+        <div class="col-lg-8">
+
+            <form method="POST">
+                {{ form.hidden_tag() }}  
+
+                <div class="card">
+
+                    <div class="card-header">
+                        <h5>Edit Somalia Location</h5>
+                    </div>
+
+                    <div class="card-body">
+
+                        <!-- REGION -->
+                        <div class="mb-4">
+                            {{ form.region.label(class="fw-semibold") }}
+                            {{ form.region(class="form-control", placeholder="Enter Region Name") }}
+                            {% if form.region.errors %}
+                                <div class="text-danger small">
+                                    {% for error in form.region.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- DISTRICT -->
+                        <div class="mb-4">
+                            {{ form.district.label(class="fw-semibold") }}
+                            {{ form.district(class="form-control", placeholder="Enter District Name") }}
+                            {% if form.district.errors %}
+                                <div class="text-danger small">
+                                    {% for error in form.district.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Optional: image upload -->
+                        <!--
+                        <div class="mb-4">
+                            <label class="fw-semibold">Location Image (Optional)</label>
+                            <div class="d-flex align-items-center gap-3">
+                                <div style="width:120px;height:120px;border:1px solid #ddd;border-radius:6px;overflow:hidden;">
+                                    <img
+                                        id="imagePreview"
+                                        src="{{ url_for('static', filename=location.image_url if location.image_url else 'backend/uploads/images/no_image.jpg') }}"
+                                        class="img-fluid h-100 w-100"
+                                    >
+                                </div>
+                                <input
+                                    type="file"
+                                    name="image"
+                                    class="form-control"
+                                    accept="image/*"
+                                    onchange="previewImage(event)"
+                                >
+                            </div>
+                            <small class="text-muted">Allowed: jpg, png, jpeg</small>
+                        </div>
+                        -->
+
+                    </div>
+
+                    <div class="card-footer text-center">
+                        {{ form.submit(class="btn btn-primary", value="Update Location") }}
+                    </div>
+
+                </div>
+
+            </form>
+
+        </div>
+    </div>
+</div>
+
+<!-- IMAGE PREVIEW SCRIPT -->
+<script>
+function previewImage(event){
+    const reader = new FileReader();
+    reader.onload = function(){
+        document.getElementById("imagePreview").src = reader.result;
+    }
+    reader.readAsDataURL(event.target.files[0]);
+}
+</script>
+
+{% endblock %}

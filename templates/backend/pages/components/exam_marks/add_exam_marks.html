@@ -1,0 +1,265 @@
+{% extends 'backend/home/base.html' %}
+{% block title %}Gali Dhibcaha Imtixaanka{% endblock %}
+
+{% block content %}
+<div class="main-content">
+    <div class="row justify-content-center">
+        <div class="col-lg-11">
+            <form method="POST" id="marksForm">
+                {{ form.hidden_tag() }}
+                
+                <div class="card shadow-sm mb-4 border-0">
+                    <div class="card-header bg-primary text-white py-3">
+                        <h5 class="mb-0"><i class="fas fa-edit me-2"></i> Maareynta Dhibcaha Imtixaanka</h5>
+                    </div>
+                    <div class="card-body bg-light">
+                        <div class="row g-3">
+                            <div class="col-md-3">
+                                <label class="form-label fw-bold small text-uppercase">1. Imtixaanka</label>
+                                {{ form.exam_id(class="form-select select2", id="examSelect") }}
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label fw-bold small text-uppercase">2. Fasalka</label>
+                                {{ form.class_id(class="form-select select2", id="classSelect") }}
+                            </div>
+                            <div class="col-md-3" id="sectionWrapper" style="display: none;">
+                                <label class="form-label fw-bold small text-uppercase">3. Qaybta (Section)</label>
+                                {{ form.section_id(class="form-select select2", id="sectionSelect") }}
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label fw-bold small text-uppercase">4. Maaddada</label>
+                                {{ form.exam_subject_id(class="form-select select2", id="subjectSelect") }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card shadow-sm border-0">
+                    <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
+                        <h6 class="mb-0 fw-bold text-dark">
+                            <i class="fas fa-users me-2 text-primary"></i>Liiska Ardayda 
+                            <span class="badge bg-soft-primary text-primary ms-2" id="studentCount">0</span>
+                        </h6>
+                        <div class="search-box w-25">
+                            <input type="text" id="studentSearch" class="form-control form-control-sm" placeholder="Raadi magaca ardayga...">
+                        </div>
+                    </div>
+                    
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="bg-light">
+                                    <tr>
+                                        <th class="ps-4" width="80">S/N</th>
+                                        <th width="150">Roll No</th>
+                                        <th>Magaca Ardayga</th>
+                                        <th width="250">Dhibcaha la helay</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="studentsTable">
+                                    <tr>
+                                        <td colspan="4" class="text-center py-5 text-muted">
+                                            <p class="mb-0">Fadlan dooro filter-ka kor ku xusan si aad u aragto ardayda.</p>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="card-footer bg-white d-flex justify-content-between py-3 border-0">
+                        <a href="{{ url_for('main.dashboard') }}" class="btn btn-light px-4">Jooji</a>
+                        <button type="button" id="saveMarksBtn" class="btn btn-primary px-5 shadow-sm ripple">
+                            <span id="btnText">Keydi Dhibcaha</span>
+                            <span id="btnSpinner" class="spinner-border spinner-border-sm d-none"></span>
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const examSelect = document.getElementById("examSelect");
+    const classSelect = document.getElementById("classSelect");
+    const sectionSelect = document.getElementById("sectionSelect");
+    const sectionWrapper = document.getElementById("sectionWrapper");
+    const subjectSelect = document.getElementById("subjectSelect");
+    const studentsTable = document.getElementById("studentsTable");
+    const saveBtn = document.getElementById("saveMarksBtn");
+    const studentSearch = document.getElementById("studentSearch");
+
+    // 1. Load Sections
+    classSelect.addEventListener("change", async function() {
+        const classId = this.value;
+        if (classId == "0" || classId == "") {
+            sectionWrapper.style.display = "none";
+            return;
+        }
+        try {
+            const res = await fetch(`/get-teacher-sections/${classId}`);
+            const sections = await res.json();
+            sectionSelect.innerHTML = '<option value="0">--- Dhamaan Qaybaha ---</option>';
+            if (sections.length > 0) {
+                sections.forEach(s => {
+                    sectionSelect.innerHTML += `<option value="${s.id}">${s.name}</option>`;
+                });
+                sectionWrapper.style.display = "block";
+            } else {
+                sectionWrapper.style.display = "none";
+            }
+            updateSubjects();
+        } catch (e) { console.error("Section Error:", e); }
+    });
+
+    // 2. Load Subjects
+    async function updateSubjects() {
+        const classId = classSelect.value;
+        const examId = examSelect.value;
+        if (classId == "0" || examId == "0") return;
+
+        try {
+            const res = await fetch(`/get-exams-subjects?class_id=${classId}&exam_id=${examId}`);
+            const subjects = await res.json();
+            subjectSelect.innerHTML = '<option value="0">--- Dooro Maaddada ---</option>';
+            subjects.forEach(sub => {
+                subjectSelect.innerHTML += `<option value="${sub.id}">${sub.name}</option>`;
+            });
+            studentsTable.innerHTML = '<tr><td colspan="4" class="text-center py-4 text-muted">Hadda dooro maaddada...</td></tr>';
+        } catch (e) { console.error("Subject Error:", e); }
+    }
+
+    // 3. Load Students
+    async function loadStudents() {
+        const examId = examSelect.value;
+        const subId = subjectSelect.value;
+        const classId = classSelect.value;
+        const secId = sectionSelect.value || 0;
+
+        if (examId == "0" || subId == "0" || classId == "0") return;
+
+        studentsTable.innerHTML = '<tr><td colspan="4" class="text-center py-5"><div class="spinner-border text-primary"></div><br>Raadinaya ardayda...</td></tr>';
+        
+        try {
+            const res = await fetch(`/get-assigned-students?subject_id=${subId}&class_id=${classId}&section_id=${secId}&exam_id=${examId}`);
+            const students = await res.json();
+
+            if (students.length === 0) {
+                studentsTable.innerHTML = '<tr><td colspan="4" class="text-center py-5 text-danger">Ma jiro arday laga helay filter-kan.</td></tr>';
+                document.getElementById("studentCount").textContent = "0";
+                return;
+            }
+
+            studentsTable.innerHTML = "";
+            students.forEach((s, i) => {
+                studentsTable.innerHTML += `
+                    <tr class="student-row">
+                        <td class="ps-4 text-muted">${i+1}</td>
+                        <td class="fw-bold text-primary">#${s.roll_no}</td>
+                        <td class="student-name">${s.full_name}</td>
+                        <td>
+                            <div class="input-group input-group-sm">
+                                <input type="number" step="0.01" min="0" max="${s.total_marks}" name="marks[${s.id}]" 
+                                       class="form-control mark-input fw-bold border-primary" 
+                                       value="${s.existing_mark}" required style="max-width: 100px;">
+                                <span class="input-group-text bg-light">/ ${s.total_marks}</span>
+                            </div>
+                            <div class="invalid-feedback d-none text-danger small">Dhibcaha waa inay u dhaxeeyaan 0 iyo ${s.total_marks}</div>
+                        </td>
+                    </tr>`;
+            });
+            document.getElementById("studentCount").textContent = students.length;
+
+            // --- FULLY CORRECTED INPUT VALIDATION ---
+            document.querySelectorAll(".mark-input").forEach(input => {
+                input.addEventListener("input", function() {
+                    const max = parseFloat(this.getAttribute("max"));
+                    const val = parseFloat(this.value);
+
+                    if (val > max) {
+                        // Marka uu ka bato, si otomaatig ah ugu celi Max-ka
+                        this.value = max;
+                        this.classList.add("is-invalid");
+                        
+                        // Muuji fariinta khaladka haddii aad rabto
+                        const feedback = this.parentElement.nextElementSibling;
+                        if(feedback) feedback.classList.remove("d-none");
+
+                        setTimeout(() => {
+                            this.classList.remove("is-invalid");
+                            if(feedback) feedback.classList.add("d-none");
+                        }, 2000);
+                    } else if (val < 0) {
+                        this.value = 0;
+                    }
+                });
+            });
+
+        } catch (e) { 
+            console.error(e);
+            studentsTable.innerHTML = '<tr><td colspan="4" class="text-center py-5 text-danger">Khalad ayaa dhacay inta xogta la raadinayay.</td></tr>';
+        }
+    }
+
+    // 4. Live Search
+    studentSearch.addEventListener("input", function() {
+        const term = this.value.toLowerCase();
+        document.querySelectorAll(".student-row").forEach(row => {
+            const name = row.querySelector(".student-name").textContent.toLowerCase();
+            row.style.display = name.includes(term) ? "" : "none";
+        });
+    });
+
+    // Listeners
+    examSelect.addEventListener("change", updateSubjects);
+    classSelect.addEventListener("change", updateSubjects);
+    sectionSelect.addEventListener("change", loadStudents);
+    subjectSelect.addEventListener("change", loadStudents);
+
+    // 5. Save Logic
+    saveBtn.addEventListener("click", async function() {
+        if (subjectSelect.value == "0") {
+            alert("Fadlan dooro maaddada horta!");
+            return;
+        }
+
+        const formData = new FormData(document.getElementById("marksForm"));
+        formData.append('exam_id', examSelect.value);
+        formData.append('exam_subject_id', subjectSelect.value);
+
+        saveBtn.disabled = true;
+        document.getElementById("btnSpinner").classList.remove("d-none");
+        document.getElementById("btnText").textContent = "Keydinaya...";
+
+        try {
+            const response = await fetch(window.location.href, {
+                method: "POST",
+                body: formData,
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            });
+            const res = await response.json();
+            if (res.success) {
+                alert("Guul: " + res.message);
+                loadStudents();
+            } else {
+                alert("Error: " + res.error);
+            }
+        } catch (e) { alert("Khalad ka dhacay nidaamka (Server Error)."); }
+        finally {
+            saveBtn.disabled = false;
+            document.getElementById("btnSpinner").classList.add("d-none");
+            document.getElementById("btnText").textContent = "Keydi Dhibcaha";
+        }
+    });
+});
+</script>
+
+<style>
+    .mark-input.is-invalid { border-color: #dc3545 !important; background-color: #fff8f8; transition: 0.3s; }
+    .badge.bg-soft-primary { background-color: #e7f0ff; color: #0d6efd; }
+    .student-row:hover { background-color: #f8f9fa; }
+    .ripple { position: relative; overflow: hidden; }
+</style>
+{% endblock %}

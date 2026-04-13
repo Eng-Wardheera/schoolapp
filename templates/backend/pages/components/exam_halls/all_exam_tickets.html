@@ -1,0 +1,232 @@
+{% extends 'backend/home/base.html' %}
+
+{% block title %}All Exam Tickets | School Management{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-title">
+        <h5>All Exam Tickets</h5>
+    </div>
+</div>
+
+<div class="main-content">
+
+<!-- 🔹 Controls -->
+<div class="mb-3 d-flex gap-2">
+    <select id="shift_filter" class="form-select" style="max-width:200px;">
+        <option value="">-- Select Shift --</option>
+        <option value="morning">Morning</option>
+        <option value="afternoon">Afternoon</option>
+    </select>
+
+      <!-- All / Range selection -->
+    <select id="print_mode" class="form-select" style="max-width:150px;">
+        <option value="all">All Tickets</option>
+        <option value="range">Range</option>
+    </select>
+
+    <!-- Range inputs -->
+    <input type="number" id="range_min" placeholder="Min ID" style="width:100px; display:none;">
+    <input type="number" id="range_max" placeholder="Max ID" style="width:100px; display:none;">
+
+
+    <button onclick="generateExamTickets()" class="btn btn-primary">
+        Generate
+    </button>
+
+    <button onclick="printAllTickets()" class="btn btn-success">
+        Print
+    </button>
+
+    <button onclick="downloadTicketsWord()" class="btn btn-indigo">
+        Word
+    </button>
+
+    <button onclick="downloadTicketsPNG()" class="btn btn-indigo">
+        PNG
+    </button>
+
+      <!-- ✅ Delete All Button -->
+    <form action="{{ url_for('main.delete_all_exam_tickets') }}" method="POST" 
+          style="display:inline;" 
+          onsubmit="return confirm('Are you sure you want to delete ALL tickets? This cannot be undone!');">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="btn btn-danger">Delete All</button>
+    </form>
+</div>
+
+<!-- 🔍 Search -->
+<div class="mb-3">
+    <input type="text" id="searchInput" class="form-control"
+           placeholder="Search roll no, student name, or class...">
+</div>
+
+<!-- 🔹 Table -->
+<div class="table-responsive" style="max-height: 500px; overflow-y: auto;">
+    <table id="ticketTable" class="table table-bordered table-hover align-middle
+        {% if session.get('theme') == 'dark' %}table-dark{% else %}table-light{% endif %}">
+
+        <thead class="table-secondary" style="position: sticky; top: 0;">
+            <tr>
+                <th>#</th>
+                <th>Roll No</th>
+                <th>Student Name</th>
+                <th>Shift</th>
+                <th>Class</th>
+                <th>Section</th>
+                <th>Exam</th>
+                <th>Hall</th>
+                <th>Issued At</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            {% for ticket in tickets %}
+            <tr class="data-row">
+                <td>{{ loop.index }}</td>
+                <td class="roll-no">{{ ticket.student.roll_no }}</td>
+                <td class="student-name">{{ ticket.student.full_name }}</td>
+                <td>{{ ticket.student.shift }}</td>
+                <td class="class-name">{{ ticket.class_obj.name }}</td>
+                <td>
+                    {% if ticket.student.section_rel %}
+                        Section {{ ticket.student.section_rel.name }}
+                    {% endif %}
+                </td>
+                <td class="exam-name">{{ ticket.exam.exam_name }}</td>
+                <td class="hall-name">
+                    {{ ticket.hall.name if ticket.hall else 'Not Assigned' }}
+                </td>
+                <td>{{ ticket.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                <td>
+                    <button class="btn btn-sm btn-success"
+                            onclick="printTicket('{{ ticket.id }}')">
+                        Print
+                    </button>
+                  <form action="{{ url_for('main.delete_exam_ticket', ticket_id=ticket.id) }}" method="POST" style="display:inline;" onsubmit="return confirm('Are you sure you want to delete this ticket?');">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button class="btn btn-sm btn-danger" type="submit">
+                        Delete
+                    </button>
+                </form>
+
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+
+    </table>
+</div>
+
+<!-- 🔹 Summary -->
+<div class="mt-4">
+    <h5>Summary</h5>
+    <div class="card">
+        <div class="card-body">
+            <p><strong>Total Tickets:</strong> {{ tickets|length }}</p>
+
+            {% if class_counts %}
+            <ul>
+                {% for class_name, count in class_counts.items() %}
+                <li>{{ class_name }}: {{ count }}</li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+</div>
+
+<!-- 🔹 JS -->
+<script>
+
+function getShift() {
+    return document.getElementById('shift_filter').value.trim();
+}
+
+// 🔍 SEARCH
+document.getElementById('searchInput').addEventListener('keyup', function() {
+    let filter = this.value.toLowerCase();
+    let rows = document.querySelectorAll('#ticketTable tbody tr');
+    let index = 1;
+
+    rows.forEach(row => {
+        let text = row.innerText.toLowerCase();
+
+        if (text.includes(filter)) {
+            row.style.display = '';
+            row.querySelector('td:first-child').textContent = index++;
+        } else {
+            row.style.display = 'none';
+        }
+    });
+});
+
+// 🖨️ SINGLE
+function printTicket(id) {
+    window.open(`/print-exam-ticket/${id}`, "_blank");
+}
+
+// 🖨️ ALL
+// Show/hide range inputs based on selection
+document.getElementById('print_mode').addEventListener('change', function() {
+    const mode = this.value;
+    document.getElementById('range_min').style.display = mode === 'range' ? 'inline-block' : 'none';
+    document.getElementById('range_max').style.display = mode === 'range' ? 'inline-block' : 'none';
+});
+
+// 🖨️ ALL / RANGE
+function printAllTickets() {
+    const shift = document.getElementById('shift_filter').value.trim();
+    const mode = document.getElementById('print_mode').value;
+    const min = document.getElementById('range_min').value;
+    const max = document.getElementById('range_max').value;
+
+    if (!shift) {
+        alert("Select shift first!");
+        return;
+    }
+
+    let url = `/print-all-exam-tickets?shift=${shift}`;
+
+    if (mode === 'range') {
+        if (!min || !max) {
+            alert("Please enter both min and max values!");
+            return;
+        }
+        url += `&min=${min}&max=${max}`;
+    }
+
+    window.open(url, "_blank");
+}
+
+
+// ⚙️ GENERATE
+function generateExamTickets() {
+    const shift = getShift();
+
+    if (!shift) {
+        alert("Select shift first!");
+        return;
+    }
+
+    window.location.href = `/generate/exam-tickets?shift=${shift}`;
+}
+
+// 📄 WORD
+function downloadTicketsWord() {
+    const shift = getShift();
+    window.location.href = `/download-exam-tickets-word?shift=${shift}`;
+}
+
+// 🖼️ PNG
+function downloadTicketsPNG() {
+    const shift = getShift();
+    window.location.href = `/download-exam-tickets-png?shift=${shift}`;
+}
+
+</script>
+
+{% endblock %}

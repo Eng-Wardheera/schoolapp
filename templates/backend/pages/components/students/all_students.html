@@ -1,0 +1,157 @@
+{% extends 'backend/home/base.html' %}
+
+{% block title %}All Students View | School System{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-left d-flex align-items-center">
+        <div class="page-header-title"><h5>Students Management</h5></div>
+        <ul class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Home</a></li>
+            <li class="breadcrumb-item">All Students</li>
+        </ul>
+    </div>
+    <div class="page-header-right ms-auto d-flex gap-2">
+        <a href="{{ url_for('main.add_student') }}" class="btn btn-primary">
+            <i class="feather-plus me-1"></i> Add Student
+        </a>
+        
+        <form action="{{ url_for('main.delete_all_students') }}" method="POST" onsubmit="return confirm('ALARM: Ma hubtaa inaad tirtirto DHAMAAN ardayda iskuulka? Ficilkan looma soo celin karo!');">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn btn-outline-danger">
+                <i class="feather-alert-triangle me-1"></i> Delete All
+            </button>
+        </form>
+    </div>
+</div>
+
+<div class="container-fluid py-4">
+
+    <div class="card mb-4 shadow-sm">
+        <div class="card-body">
+            <div class="row align-items-center">
+                <div class="col-md-6 d-flex gap-2">
+                    <a href="{{ url_for('main.export_students_xlsx') }}" class="btn btn-success btn-sm">
+                        <i class="feather-file-text me-1"></i> Export Excel (All Sheets)
+                    </a>
+                    <a href="{{ url_for('main.export_students') }}" class="btn btn-outline-success btn-sm">
+                        <i class="feather-download me-1"></i> Export CSV
+                    </a>
+                    <form action="{{ url_for('main.delete_repeated_students') }}" method="POST" onsubmit="return confirm('Ma hubtaa inaad tirtirto ardayda soo noqnoqotay?');">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn btn-warning btn-sm">
+                            <i class="feather-copy me-1"></i> Clear Duplicates
+                        </button>
+                    </form>
+                </div>
+                <div class="col-md-6">
+                    <form action="{{ url_for('main.import_students') }}" method="POST" enctype="multipart/form-data" class="d-flex align-items-center justify-content-end">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <div class="input-group input-group-sm w-75">
+                            <input type="file" name="file" accept=".csv, .xlsx, .xls" required class="form-control">
+                            <button type="submit" class="btn btn-info">
+                                <i class="feather-upload me-1"></i> Import
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-body p-0"> <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0" id="studentList">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>#</th>
+                                    <th>Student Info</th>
+                                    <th>Class & Section</th> <th>Admission No</th>
+                                    <th>Level</th>
+                                    <th>Status</th>
+                                    <th class="text-end">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for student in students %}
+                                <tr>
+                                    <td>{{ loop.index }}</td>
+                                    <td>
+                                        <div class="d-flex align-items-center gap-3">
+                                            <div class="avatar-image avatar-md">
+                                                {% if student.photo %}
+                                                    <img src="{{ url_for('static', filename=student.photo) }}" class="rounded-circle" style="width: 40px; height: 40px; object-fit: cover;">
+                                                {% else %}
+                                                    <div class="avatar-text bg-soft-primary text-primary rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                                        {{ student.full_name[0]|upper }}
+                                                    </div>
+                                                {% endif %}
+                                            </div>
+                                            <div>
+                                                <div class="fw-bold text-dark">{{ student.full_name }}</div>
+                                                <small class="text-muted">{{ student.gender|capitalize }} | {{ student.shift }}</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="fw-bold">{{ student.class_obj.name if student.class_obj else '-' }}</div>
+                                        <small class="text-muted">Sec: {{ student.section_rel.name if student.section_rel else 'N/A' }}</small>
+                                    </td>
+                                    <td><span class="badge bg-light text-dark border">{{ student.roll_no }}</span></td>
+                                    <td>{{ student.level.name if student.level else '-' }}</td>
+                                    <td>
+                                        {% if student.status == 'active' %}
+                                            <span class="badge bg-success-soft text-success">Active</span>
+                                        {% else %}
+                                            <span class="badge bg-danger-soft text-danger">{{ student.status|capitalize }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-end">
+                                        <div class="d-flex justify-content-end gap-2 px-3">
+                                            <a href="{{ url_for('main.edit_student', student_id=student.id) }}" class="btn btn-sm btn-outline-primary" title="Edit">
+                                                <i class="feather-edit-3"></i>
+                                            </a>
+                                            <form action="{{ url_for('main.delete_student', student_id=student.id) }}" method="POST">
+                                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Ma hubtaa inaad tirtirto ardaygan?')" title="Delete">
+                                                    <i class="feather-trash-2"></i>
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div> </div> </div>
+    </div>
+</div>
+
+
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        $('#studentList').DataTable({
+            responsive: true,
+            pageLength: 10,
+            searching: true,
+            ordering: true,
+            order: [[0, 'asc']],
+            language: {
+                search: "_INPUT_",
+                searchPlaceholder: "Search sections..."
+            }
+        });
+    });
+</script>
+
+<style>
+    /* Qurxinta Badge-ka */
+    .bg-success-soft { background-color: #e8fadf; color: #28a745; }
+    .bg-danger-soft { background-color: #fbe9eb; color: #dc3545; }
+    .table thead th { font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px; }
+</style>
+{% endblock %}

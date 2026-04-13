@@ -1,0 +1,76 @@
+{% extends 'backend/home/base.html' %}
+
+{% block title %}Add New Academic Year | School Management{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+    <div class="page-header-left d-flex align-items-center">
+        <div class="page-header-title">
+            <h5>Academic Years</h5>
+        </div>
+        <ul class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Home</a></li>
+            <li class="breadcrumb-item">Add Academic Year</li>
+        </ul>
+    </div>
+</div>
+
+<div class="main-content">
+    <div class="row">
+        <div class="col-lg-8">
+
+            <form method="POST">
+                {{ form.hidden_tag() }} 
+
+                <div class="card">
+
+                    <div class="card-header">
+                        <h5>Add Academic Year</h5>
+                    </div>
+
+                    <div class="card-body">
+
+                        <!-- YEAR NAME -->
+                        <div class="mb-4">
+                            {{ form.year_name.label(class="fw-semibold") }}
+                            {{ form.year_name(class="form-control", placeholder="Enter Academic Year (e.g., 2026-2027)") }}
+                            {% for error in form.year_name.errors %}
+                                <div class="text-danger small">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <!-- IS ACTIVE -->
+                        <div class="mb-4 form-check">
+                            {{ form.is_active(class="form-check-input") }}
+                            {{ form.is_active.label(class="form-check-label") }}
+                        </div>
+
+                        <!-- SCHOOL (Hidden, auto-set from backend) -->
+                        {{ form.school_id(class="d-none") }}
+
+                        <!-- BRANCH (Hidden, auto-set from backend) -->
+                        {{ form.branch_id(class="d-none") }}
+
+                    </div>
+
+                    <div class="card-footer d-flex justify-content-between">
+                        <!-- Submit Button -->
+                        {{ form.submit(class="btn btn-primary", value=('Update Academic Year' if edit else 'Save Academic Year')) }}
+
+                        <!-- Back Button -->
+                        <a href="{{ url_for('main.all_academic_years') }}" class="btn btn-secondary">
+                            <i class="feather-arrow-left me-1"></i> Back
+                        </a>
+                    </div>
+
+
+                </div>
+
+            </form>
+
+        </div>
+    </div>
+</div>
+
+{% endblock %}

@@ -1,0 +1,168 @@
+{% extends 'backend/home/base.html' %}
+
+{% block title %}All Exam Hall Assignments | School Management{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+    <div class="page-header-title">
+        <h5>All Exam Hall Assignments (Halls Based)</h5>
+    </div>
+</div>
+
+<div class="main-content">
+
+<!-- 🔹 Controls -->
+<div class="mb-3 d-flex gap-2">
+    <select id="shift_filter" class="form-select" style="max-width:200px;">
+        <option value="">-- Select Shift --</option>
+        <option value="morning">Morning</option>
+        <option value="afternoon">Afternoon</option>
+    </select>
+
+    <button onclick="generateAssignments()" class="btn btn-primary">
+        <i class="bi bi-arrow-repeat"></i> Generate Assignments
+    </button>
+    <button onclick="printHalls()" class="btn btn-success">
+        <i class="bi bi-printer"></i> Print
+    </button>
+    <button onclick="downloadWord()" class="btn btn-indigo">
+        <i class="bi bi-file-word"></i> Word
+    </button>
+    <button onclick="downloadPNG()" class="btn btn-indigo">
+        <i class="bi bi-image"></i> PNG
+    </button>
+      <!-- ✅ Delete All Button -->
+    <form action="{{ url_for('main.delete_all_exam_hall_assignments') }}" method="POST" 
+          style="display:inline;" 
+          onsubmit="return confirm('Are you sure you want to delete ALL tickets? This cannot be undone!');">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <button type="submit" class="btn btn-danger">Delete All</button>
+    </form>
+</div>
+
+<script>
+function getShift() {
+    const shift = document.getElementById("shift_filter").value;
+    if (!shift) {
+        alert("Fadlan dooro shift (morning/afternoon)");
+        return null;
+    }
+    return shift;
+}
+function generateAssignments() { const shift = getShift(); if (!shift) return; window.location.href = `/generate/exam-hall-assignments?shift=${shift}`; }
+function printHalls() { const shift = getShift(); if (!shift) return; window.open(`/print-exam-halls?shift=${shift}`, "_blank"); }
+function downloadWord() { const shift = getShift(); if (!shift) return; window.location.href = `/download-exam-halls-word?shift=${shift}`; }
+function downloadPNG() { const shift = getShift(); if (!shift) return; window.location.href = `/download-exam-halls-png?shift=${shift}`; }
+</script>
+
+<!-- 🔍 Search -->
+<div class="mb-3">
+    <input type="text" id="searchInput" class="form-control"
+           placeholder="Search roll no, student name, or class...">
+</div>
+
+<!-- 🔹 Scrollable Table -->
+<div class="table-responsive" style="max-height: 500px; overflow-y: auto;">
+    <table id="assignmentTable" class="table table-bordered table-hover align-middle
+                  {% if session.get('theme') == 'dark' %}table-dark{% else %}table-light{% endif %}">
+        <thead class="table-secondary" style="position: sticky; top: 0; z-index: 2;">
+            <tr>
+                <th>#</th>
+                <th>Roll No</th>
+                <th>Student Name</th>
+                <th>Shift</th>
+                <th>Class</th>
+                <th>Assigned At</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% set class_counts_general = {} %}
+            {% for hall in halls %}
+                <!-- Hall Header -->
+                <tr class="hall-row {% if session.get('theme') == 'dark' %}table-primary{% else %}table-info{% endif %}">
+                    <td colspan="6">
+                        <strong>{{ hall.name }} (Capacity: {{ hall.capacity }})</strong>
+                        - {{ hall.hall_assignments|length }} assigned
+                    </td>
+                </tr>
+
+                {% if hall.hall_assignments|length > 0 %}
+                    {% for assign in hall.hall_assignments %}
+                    <tr class="data-row">
+                        <td>{{ loop.index }}</td>
+                        <td class="roll-no">{{ assign.student.roll_no }}</td>
+                        <td class="student-name">{{ assign.student.full_name }}</td>
+                        <td>{{ assign.student.shift }}</td>
+                        <td class="class-name">{{ assign.student.class_.name }}</td>
+                        <td>{{ assign.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                    </tr>
+                    {% set class_name = assign.student.class_.name %}
+                    {% if class_name in class_counts_general %}
+                        {% set _ = class_counts_general.update({class_name: class_counts_general[class_name] + 1}) %}
+                    {% else %}
+                        {% set _ = class_counts_general.update({class_name: 1}) %}
+                    {% endif %}
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="6" class="text-muted text-center">No students assigned yet</td>
+                    </tr>
+                {% endif %}
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% if not halls %}
+<div class="text-center text-muted">
+    No exam halls found.
+</div>
+{% endif %}
+
+<!-- 🔹 General Summary -->
+<div class="mt-4">
+    <h5>General Exam Summary</h5>
+    <div class="card mb-3 {% if session.get('theme') == 'dark' %}bg-dark text-light{% endif %}">
+        <div class="card-body">
+            <p><strong>Total Halls:</strong> {{ halls|length }}</p>
+            <p><strong>Total Assigned Students:</strong> {{ total_students }}</p>
+
+            {% if class_counts_general %}
+                <ul>
+                    {% for class_name, count in class_counts_general.items() %}
+                        <li><strong>{{ class_name }}</strong>: {{ count }} students</li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p class="text-muted mb-0">No students assigned yet.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+</div>
+
+<!-- 🔍 JS Search -->
+<script>
+document.getElementById('searchInput').addEventListener('keyup', function() {
+    let filter = this.value.toLowerCase();
+    let rows = document.querySelectorAll('#assignmentTable tbody tr');
+
+    rows.forEach(row => {
+        if (row.classList.contains('hall-row')) return;
+
+        let roll = row.querySelector('.roll-no')?.textContent.toLowerCase() || '';
+        let student = row.querySelector('.student-name')?.textContent.toLowerCase() || '';
+        let className = row.querySelector('.class-name')?.textContent.toLowerCase() || '';
+
+        if (roll.includes(filter) || student.includes(filter) || className.includes(filter)) {
+            row.style.display = '';
+        } else {
+            row.style.display = 'none';
+        }
+    });
+});
+</script>
+
+{% endblock %}

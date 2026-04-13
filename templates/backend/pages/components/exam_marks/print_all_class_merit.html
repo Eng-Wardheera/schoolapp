@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Class Merit Summary - {{ selected_class.name }}</title>
+    <style>
+        /* BASE SETTINGS */
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            margin: 0; 
+            padding: 0; 
+            background-color: #f5f5f5; 
+            color: #333;
+        }
+
+        @media print {
+            body { background: white; padding: 0; }
+            .no-print { display: none !important; }
+            .summary-page { 
+                border: none !important;
+                margin: 0 !important;
+                padding: 5mm !important;
+                box-shadow: none !important;
+                width: 100%;
+            }
+            @page { size: A4 portrait; margin: 5mm; }
+        }
+
+        .summary-page {
+            background: #fff;
+            width: 210mm; /* A4 Portrait width */
+            min-height: 290mm;
+            margin: 20px auto;
+            padding: 10mm;
+            border: 2px solid #2e7d32;
+            box-sizing: border-box;
+            position: relative;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+
+        /* HEADER LOGO FULL WIDTH */
+        .top-full-logo { 
+            width: 100%; 
+            margin-bottom: 10px; 
+            text-align: center;
+        }
+        .top-full-logo img { 
+            width: 100%;
+            height: auto;
+            max-height: 120px;
+            display: block;
+            object-fit: contain;
+        }
+
+        .school-info-header { text-align: center; margin-bottom: 5px; }
+        .school-info-header h2 { margin: 5px 0; color: #2e7d32; font-size: 22px; text-transform: uppercase; }
+        .header-line { height: 4px; background-color: #2e7d32; margin: 10px 0; width: 100%; }
+
+        .report-title-box {
+            background: #f9f9f9;
+            border-top: 2px solid #333;
+            border-bottom: 2px solid #333;
+            text-align: center;
+            padding: 8px;
+            margin: 15px 0;
+            font-weight: bold;
+            font-size: 16px;
+            text-transform: uppercase;
+        }
+
+        /* TABLE STYLES */
+        table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
+        th { background: #2e7d32; color: white; padding: 10px; border: 1px solid #1b5e20; text-transform: uppercase; font-size: 11px; }
+        td { padding: 10px 5px; border: 1px solid #ccc; text-align: center; font-size: 13px; }
+        
+        .rank-col { background-color: #e8f5e9; font-weight: bold; width: 40px; }
+        .student-name-col { text-align: left; padding-left: 10px; font-weight: bold; }
+        
+        .fail-mark { color: #d32f2f; font-weight: bold; }
+        .pass-mark { color: #2e7d32; font-weight: bold; }
+
+        /* FOOTER SIGNATURES */
+        .footer-sigs { 
+            display: flex; 
+            justify-content: space-around; 
+            margin-top: 40px; 
+        }
+        .sig-box { width: 30%; text-align: center; }
+        .sig-line { border-top: 2px solid #333; margin-bottom: 5px; }
+        .sig-text { font-size: 12px; font-weight: bold; }
+
+        .printed-info {
+            margin-top: 20px;
+            font-size: 10px;
+            text-align: center;
+            color: #888;
+            border-top: 1px dashed #ccc;
+            padding-top: 8px;
+        }
+
+        .no-print-btn { background: #2e7d32; color: white; padding: 12px 30px; border: none; cursor: pointer; font-weight: bold; border-radius: 5px; margin: 20px; }
+    </style>
+</head>
+<body>
+
+    <div class="no-print" style="text-align: center;">
+        <button class="no-print-btn" onclick="window.print()">🖨️ PRINT MERIT SUMMARY LIST</button>
+    </div>
+
+    <div class="summary-page">
+        
+        <div class="top-full-logo">
+            <img src="{% if g.site_logo and g.site_logo.main_logo %}{{ url_for('static', filename=g.site_logo.main_logo) }}{% elif school and school.logo %}{{ url_for('static', filename=school.logo) }}{% else %}{{ url_for('static', filename='backend/uploads/images/no_image.jpg') }}{% endif %}" alt="School Banner">
+        </div>
+
+        <div class="school-info-header">
+            <h2>{{ school.name | upper }}</h2>
+            <p><strong>Academic Year:</strong> {{ active_year.year_name }} | <strong>Class:</strong> {{ selected_class.name }}</p>
+        </div>
+
+        <div class="header-line"></div>
+
+        <div class="report-title-box">
+            Class Performance Merit Ranking List
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Rank</th>
+                    <th class="text-left">Student Full Name</th>
+                    <th>ID</th>
+                    <th>Obtained</th>
+                    <th>Possible</th>
+                    <th>Average (%)</th>
+                    <th>Grade</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in class_report_data %}
+                <tr>
+                    <td class="rank-col">{{ loop.index }}</td>
+                    <td class="student-name-col">{{ item.student.full_name | upper }}</td>
+                    <td>{{ item.student.id }}</td>
+                    <td>{{ item.grand_total | int }}</td>
+                    <td>{{ item.total_out_of | int }}</td>
+                    <td class="{{ 'fail-mark' if item.final_avg < 50 else 'pass-mark' }}">
+                        {{ item.final_avg }}%
+                    </td>
+                    <td><strong>{{ item.final_grade }}</strong></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div style="font-size: 11px; margin-top: 10px; font-style: italic; color: #555;">
+            * This list ranks students based on their overall average across all published exams.
+        </div>
+
+        <div class="footer-sigs">
+            <div class="sig-box">
+                <div class="sig-line"></div>
+                <div class="sig-text">Class Teacher</div>
+            </div>
+            <div class="sig-box">
+                <div class="sig-line"></div>
+                <div class="sig-text">Exam Office</div>
+            </div>
+            <div class="sig-box">
+                <div class="sig-line"></div>
+                <div class="sig-text">Principal & School Stamp</div>
+            </div>
+        </div>
+
+        <div class="printed-info">
+            Printed by: {{ current_user.username | upper }} 
+            | Date: {{ now_eat.strftime('%d %b, %Y %I:%M %p') }} 
+            | Total Students: {{ class_report_data|length }}
+        </div>
+
+    </div>
+
+</body>
+</html>

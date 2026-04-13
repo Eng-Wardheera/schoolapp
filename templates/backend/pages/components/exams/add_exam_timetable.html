@@ -1,0 +1,131 @@
+{% extends 'backend/home/base.html' %}
+
+{% block title %}Add Exam Timetable | School Management{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+    <div class="page-header-left d-flex align-items-center">
+        <div class="page-header-title">
+            <h5>Exam Timetables</h5>
+        </div>
+        <ul class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Home</a></li>
+            <li class="breadcrumb-item">Add Exam Timetable</li>
+        </ul>
+    </div>
+</div>
+
+<div class="main-content">
+    <div class="row">
+        <div class="col-lg-8">
+
+            <form method="POST">
+                {{ form.hidden_tag() }}
+
+                <div class="card">
+
+                    <div class="card-header">
+                        <h5>Add Exam Timetable</h5>
+                    </div>
+
+                    <div class="card-body">
+
+                        <!-- EXAM -->
+                        <div class="mb-4">
+                            {{ form.exam_id.label(class="fw-semibold") }}
+                            {{ form.exam_id(class="form-select") }}
+                            {% for error in form.exam_id.errors %}
+                                <div class="text-danger small">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <!-- CLASS LEVEL -->
+                        <div class="mb-4">
+                            {{ form.level_id.label(class="fw-semibold") }}
+                            {{ form.level_id(class="form-select", id="level_id") }}
+                        </div>
+
+                        <!-- SUBJECT -->
+                        <div class="mb-4">
+                            {{ form.subject_id.label(class="fw-semibold") }}
+                            {{ form.subject_id(class="form-select", id="subject_id") }}
+                        </div>
+
+                     <script>
+document.addEventListener("DOMContentLoaded", function() {
+    const levelSelect = document.getElementById("level_id");
+    const subjectSelect = document.getElementById("subject_id");
+
+    // Set placeholder
+    subjectSelect.innerHTML = '<option value="0">-- Select Subject --</option>';
+
+    levelSelect.addEventListener("change", function() {
+        const levelId = parseInt(this.value);
+        subjectSelect.innerHTML = '<option value="0">-- Select Subject --</option>';
+        if (!levelId) return;
+
+        fetch(`/get-exam-subjects/${levelId}`)
+            .then(res => res.json())
+            .then(data => {
+                data.subjects.forEach(sub => {
+                    const opt = document.createElement("option");
+                    opt.value = sub.id;
+                    opt.text = sub.name;
+                    subjectSelect.appendChild(opt);
+                });
+            })
+            .catch(err => console.error("Error fetching subjects:", err));
+    });
+});
+</script>
+
+
+                        <!-- DATE -->
+                        <div class="mb-4">
+                            {{ form.date.label(class="fw-semibold") }}
+                            {{ form.date(class="form-control", placeholder="YYYY-MM-DD") }}
+                            {% for error in form.date.errors %}
+                                <div class="text-danger small">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <!-- START TIME -->
+                        <div class="mb-4">
+                            {{ form.start_time.label(class="fw-semibold") }}
+                            {{ form.start_time(class="form-control", placeholder="HH:MM") }}
+                            {% for error in form.start_time.errors %}
+                                <div class="text-danger small">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <!-- END TIME -->
+                        <div class="mb-4">
+                            {{ form.end_time.label(class="fw-semibold") }}
+                            {{ form.end_time(class="form-control", placeholder="HH:MM") }}
+                            {% for error in form.end_time.errors %}
+                                <div class="text-danger small">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <!-- Hidden school and branch from current_user -->
+                        {{ form.school_id }}
+                        {{ form.branch_id }}
+
+                    </div>
+
+                    <div class="card-footer d-flex justify-content-between">
+                        {{ form.submit(class="btn btn-primary", value='Save Timetable') }}
+                        <a href="{{ url_for('main.all_exam_timetables') }}" class="btn btn-secondary">
+                            <i class="feather-arrow-left me-1"></i> Back
+                        </a>
+                    </div>
+
+                </div>
+            </form>
+
+        </div>
+    </div>
+</div>
+
+{% endblock %}

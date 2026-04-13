@@ -1,0 +1,514 @@
+{% extends 'backend/home/base.html' %}
+
+{% block title %}Quiz Builder | {{ paper.exam_subject.subject.subject_name }}{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-1">
+                <li class="breadcrumb-item"><a href="{{ url_for('main.all_exam_papers') }}">Exams</a></li>
+                <li class="breadcrumb-item active">Paper #{{ paper.id }}</li>
+            </ol>
+        </nav>
+        <div class="d-flex align-items-center">
+            <h4 class="fw-bold mb-0 me-3">
+                {{ paper.exam_subject.subject.subject_name }} 
+                <span class="text-muted fw-normal">| {{ paper.exam_subject.exam.exam_name }}</span>
+            </h4>
+            <span class="badge bg-info-subtle text-info border border-info-subtle rounded-pill px-3">
+                ID: {{ paper.id }}
+            </span>
+        </div>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{{ url_for('main.view_exam_paper', id=paper.id) }}" class="btn btn-outline-secondary px-4 rounded-pill">View Paper</a>
+        <button type="button" onclick="window.location.reload()" class="btn btn-outline-primary px-4 rounded-pill">Refresh</button>
+    </div>
+</div>
+
+<div class="main-content">
+    <form method="POST" enctype="multipart/form-data" id="questionForm">
+        {{ form.hidden_tag() }}
+        <input type="hidden" name="question_id" id="edit_question_id" value="">
+
+        <div class="row g-4">
+            <div class="col-lg-9">
+                <div id="builder-card" class="card shadow-sm border-0 mb-4 p-4 position-relative overflow-hidden" style="transition: 0.3s border-left;">
+                    <div class="position-absolute top-0 start-0 w-100" style="height: 4px; background: #e9ecef;">
+                        <div id="progress-bar" class="bg-primary h-100" style="width: 5%;"></div>
+                    </div>
+
+                    <div class="d-flex align-items-start mb-3 mt-2">
+                        <div class="me-3 text-center">
+                            <div id="q-number-circle" class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center fw-bold shadow-sm" style="width: 45px; height: 45px; font-size: 1.2rem;">
+                                {{ questions_count + 1 }}
+                            </div>
+                            <small id="mode-text" class="text-muted fw-bold d-block mt-1">NEW</small>
+                        </div>
+                        
+                        <div class="flex-grow-1">
+                            <div class="mb-2">
+                                {{ form.question_text(class="form-control border-0 fs-4 fw-medium p-0 auto-expand", id="q_text_input",
+                                   placeholder="Halkan ku qor su'aashaada...", style="box-shadow:none; resize:none;", rows="2") }}
+                            </div>
+                            <div class="d-flex align-items-center gap-3">
+                                <span class="badge bg-light text-dark border py-2 px-3 rounded-pill">
+                                    <i class="bi bi-star-fill text-warning me-1"></i> 
+                                    <span id="display_marks">{{ form.marks.data or 2 }}</span> Points
+                                </span>
+                                <span id="edit-cancel-badge" class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill d-none cursor-pointer" onclick="resetToNew()">
+                                    <i class="bi bi-x-circle me-1"></i> Jooji Edit-ka
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-4 ps-5">
+                        <div class="image-upload-wrapper border-dashed rounded-3 p-3 text-center bg-light shadow-sm">
+                            <input type="file" name="question_image_file" class="form-control d-none" id="qImage" accept="image/*">
+                            <label for="qImage" class="mb-0 cursor-pointer w-100">
+                                <div id="image_preview_container" class="d-none mb-2">
+                                    <img id="image_preview" src="#" alt="Preview" class="img-fluid rounded-2" style="max-height: 150px;">
+                                    <div class="mt-2"><span class="btn btn-sm btn-outline-danger" onclick="removeImage(event)">Remove Image</span></div>
+                                </div>
+                                <div id="upload-placeholder">
+                                    <i class="bi bi-image fs-2 text-muted"></i>
+                                    <p class="mb-0 small text-muted fw-bold">Sawir ku dar su'aasha (Optional)</p>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div id="optionsSection" class="ps-5 mb-4">
+                        <label class="small fw-bold text-muted text-uppercase mb-3 d-block" style="letter-spacing: 1px;">Xulashooyinka Jawaabta</label>
+                        <div id="optionsWrapper" class="d-flex flex-column gap-3"></div>
+                    </div>
+
+                    <div class="d-flex justify-content-center gap-2 mb-4 mt-2 bg-light p-2 rounded-pill mx-auto" style="max-width: fit-content;">
+                        <button type="button" onclick="setType('mcq')" class="btn btn-white border-0 px-4 py-2 rounded-pill fw-bold shadow-sm type-btn active" id="btn-mcq">
+                            <i class="bi bi-list-check me-2 text-info"></i> MCQ
+                        </button>
+                        <button type="button" onclick="setType('true_false')" class="btn btn-white border-0 px-4 py-2 rounded-pill fw-bold shadow-sm type-btn" id="btn-true_false">
+                            <i class="bi bi-toggle-on me-2 text-success"></i> T/F
+                        </button>
+                        <button type="button" onclick="setType('short_answer')" class="btn btn-white border-0 px-4 py-2 rounded-pill fw-bold shadow-sm type-btn" id="btn-short_answer">
+                            <i class="bi bi-chat-left-text me-2 text-warning"></i> Short
+                        </button>
+                    </div>
+
+                    <div class="d-flex justify-content-center gap-3 border-top pt-4">
+                        <button type="button" id="addOptionBtn" class="btn btn-outline-primary px-4 py-2 fw-bold rounded-pill">
+                            <i class="bi bi-plus-circle me-2"></i>Add Option
+                        </button>
+                    </div>
+                </div>
+
+                <div class="mt-5">
+                    <h6 class="fw-bold mb-3 text-dark text-uppercase small" style="letter-spacing: 1px;">
+                        <i class="bi bi-journal-text me-2 text-primary"></i> SU'AALAHA PAPER-KA (<span id="total-q-count">{{ questions_count }}</span>)
+                    </h6>
+
+                    <div id="recent-questions-list">
+                    {% if recent_questions %}
+                        {% for q in recent_questions %}
+                        <div class="card border-0 shadow-sm mb-3 overflow-hidden animate__animated animate__fadeIn" id="q-card-{{ q.id }}">
+                            <div class="card-body p-0">
+                                <div class="d-flex">
+                                    <div class="bg-light d-flex align-items-center justify-content-center fw-bold text-muted border-end q-index" style="width: 50px;">
+                                        {{ loop.revindex }}
+                                    </div>
+                                    <div class="p-3 flex-grow-1">
+                                        <div class="d-flex justify-content-between align-items-start mb-2">
+                                            <p class="mb-0 fw-medium text-dark">{{ q.question_text }}</p>
+                                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill">
+                                                {{ q.marks }} Pts
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div class="p-3 border-start d-flex flex-column gap-2 bg-light-subtle">
+                                        <button type="button" class="btn btn-sm btn-white text-primary shadow-sm" 
+                                                onclick='editQuestion("{{ q.id }}", {{ q.question_text|tojson }}, "{{ q.question_type }}", "{{ q.marks }}", "{{ q.correct_answer }}", {{ q.options|tojson if q.options else "{}" }})'>
+                                            <i class="bi bi-pencil-square"></i>
+                                        </button>
+                                        
+                                        <button type="button" 
+                                                class="btn btn-sm btn-white text-danger shadow-sm border" 
+                                                onclick="deleteQuestion('{{ q.id }}')">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center py-5 bg-white rounded-4 shadow-sm border border-dashed" id="no-questions-msg">
+                            <i class="bi bi-folder-x fs-1 text-muted"></i>
+                            <p class="text-muted mt-2">Weli wax su'aal ah kuma jiraan.</p>
+                        </div>
+                    {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-3">
+                <div class="card shadow-sm border-0 sticky-top" style="top: 20px;">
+                    <div class="card-header bg-white py-3 border-0 d-flex align-items-center justify-content-between">
+                        <h6 class="mb-0 fw-bold"><i class="bi bi-gear-fill me-2 text-primary"></i>Config</h6>
+                        <span id="status-badge" class="badge bg-success-subtle text-success rounded-pill px-2">Active</span>
+                    </div>
+                    <div class="card-body pt-0">
+                        <div class="mb-3">
+                            <label class="small fw-bold text-muted mb-1">Question Type</label>
+                            {{ form.question_type(class="form-select bg-light border-0 py-2", id="main_type_select") }}
+                        </div>
+                        <div class="mb-3">
+                            <label class="small fw-bold text-muted mb-1">Correct Answer</label>
+                            {{ form.correct_answer(class="form-control bg-light border-0 py-2", id="correct_answer_input", placeholder="Tusaale: A") }}
+                        </div>
+                        <div class="mb-3">
+                            <label class="small fw-bold text-muted mb-1">Marks</label>
+                            {{ form.marks(class="form-control bg-light border-0 py-2", id="marks_input") }}
+                        </div>
+                        
+                        <div class="form-check form-switch mb-4">
+                            {{ form.shuffle_options(class="form-check-input") }}
+                            <label class="form-check-label small fw-bold">Shuffle Options</label>
+                        </div>
+
+                        <hr class="opacity-50">
+                        
+                        <button type="button" id="btn-save-next" class="btn btn-primary w-100 mb-2 py-3 fw-bold shadow-sm rounded-3">
+                            <i class="bi bi-plus-lg me-2"></i>SAVE & ADD NEXT
+                        </button>
+                        <button type="button" id="btn-save-exit" class="btn btn-dark w-100 py-2 fw-bold rounded-3">
+                            <i class="bi bi-check2-all me-2"></i>SAVE & EXIT
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<style>
+    body { background-color: #f4f7fa; font-family: 'Plus Jakarta Sans', sans-serif; }
+    .card { border-radius: 20px; }
+    .btn-white { background: #fff; border: 1px solid #f1f1f1; }
+    .btn-white.active { background: #0d6efd !important; color: white !important; }
+    .option-circle {
+        width: 36px; height: 36px; border-radius: 12px;
+        display: flex; align-items: center; justify-content: center;
+        font-weight: 800; font-size: 14px; color: #444;
+        background: #fff; border: 2px solid #eee; transition: 0.3s;
+    }
+    .option-row:hover .option-circle { border-color: #0d6efd; color: #0d6efd; transform: scale(1.05); }
+    .cursor-pointer { cursor: pointer; }
+    .border-dashed { border: 2px dashed #dee2e6 !important; }
+    .animate__fadeInUp { animation-duration: 0.5s; }
+</style>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const typeSelect = document.querySelector("#main_type_select");
+    const wrapper = document.getElementById("optionsWrapper");
+    const marksInput = document.getElementById("marks_input");
+    const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    let questionsCount = parseInt("{{ questions_count }}");
+
+    // 1. IMAGE PREVIEW LOGIC
+    const qImage = document.getElementById('qImage');
+    const previewContainer = document.getElementById('image_preview_container');
+    const placeholder = document.getElementById('upload-placeholder');
+    const previewImg = document.getElementById('image_preview');
+
+    qImage.addEventListener('change', function() {
+        const file = this.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                previewImg.src = e.target.result;
+                previewContainer.classList.remove('d-none');
+                placeholder.classList.add('d-none');
+            }
+            reader.readAsDataURL(file);
+        }
+    });
+
+    window.removeImage = function(e) {
+        e.preventDefault();
+        qImage.value = "";
+        previewContainer.classList.add('d-none');
+        placeholder.classList.remove('d-none');
+    };
+
+    // 2. AJAX SAVE FUNCTION
+    async function saveQuestion(exitAfter = false) {
+        const qText = document.getElementById('q_text_input').value.trim();
+        if(!qText) {
+            showNotification("Fadlan qor su'aasha horta!", "danger");
+            return;
+        }
+
+        const form = document.getElementById('questionForm');
+        const formData = new FormData(form);
+        
+        try {
+            const response = await fetch(window.location.href, {
+                method: 'POST',
+                body: formData,
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                if (exitAfter) {
+                    window.location.href = "{{ url_for('main.view_exam_paper', id=paper.id) }}";
+                    return;
+                }
+                
+                if (!document.getElementById('edit_question_id').value) {
+                    questionsCount++;
+                    appendQuestionToList(result.question);
+                } else {
+                    updateQuestionInList(result.question);
+                }
+
+                resetToNew();
+                showNotification(result.message || "Guul ayaa lagu keydiyay!", "success");
+            } else {
+                showNotification(result.message || "Khalad ayaa dhacay!", "danger");
+            }
+        } catch (error) {
+            showNotification("Xiriirka server-ka waa go'an yahay!", "danger");
+        }
+    }
+
+    // 3. AJAX DELETE FUNCTION (Fully Fixed)
+    window.deleteQuestion = function(questionId) {
+    if (confirm('Ma hubtaa inaad rabto inaad tirtirto su\'aashan?')) {
+        
+        const deleteUrl = `/delete-question/${questionId}`; 
+        
+        // Soo qaado CSRF Token-ka ka dhex jira Form-ka
+        const csrfToken = document.querySelector('input[name="csrf_token"]').value;
+
+        fetch(deleteUrl, {
+            method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Content-Type': 'application/json',
+                // Kani waa qaybta muhiimka ah ee CSRF
+                'X-CSRFToken': csrfToken
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                // Haddii server-ku soo celiyo 404, 403 (Forbidden) ama 500
+                throw new Error('Server Error: ' + response.status);
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                // Aqoonso kaadhka su'aasha (hubi in ID-ga card-ka uu yahay q-card-ID)
+                const element = document.getElementById(`q-card-${questionId}`);
+                if (element) {
+                    element.style.transition = "all 0.4s ease";
+                    element.style.opacity = "0";
+                    element.style.transform = "translateX(50px)";
+                    
+                    setTimeout(() => {
+                        element.remove();
+                        // Cusboonaysii tirada guud ee su'aalaha
+                        questionsCount--;
+                        const totalCountElem = document.getElementById('total-q-count');
+                        if (totalCountElem) totalCountElem.innerText = questionsCount;
+                        
+                        // Dib u habee nambarada (Q1, Q2...)
+                        reIndexQuestions();
+                    }, 400);
+                    showNotification("Su'aasha waa la tirtiray", "success");
+                }
+            } else {
+                showNotification('Khalad: ' + data.message, "danger");
+            }
+        })
+        .catch(error => {
+            console.error('Error details:', error);
+            showNotification('Server-ka lama xiriiri karo! Hubi Route-ka ama CSRF Token.', "danger");
+        });
+    }
+};
+
+    function appendQuestionToList(q) {
+        const list = document.getElementById('recent-questions-list');
+        const noMsg = document.getElementById('no-questions-msg');
+        if(noMsg) noMsg.remove();
+
+        const html = `
+            <div class="card border-0 shadow-sm mb-3 overflow-hidden animate__animated animate__fadeInUp" id="q-card-${q.id}">
+                <div class="card-body p-0">
+                    <div class="d-flex">
+                        <div class="bg-light d-flex align-items-center justify-content-center fw-bold text-muted border-end q-index" style="width: 50px;">
+                            ${questionsCount}
+                        </div>
+                        <div class="p-3 flex-grow-1">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <p class="mb-0 fw-medium text-dark">${q.text}</p>
+                                <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill">${q.marks} Pts</span>
+                            </div>
+                        </div>
+                        <div class="p-3 border-start d-flex flex-column gap-2 bg-light-subtle">
+                            <button type="button" class="btn btn-sm btn-white text-primary shadow-sm" onclick='editQuestion("${q.id}", ${JSON.stringify(q.text)}, "${q.type}", "${q.marks}", "${q.correct}", ${JSON.stringify(q.options)})'>
+                                <i class="bi bi-pencil-square"></i>
+                            </button>
+                            <button type="button" class="btn btn-sm btn-white text-danger shadow-sm" onclick="deleteQuestion('${q.id}')">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>`;
+        list.insertAdjacentHTML('afterbegin', html);
+        document.getElementById('total-q-count').innerText = questionsCount;
+        reIndexQuestions();
+    }
+
+    function updateQuestionInList(q) {
+        const card = document.getElementById(`q-card-${q.id}`);
+        if(card) {
+            card.querySelector('.text-dark').innerText = q.text;
+            card.querySelector('.badge').innerText = `${q.marks} Pts`;
+            const editBtn = card.querySelector('.text-primary').parentElement;
+            editBtn.innerHTML = `
+                <button type="button" class="btn btn-sm btn-white text-primary shadow-sm" 
+                    onclick='editQuestion("${q.id}", ${JSON.stringify(q.text)}, "${q.type}", "${q.marks}", "${q.correct}", ${JSON.stringify(q.options)})'>
+                    <i class="bi bi-pencil-square"></i>
+                </button>
+                <button type="button" class="btn btn-sm btn-white text-danger shadow-sm" onclick="deleteQuestion('${q.id}')">
+                    <i class="bi bi-trash"></i>
+                </button>
+            `;
+        }
+    }
+
+    function reIndexQuestions() {
+        const indices = document.querySelectorAll('.q-index');
+        const len = indices.length;
+        indices.forEach((el, i) => {
+            el.innerText = len - i;
+        });
+    }
+
+    window.editQuestion = function(id, text, type, marks, correct, options) {
+        document.getElementById('edit_question_id').value = id;
+        document.getElementById('q_text_input').value = text;
+        document.getElementById('main_type_select').value = type;
+        document.getElementById('marks_input').value = marks;
+        document.getElementById('display_marks').innerText = marks;
+        document.getElementById('correct_answer_input').value = correct || "";
+        
+        document.getElementById('mode-text').innerText = "EDITING";
+        document.getElementById('mode-text').className = "text-warning fw-bold d-block mt-1";
+        document.getElementById('builder-card').style.borderLeft = "6px solid #ffc107";
+        document.getElementById('q-number-circle').className = "bg-warning text-dark rounded-circle d-flex align-items-center justify-content-center fw-bold shadow-sm";
+        document.getElementById('q-number-circle').innerText = "!";
+        document.getElementById('edit-cancel-badge').classList.remove('d-none');
+        document.getElementById('btn-save-next').innerHTML = '<i class="bi bi-save me-2"></i>UPDATE & CONTINUE';
+
+        setType(type, options);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    window.resetToNew = function() {
+        document.getElementById('edit_question_id').value = "";
+        document.getElementById('questionForm').reset();
+        document.getElementById('mode-text').innerText = "NEW";
+        document.getElementById('mode-text').className = "text-muted fw-bold d-block mt-1";
+        document.getElementById('builder-card').style.borderLeft = "none";
+        document.getElementById('q-number-circle').className = "bg-primary text-white rounded-circle d-flex align-items-center justify-content-center fw-bold shadow-sm";
+        document.getElementById('q-number-circle').innerText = questionsCount + 1;
+        document.getElementById('edit-cancel-badge').classList.add('d-none');
+        document.getElementById('btn-save-next').innerHTML = '<i class="bi bi-plus-lg me-2"></i>SAVE & ADD NEXT';
+        previewContainer.classList.add('d-none');
+        placeholder.classList.remove('d-none');
+        setType('mcq');
+    };
+
+    window.setType = function(val, existingOptions = null) {
+        typeSelect.value = val;
+        document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('active'));
+        const activeBtn = document.getElementById('btn-' + val);
+        if(activeBtn) activeBtn.classList.add('active');
+        
+        wrapper.innerHTML = "";
+        if (val === "mcq") {
+            document.getElementById("addOptionBtn").style.display = "block";
+            if (existingOptions && Object.keys(existingOptions).length > 0) {
+                Object.values(existingOptions).forEach((opt, i) => createOptionRow(i, opt));
+            } else {
+                for (let i = 0; i < 4; i++) createOptionRow(i);
+            }
+        } else if (val === "true_false") {
+            document.getElementById("addOptionBtn").style.display = "none";
+            createOptionRow(0, "True");
+            createOptionRow(1, "False");
+        } else {
+            document.getElementById("addOptionBtn").style.display = "none";
+            wrapper.innerHTML = `<p class="text-center text-muted py-3">No options needed for Short Answer.</p>`;
+        }
+    };
+
+    function createOptionRow(index, value = "") {
+        const div = document.createElement("div");
+        div.className = "d-flex align-items-center mb-1 option-row";
+        div.innerHTML = `
+            <div class="option-circle me-3 shadow-sm">${letters[index] || index + 1}</div>
+            <div class="flex-grow-1">
+                <input type="text" name="mcq_options[]" class="form-control border-0 bg-light rounded-3 px-4 py-3 fw-medium" 
+                       placeholder="Qor xulashada..." value="${value}">
+            </div>
+            <button type="button" class="btn btn-link text-danger remove-option ms-2 opacity-50"><i class="bi bi-x-circle-fill fs-5"></i></button>
+        `;
+        wrapper.appendChild(div);
+    }
+
+    function showNotification(msg, type) {
+        const toast = document.createElement('div');
+        toast.className = `alert alert-${type} position-fixed top-0 end-0 m-3 shadow-lg animate__animated animate__bounceInRight`;
+        toast.style.zIndex = "9999";
+        toast.innerText = msg;
+        document.body.appendChild(toast);
+        setTimeout(() => {
+            toast.classList.replace('animate__bounceInRight', 'animate__fadeOutRight');
+            setTimeout(() => toast.remove(), 1000);
+        }, 3000);
+    }
+
+    // Event Listeners
+    document.getElementById('btn-save-next').addEventListener('click', () => saveQuestion(false));
+    document.getElementById('btn-save-exit').addEventListener('click', () => saveQuestion(true));
+    document.getElementById("addOptionBtn").addEventListener("click", () => createOptionRow(wrapper.children.length));
+    
+    wrapper.addEventListener("click", (e) => {
+        if (e.target.closest(".remove-option")) {
+            const rows = wrapper.querySelectorAll(".option-row");
+            if(rows.length > 2) {
+                e.target.closest(".option-row").remove();
+                wrapper.querySelectorAll(".option-circle").forEach((el, i) => el.innerText = letters[i]);
+            } else {
+                showNotification("Ugu yaraan 2 xulasho waa qasab!", "warning");
+            }
+        }
+    });
+
+    marksInput.addEventListener('input', (e) => document.getElementById('display_marks').innerText = e.target.value || '2');
+
+    // Initial setup
+    setType('mcq');
+});
+</script>
+{% endblock %}

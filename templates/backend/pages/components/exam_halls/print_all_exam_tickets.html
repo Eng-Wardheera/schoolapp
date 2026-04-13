@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="so">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        /* Setup bogga A4 Landscape */
+        @page {
+            size: A4 landscape;
+            margin: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-content: flex-start;
+            gap: 8mm;
+            background: #f4f4f4;
+            margin: 0;
+            padding: 5mm;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+        }
+
+        .exam-card {
+            width: 135mm; 
+            height: 88mm;  
+            background-color: #fffde7 !important; 
+            border: 4px solid #1e88e5 !important;
+            border-radius: 15px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 5px 10px rgba(0,0,0,0.1);
+            background-image: linear-gradient(rgba(255, 253, 231, 0.9), rgba(255, 253, 231, 0.9)) !important;
+            page-break-inside: avoid;
+        }
+
+        .card-header {
+            background-color: #1e88e5 !important;
+            color: white !important;
+            padding: 8px 10px 8px 85px; 
+            text-align: center;
+            border-bottom: 5px solid #ffd600 !important;
+            border-bottom-right-radius: 60px;
+        }
+
+        .school-name { font-size: 16px; font-weight: bold; text-transform: uppercase; margin: 0; }
+        .school-subname { font-size: 10px; color: #ffd600 !important; margin-top: 3px; font-weight: bold; }
+
+        .logo-box {
+            position: absolute;
+            top: 5px;
+            left: 10px;
+            width: 65px;
+            height: 65px;
+            background: white !important;
+            border-radius: 50%;
+            border: 2px solid #2e7d32 !important;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+        }
+
+        .exam-title {
+            text-align: center;
+            color: #2e7d32 !important;
+            font-size: 22px;
+            font-weight: 900;
+            margin: 5px 0 2px 0;
+            text-transform: uppercase;
+        }
+
+        .watermark {
+            position: absolute;
+            top: 55%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-25deg);
+            font-size: 35px;
+            color: rgba(0, 0, 0, 0.04) !important;
+            font-weight: bold;
+            white-space: nowrap;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .card-body { 
+            padding: 15px 20px 5px 20px;
+            position: relative; 
+            z-index: 2; 
+        }
+        
+        .info-row { 
+            display: flex; 
+            margin-bottom: 8px; 
+            align-items: baseline; 
+        }
+
+        .label { 
+            font-weight: bold; 
+            font-size: 13px; 
+            color: #333 !important; 
+            min-width: 90px; 
+        }
+
+        .value { 
+            border-bottom: 1.2px dashed #1e88e5 !important; 
+            flex-grow: 1; 
+            margin-left: 8px; 
+            font-size: 14px; 
+            color: #000 !important; 
+            font-weight: 600;
+        }
+
+        .flex-container { 
+            display: flex; 
+            justify-content: space-between; 
+            gap: 10px;
+            margin-bottom: 8px;
+        }
+
+        .flex-item { 
+            display: flex; 
+            align-items: baseline; 
+            flex: 1; 
+        }
+
+        .signature-area {
+            display: flex;
+            align-items: flex-end; 
+            justify-content: flex-end;
+        }
+
+        .signature-wrap {
+            width: 100px;
+            border-bottom: 1.5px solid #333 !important; 
+            position: relative;
+            height: 25px; 
+            margin-left: 8px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .signature-wrap img {
+            position: absolute;
+            bottom: -2px; 
+            max-height: 40px; 
+            mix-blend-mode: multiply; 
+        }
+
+        .card-footer {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            background-color: #2e7d32 !important;
+            color: white !important;
+            padding: 5px 2px;
+            text-align: center;
+            font-size: 9px;
+            font-weight: bold;
+            border-top: 3px solid #ffd600 !important;
+        }
+
+        @media print {
+            body { background: none; padding: 0; }
+            .exam-card { box-shadow: none !important; }
+        }
+    </style>
+</head>
+<body>
+
+{% for ticket in tickets %}
+<div class="exam-card">
+    <div class="watermark">{{ ticket.exam.exam_name if ticket.exam else '---' }}</div>
+    
+    <div class="logo-box">
+        <img src="{{ url_for('static', filename=g.site_logo.sub_logo) if g.site_logo and g.site_logo.sub_logo else url_for('static', filename='backend/uploads/images/no_image.jpg') }}" 
+             style="width: 55px; height: 55px; object-fit: contain; border-radius: 50%;" alt="Logo"/>
+    </div>
+
+    <div class="card-header">
+        <div class="school-name">
+            {% if ticket.student and ticket.student.branch %}
+                {{ ticket.student.branch.name | upper }}
+            {% elif current_user.school %}
+                {{ current_user.school.name | upper }}
+            {% else %}
+                ---
+            {% endif %}
+        </div>
+ <div class="school-subname">
+    {% if ticket.student and ticket.student.branch and ticket.student.branch.title %}
+        {% set title = ticket.student.branch.title | translate | upper %}
+        {% set name = ticket.student.branch.name | upper %}
+        {% set first_word = name.split(' ')[0] %}
+
+        {% if first_word in title %}
+            {# Haddii word-kii koowaad ee name uu ku jiro title, kaliya title soo bandhig #}
+            {{ title }}
+        {% else %}
+            {# Haddii first_word aanu ku jirin title, muuji title EE name #}
+            {{ title }} EE {{ name }}
+        {% endif %}
+
+    {% elif ticket.student and ticket.student.school and ticket.student.school.title %}
+        {% set title = ticket.student.school.title | translate | upper %}
+        {% set name = current_user.school.name | upper %}
+        {% set first_word = name.split(' ')[0] %}
+
+        {% if first_word in title %}
+            {{ title }}
+        {% else %}
+            {{ title }} EE {{ name }}
+        {% endif %}
+
+    {% else %}
+        ---
+    {% endif %}
+</div>
+
+
+
+    </div>
+
+    <div class="exam-title">{{ ticket.exam.exam_name if ticket.exam else '---' }}</div>
+
+    <div class="card-body">
+        <div class="info-row">
+            <span class="label">Student Name:</span>
+            <span class="value">{{ ticket.student.full_name if ticket.student else '---' }}</span>
+        </div>
+
+        <div class="flex-container">
+            <div class="flex-item">
+                <span class="label">Class:</span>
+                <span class="value">
+                    {% if ticket.class_obj %}{{ ticket.class_obj.name }}{% else %}---{% endif %}
+                    {% if ticket.student and ticket.student.section_rel %}
+                        - Section {{ ticket.student.section_rel.name }}
+                    {% endif %}
+                </span>
+            </div>
+            <div class="flex-item">
+                <span class="label">Academic Year:</span>
+                <span class="value">{{ ticket.exam.academic_year.year_name if ticket.exam and ticket.exam.academic_year else '---' }}</span>
+            </div>
+        </div>
+
+        <div class="flex-container">
+            <div class="flex-item">
+                <span class="label">Exam Hall:</span>
+                <span class="value">{{ ticket.hall.name if ticket.hall else '---' }}</span>
+            </div>
+            <div class="flex-item">
+                <span class="label">Shift Mode:</span>
+                <span class="value">{{ ticket.student.shift|title if ticket.student and ticket.student.shift else '---' }}</span>
+            </div>
+        </div>
+
+        <div class="flex-container" style="margin-top: 5px;">
+            <div class="flex-item">
+                <span class="label">Validity:</span>
+                <span class="value" style="font-size: 7px; font-family: 'Times New Roman', serif; font-style: italic; border-bottom: none;">
+                    From: {{ ticket.exam.start_date.strftime('%d %b %Y') if ticket.exam and ticket.exam.start_date else '---' }} 
+                    To: {{ ticket.exam.end_date.strftime('%d %b %Y') if ticket.exam and ticket.exam.end_date else '---' }}
+                </span>
+            </div>
+            <div class="flex-item signature-area">
+                <span class="label">Sign:</span>
+                <div class="signature-wrap">
+                    {% if g.site_logo and g.site_logo.sign_logo %}
+                        <img src="{{ url_for('static', filename=g.site_logo.sign_logo) }}" alt="Signature">
+                    {% else %}
+                        <div style="width: 100%; height: 100%;"></div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card-footer">
+        FADLAN ILAASHO KARKA IMTIXAANKA, HADDII UU KAA LUMO <br>
+        WAXAA ADKAAN DOONTA IN AAD GASHO IMTIXAANKA
+    </div>
+</div>
+{% endfor %}
+
+<script>
+    window.onload = function() {
+        window.print();
+    };
+</script>
+</body>
+</html>

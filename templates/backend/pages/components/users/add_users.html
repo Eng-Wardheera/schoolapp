@@ -1,0 +1,655 @@
+{% extends 'backend/home/base.html' %}
+
+{% block title %}Add New User | School System{% endblock %}
+
+{% block content %}
+
+
+<!-- [ page-header ] start -->
+<div class="page-header">
+    <div class="page-header-left d-flex align-items-center">
+        <div class="page-header-title">
+            <h5 class="m-b-10">Users</h5>
+        </div>
+        <ul class="breadcrumb">
+            <li class="breadcrumb-item"><a href="index.html">Home</a></li>
+            <li class="breadcrumb-item">Create</li>
+        </ul>
+    </div>
+    <div class="page-header-right ms-auto">
+        <div class="page-header-right-items">
+            <div class="d-flex d-md-none">
+                <a href="javascript:void(0)" class="page-header-right-close-toggle">
+                    <i class="feather-arrow-left me-2"></i>
+                    <span>Back</span>
+                </a>
+            </div>
+            <div class="d-flex align-items-center gap-2 page-header-right-items-wrapper">
+                <a href="javascript:void(0);" class="btn btn-light-brand successAlertMessage">
+                    <i class="feather-layers me-2"></i>
+                    <span>Save as Draft</span>
+                </a>
+                <a href="javascript:void(0);" class="btn btn-primary successAlertMessage">
+                    <i class="feather-user-plus me-2"></i>
+                    <span>Create Customer</span>
+                </a>
+            </div>
+        </div>
+        <div class="d-md-none d-flex align-items-center">
+            <a href="javascript:void(0)" class="page-header-right-open-toggle">
+                <i class="feather-align-right fs-20"></i>
+            </a>
+        </div>
+    </div>
+</div>
+<!-- [ page-header ] end -->
+<!-- [ Main Content ] start -->
+<div class="main-content">
+   
+<div class="row">
+    <!-- Left Sidebar -->
+
+    <!-- Form for Adding New User -->
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+            <h4 class="card-title">Add User Form</h4>
+            </div>
+            <div class="card-body">
+                <form method="POST" enctype="multipart/form-data">
+                    {{ form.hidden_tag() }}
+<div class="row">
+    <!-- School -->
+    <div class="col-md-6">
+        <div class="form-group">
+            <label for="school">School</label>
+            <select id="school" name="school_id" class="form-control">
+                <option value="" disabled selected>Select School</option>
+                {% for school in schools %}
+                    <option value="{{ school.id }}" data-has-branches="{{ '1' if school.branches|length > 0 else '0' }}">
+                        {{ school.name }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+    </div>
+
+    <!-- Branch -->
+    <div class="col-md-6" id="branch-container" style="display:none;">
+        <div class="form-group">
+            <label for="branch">Branch</label>
+            <select class="form-control" id="branch-dropdown" name="branch_id">
+                <option value="" disabled selected>Select Branch</option>
+                {% for branch in branches %}
+                    <option value="{{ branch.id }}" data-school-id="{{ branch.school_id }}">{{ branch.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const schoolSelect = document.getElementById('school');
+    const branchContainer = document.getElementById('branch-container');
+    const branchDropdown = document.getElementById('branch-dropdown');
+
+    function updateBranches() {
+        const selectedOption = schoolSelect.options[schoolSelect.selectedIndex];
+        const hasBranches = selectedOption.dataset.hasBranches === '1';
+        const schoolId = selectedOption.value;
+
+        if (hasBranches) {
+            branchContainer.style.display = 'block'; // show label + select
+
+            // Filter branches by school
+            Array.from(branchDropdown.options).forEach(option => {
+                if (option.dataset.schoolId === schoolId || option.value === "") {
+                    option.style.display = 'block';
+                } else {
+                    option.style.display = 'none';
+                }
+            });
+        } else {
+            branchContainer.style.display = 'none'; // hide label + select
+        }
+    }
+
+    schoolSelect.addEventListener('change', updateBranches);
+
+    // Optional: hide branch container on page load
+    branchContainer.style.display = 'none';
+});
+</script>
+
+
+
+                    <div class="row">
+                        <!-- Username Field -->
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="username">Username</label>
+                                <input type="text" class="form-control" id="username" name="username" required placeholder="Enter username">
+                            </div>
+                        </div>
+
+                        <!-- Full Name Field -->
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="fullname">Full Name</label>
+                                <input type="text" class="form-control" id="fullname" name="fullname"  placeholder="Enter full name">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <!-- Email Field -->
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="email">Email</label>
+                                <input type="email" class="form-control" id="email" name="email"  placeholder="Enter email" required>
+                            </div>
+                        </div>
+                    <!-- templates/admin/users/register.html -->
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="role">Role</label>
+                            <select class="form-control" id="role" name="role" required>
+                                <option value="" disabled selected>Select Role</option>
+                                {% for role in roles %}
+                                    <option value="{{ role.name }}">{{ role.name|capitalize }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    
+                    
+                   
+
+                     
+                    </div>
+
+                    <div class="row">
+                        <!-- Country -->
+                       
+                        <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="country">Country</label>
+                            <!-- Country dropdown -->
+                            <select id="country" name="country" class="form-control">
+                            <option value="" disabled selected>Select Country</option>
+                            {% for country in all_countries %}
+                                <option value="{{ country.name }}"
+                                        data-phone-code="{{ country.code }}"
+                                        data-min-length="{{ country.min_length }}"
+                                        data-max-length="{{ country.max_length }}">
+                                {{ country.name }}
+                                </option>
+                            {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+
+
+                        <!-- State -->
+                        
+                        <div class="col-md-6">
+                        <div class="form-group">
+                            <label>Region/State</label>
+                            <select class="form-control" id="state-dropdown" name="state" style="display:none;">
+                                <option value="" disabled selected>Select Region</option>
+                                {% for region in somalia_regions.keys() %}
+                                    <option value="{{ region }}">{{ region }}</option>
+                                {% endfor %}
+                            </select>
+                            <input type="text" class="form-control" id="state-text" name="state_text" placeholder="Enter Region/State" style="display:block;">
+                        </div>
+                    </div>
+
+                      
+                        
+                    </div>
+
+
+
+                    <div class="row">
+
+                          <!-- City/District -->
+                       
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="city-dropdown">City/District</label>
+                                <select class="form-control" id="city-dropdown" name="city" style="display:none;"></select>
+                                <input type="text" class="form-control" id="city-text" name="city_text" placeholder="Enter City" style="display:block;">
+                            </div>
+                        
+                        </div>
+
+                           <!-- Phone Field -->
+                       <!-- Phone Input -->
+                    <!-- Phone input -->
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="phone">Phone</label>
+                            <div class="input-group">
+                                <span class="input-group-text" id="country-code">+XXX</span>
+                                <input type="text"
+                                    class="form-control"
+                                    id="phone"
+                                    name="phone"
+                                    placeholder="Enter phone number"
+                                    aria-describedby="country-code"
+                                    pattern="\d*" disabled>
+                            </div>
+                        </div>
+                    </div>
+
+
+                       
+                     
+                    </div>
+
+                    <!-- Action & Inaction Button Based on Role -->
+                     <div class="row">
+                        
+                        <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="status">User Status</label>
+                            <select class="form-control" id="status" name="status" required>
+                                <option value="" disabled selected>Select Status</option>
+                                <option value="1">Active</option>
+                                <option value="0">InActive</option>
+                            </select>
+                        </div>
+                        </div>
+
+                         <!-- Photo Upload Field -->
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="photo">Profile Photo</label>
+                                <input type="file" class="form-control" id="photo" name="photo" accept=".png, .jpg, .jpeg" >
+                                <div id="single-image-preview" class="mt-2"></div>
+                            </div>
+                        </div>
+
+                     
+
+                     </div>
+                  
+
+
+                    <!-- Password Field -->
+                    <div class="row">
+                        <!-- <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="password">Password</label>
+                                <input type="password" class="form-control" id="password" name="password" required placeholder="Enter password">
+                                <input type="password" name="password" id="passwordInput" class="form-control" placeholder="Enter a strong password" required oninput="validatePassword()">
+                                <span class="position-absolute" style="top: 38px; right: 10px; cursor: pointer;" onclick="togglePassword('passwordInput')">👁️</span>
+                                <ul id="passwordRequirements" class="text-danger small mt-2 pl-3"></ul>
+
+                            </div>
+                        </div> -->
+
+                        <div class="col-md-6">
+                            <!-- Password Field -->
+                          <div class="form-group position-relative">
+                            <label for="new_password">New Password</label>
+                            <input type="password" name="new_password" id="new_password" class="form-control" placeholder="Enter a strong password" required oninput="validatePassword()">
+                            <span class="position-absolute password-toggle" onclick="togglePassword('new_password', this)" style="top: 48px; right: 16px; cursor: pointer;">
+                                <i class="fas fa-eye"></i>
+                            </span>
+                            <ul id="passwordRequirements" class="text-danger small mt-2 pl-3"></ul>
+                            </div>
+                        </div>
+
+
+
+                            <!-- Confirm Password Field -->
+                             <div class="col-md-6">
+                              <div class="form-group position-relative">
+                                <label for="confirm_password">Confirm Password</label>
+                                <input type="password" id="confirm_password" name="confirm_password" class="form-control" placeholder="Confirm password" required oninput="validatePassword()">
+                                <span class="position-absolute password-toggle" onclick="togglePassword('confirm_password', this)" style="top: 48px; right: 16px; cursor: pointer;">
+                                    <i class="fas fa-eye"></i>
+                                </span>
+                                <div id="confirmFeedback" class="mt-1 small"></div>
+                                </div>
+
+                             </div>
+
+                               <div class="card-action text-center">
+                        <button type="submit" class="btn btn-success">Add User</button>
+                        <a href="{{ url_for('main.all_users') }}" type="reset" class="btn btn-danger">Cancel</a>
+                    </div>
+                        </div>
+                    </div>
+
+                  
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- [ Main Content ] end -->
+
+
+<!-- Include jQuery + Select2 -->
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+<script>
+function formatFlag (state) {
+    if (!state.id) return state.text;
+    var flagUrl = $(state.element).data('flag');
+    if(flagUrl){
+        var $state = $(
+            '<span><img src="' + flagUrl + '" style="height:14px; margin-right:5px;" /> ' + state.text + '</span>'
+        );
+        return $state;
+    }
+    return state.text;
+}
+
+$(document).ready(function() {
+    $('.select2-flag').select2({
+        templateResult: formatFlag,
+        templateSelection: formatFlag,
+        minimumResultsForSearch: Infinity
+    });
+});
+</script>
+
+<input type="hidden" name="country_code" id="country_code_input">
+
+<!-- full name Validation -->
+<script>
+  document.querySelector('form').addEventListener('submit', function (e) {
+    const nameInput = document.querySelector('input[name="fullname"]');
+    const namePattern = /^[A-Za-z\s.'-]+$/;
+
+    if (!namePattern.test(nameInput.value.trim())) {
+      e.preventDefault();
+      Swal.fire({
+        icon: 'error',
+        title: 'Invalid Full Name',
+        text: 'Please enter a valid name using only letters, spaces, dots, apostrophes, and dashes.',
+      });
+      nameInput.focus();
+    }
+  });
+</script>
+
+
+<!-- photo Validation allow -->
+<script>
+document.getElementById('photo').addEventListener('change', function () {
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png'];
+    const file = this.files[0];
+
+    if (file && !allowedTypes.includes(file.type)) {
+        this.value = ''; // Clear file input
+        Swal.fire({
+            icon: 'error',
+            title: 'Invalid File Type',
+            text: 'Only PNG, JPG, and JPEG files are allowed.',
+        });
+    }
+});
+</script>
+
+<!-- Password Validation -->
+<script>
+function togglePassword(fieldId, iconContainer) {
+  const input = document.getElementById(fieldId);
+  const icon = iconContainer.querySelector('i');
+
+  if (input.type === "password") {
+    input.type = "text";
+    icon.classList.remove('fa-eye');
+    icon.classList.add('fa-eye-slash');
+  } else {
+    input.type = "password";
+    icon.classList.remove('fa-eye-slash');
+    icon.classList.add('fa-eye');
+  }
+}
+
+function validatePassword() {
+  const password = document.getElementById("new_password").value;
+  const confirmPassword = document.getElementById("confirm_password").value;
+  const requirementsContainer = document.getElementById("passwordRequirements");
+
+  const requirements = [
+    { regex: /.{8,}/, message: "At least 8 characters" },
+    { regex: /[A-Z]/, message: "At least one uppercase letter" },
+    { regex: /[a-z]/, message: "At least one lowercase letter" },
+    { regex: /[0-9]/, message: "At least one number" },
+    { regex: /[!@#$%^&*(),.?\":{}|<>]/, message: "At least one special character" }
+  ];
+
+  if (password.length === 0) {
+    // Hide requirements list if password is empty
+    requirementsContainer.style.display = 'none';
+  } else {
+    // Check if all requirements met
+    const allPassed = requirements.every(req => req.regex.test(password));
+
+    if (allPassed) {
+      // Show strong password message
+      requirementsContainer.style.display = 'block';
+      requirementsContainer.innerHTML = `<li style="color: green; font-weight: bold;">✅ Strong Password</li>`;
+    } else {
+      // Show list with individual checks
+      requirementsContainer.style.display = 'block';
+
+      const listItems = requirements.map(req => {
+        const passed = req.regex.test(password);
+        return `<li style="color:${passed ? 'green' : 'red'};">${passed ? '✅ ' : '❌ '}${req.message}</li>`;
+      });
+      requirementsContainer.innerHTML = listItems.join("");
+    }
+  }
+
+  const feedback = document.getElementById("confirmFeedback");
+  if (confirmPassword && password !== confirmPassword) {
+    feedback.textContent = "Passwords do not match";
+    feedback.classList.add("text-danger");
+    feedback.classList.remove("text-success");
+  } else if (confirmPassword) {
+    feedback.textContent = "Passwords match";
+    feedback.classList.add("text-success");
+    feedback.classList.remove("text-danger");
+  } else {
+    feedback.textContent = "";
+  }
+
+  return requirements.every(req => req.regex.test(password)) && password === confirmPassword;
+}
+
+document.querySelector("form").addEventListener("submit", function (e) {
+  if (!validatePassword()) {
+    e.preventDefault();
+    Swal.fire({
+      icon: "error",
+      title: "Invalid Password",
+      text: "Please fix password errors before submitting."
+    });
+  }
+});
+</script>
+
+<!-- somalia_regions -->
+<script>
+// somaliaRegions waa dictionary Python Flask ka soo diray sida JSON
+  const somaliaRegions = {{ somalia_regions | tojson }};
+
+  const countryInput = document.getElementById('country');
+  const stateDropdown = document.getElementById('state-dropdown');
+  const stateText = document.getElementById('state-text');
+  const cityDropdown = document.getElementById('city-dropdown');
+  const cityText = document.getElementById('city-text');
+
+  countryInput.addEventListener('input', function () {
+    const country = this.value.trim().toLowerCase();
+
+    if (country === 'somalia') {
+      // Show dropdowns for region and city, hide text inputs
+      stateDropdown.style.display = 'block';
+      stateDropdown.disabled = false;
+      stateDropdown.value = "";
+      stateDropdown.setAttribute('name', 'state');
+
+      cityDropdown.style.display = 'none';
+      cityDropdown.innerHTML = '';
+      cityDropdown.removeAttribute('name');
+
+      stateText.style.display = 'none';
+      stateText.value = '';
+      stateText.removeAttribute('name');
+
+      cityText.style.display = 'none';
+      cityText.value = '';
+      cityText.removeAttribute('name');
+    } else {
+      // Show text inputs for region and city, hide dropdowns
+      stateText.style.display = 'block';
+      stateText.setAttribute('name', 'state_text');
+
+      cityText.style.display = 'block';
+      cityText.setAttribute('name', 'city_text');
+
+      stateDropdown.style.display = 'none';
+      stateDropdown.value = '';
+      stateDropdown.removeAttribute('name');
+
+      cityDropdown.style.display = 'none';
+      cityDropdown.innerHTML = '';
+      cityDropdown.removeAttribute('name');
+    }
+  });
+
+  stateDropdown.addEventListener('change', function () {
+    const selectedRegion = this.value;
+    const cities = somaliaRegions[selectedRegion] || [];
+
+    cityDropdown.innerHTML = '';
+    cityDropdown.style.display = 'block';
+    cityDropdown.disabled = false;
+    cityDropdown.setAttribute('name', 'city');
+
+    cityText.style.display = 'none';
+    cityText.value = '';
+    cityText.removeAttribute('name');
+
+    // Add default option
+    const defaultOption = document.createElement('option');
+    defaultOption.text = 'Select City';
+    defaultOption.disabled = true;
+    defaultOption.selected = true;
+    cityDropdown.appendChild(defaultOption);
+
+    // Add cities dynamically
+    cities.forEach(function(city) {
+      const option = document.createElement('option');
+      option.value = city;
+      option.text = city;
+      cityDropdown.appendChild(option);
+    });
+
+    // Add "Other" option for manual city input
+    const otherOption = document.createElement('option');
+    otherOption.value = 'Other';
+    otherOption.text = 'Other';
+    cityDropdown.appendChild(otherOption);
+  });
+
+  cityDropdown.addEventListener('change', function () {
+    if (this.value === 'Other') {
+      cityText.style.display = 'block';
+      cityText.setAttribute('name', 'city_text');
+      cityDropdown.removeAttribute('name');
+    } else {
+      cityText.style.display = 'none';
+      cityText.value = '';
+      cityText.removeAttribute('name');
+      cityDropdown.setAttribute('name', 'city');
+    }
+  });
+</script>
+
+<!-- CSS -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.19/css/intlTelInput.min.css"/>
+
+<!-- JS -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.19/js/intlTelInput.min.js"></script>
+
+<!-- phone number and country code Validation -->
+<script>
+  const countrySelect = document.getElementById("country");
+  const phoneInput = document.getElementById("phone");
+  const countryCodeSpan = document.getElementById("country-code");
+
+  countrySelect.addEventListener("change", () => {
+    const selectedOption = countrySelect.options[countrySelect.selectedIndex];
+    const phoneCode = selectedOption.getAttribute("data-phone-code");
+    const minLength = parseInt(selectedOption.getAttribute("data-min-length"));
+    const maxLength = parseInt(selectedOption.getAttribute("data-max-length"));
+
+    phoneInput.addEventListener("input", function () {
+        // Tirooyin keliya ayaa la oggol yahay
+        this.value = this.value.replace(/\D/g, "");
+    });
+
+    // Nadiifi phone number markasta oo waddanka la beddelo
+    phoneInput.value = "";
+
+    // Show country code
+    countryCodeSpan.textContent = phoneCode ? `+${phoneCode}` : "+XXX";
+
+    if (!isNaN(minLength) && !isNaN(maxLength)) {
+      phoneInput.disabled = false;
+      phoneInput.setAttribute("minlength", minLength);
+      phoneInput.setAttribute("maxlength", maxLength);
+      phoneInput.setAttribute("pattern", `\\d{${minLength},${maxLength}}`);
+      phoneInput.setAttribute("placeholder", `Enter ${minLength}-${maxLength} digits`);
+    } else {
+      phoneInput.disabled = false;
+      phoneInput.removeAttribute("minlength");
+      phoneInput.removeAttribute("maxlength");
+      phoneInput.removeAttribute("pattern");
+      phoneInput.setAttribute("placeholder", "Enter phone number");
+    }
+  });
+
+  // Initial: Disable phone input until country is selected
+  phoneInput.disabled = true;
+</script>
+
+
+
+
+
+<!-- Image Preview -->
+<script>
+      // --- Single Image Preview ---
+    document.getElementById('photo').addEventListener('change', function(event) {
+        const previewContainer = document.getElementById('single-image-preview');
+        previewContainer.innerHTML = ''; // Clear previous preview
+
+        const file = event.target.files[0];
+        if (file) {
+            const img = document.createElement('img');
+            img.src = URL.createObjectURL(file);
+            img.style.maxWidth = '120px';
+            img.style.maxHeight = '90px';
+            img.style.borderRadius = '8px';
+            img.style.objectFit = 'cover';
+            previewContainer.appendChild(img);
+        }
+    });
+</script>
+
+{% endblock %}

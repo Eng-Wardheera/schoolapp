@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="so">
+<head>
+    <meta charset="UTF-8">
+    <title>
+        {% if branch and school %}
+            Exam Attendance Sheet - {{ branch.name }} - {{ school.name }} {% if shift %}- {{ shift|capitalize }} Shift{% endif %}
+        {% elif school %}
+            Exam Attendance Sheet - {{ school.name }} {% if shift %}- {{ shift|capitalize }} Shift{% endif %}
+        {% elif branch %}
+            Exam Attendance Sheet - {{ branch.name }} {% if shift %}- {{ shift|capitalize }} Shift{% endif %}
+        {% else %}
+            Exam Attendance Sheet {% if shift %}- {{ shift|capitalize }} Shift{% endif %}
+        {% endif %}
+    </title>
+
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; background-color: #fff; }
+        
+        /* 🔥 PRINT SETTINGS */
+        @media print {
+            @page { 
+                size: A4 landscape; 
+                margin: 5mm; 
+            }
+            * {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+            .outer-border { 
+                page-break-after: always; 
+                height: 98vh; /* Waxay hubisaa inuu hal bog ku ekaado */
+            }
+            .outer-border:last-child { page-break-after: auto; }
+        }
+
+        .outer-border { 
+            border: 4px solid #2c3e50; 
+            padding: 3px; 
+            box-sizing: border-box;
+            page-break-inside: avoid;
+            margin-bottom: 20px;
+        }
+
+        .middle-border { border: 4px solid #2ecc71; padding: 3px; height: 100%; box-sizing: border-box; }
+        .inner-border { border: 2px solid #34495e; padding: 10px; position: relative; height: 100%; box-sizing: border-box; }
+        
+        /* Logo Stretch Fix */
+        .main-logo {
+            width: 100%;
+            height: 120px; 
+            margin-bottom: 5px;
+            overflow: hidden;
+        }
+
+        .main-logo img {
+            width: 100%;
+            height: 100%;
+            object-fit: fill; /* Tani waxay u fidinaysaa sawirka si buuxda */
+            display: block;
+        }
+
+        .header { text-align: center; border-bottom: 4px solid #2ecc71; padding-bottom: 10px; margin-bottom: 10px; }
+        .school-title h2 { margin: 0; color: #27ae60; font-size: 26px; text-transform: uppercase; }
+        .school-title p { margin: 5px 0; font-weight: bold; font-size: 15px; text-transform: uppercase; }
+
+        .exam-date {
+            position: absolute;
+            right: 20px;
+            top: 135px; 
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .banner-blue { 
+            background-color: #0000ff !important; 
+            color: white !important; 
+            text-align: center; 
+            padding: 8px; 
+            font-size: 17px; 
+            font-weight: bold; 
+            margin: 12px 0; 
+            text-transform: uppercase; 
+            border-top: 2px solid #34495e;
+            border-bottom: 2px solid #34495e;
+        }
+        
+        .hall-info { display: flex; justify-content: space-between; margin-bottom: 5px; font-weight: bold; }
+        .hall-name { font-size: 22px; color: #000080; }
+
+        /* Table Design */
+        table { width: 100%; border-collapse: collapse; margin-top: 5px; table-layout: fixed; }
+        th, td { border: 1px solid #000; padding: 6px; font-size: 10px; text-align: center; }
+        .th-main { background: #5dade2 !important; font-weight: bold; font-size: 11px; color: #000 !important; }
+        .student-name-col { text-align: left; padding-left: 8px; width: 22%; font-weight: bold; }
+        .class-col { width: 7%; font-weight: bold; }
+        .no-col { width: 35px; }
+        
+        .subject-title { font-size: 9px; background: #d5f5e3 !important; height: 35px; font-weight: bold; vertical-align: middle; color: #000 !important; }
+        .sign-header { font-size: 8px; background: #f8f9fa !important; color: #000 !important; }
+
+        .footer-info {
+            display: flex; 
+            justify-content: space-between; 
+            margin-top: 10px; 
+            font-size: 12px; 
+            font-weight: bold; 
+            border-top: 3px solid #2ecc71; 
+            padding-top: 5px;
+        }
+    </style>
+</head>
+<body onload="window.print()">
+
+{% for hall in halls %}
+<div class="outer-border">
+    <div class="middle-border">
+        <div class="inner-border">
+            
+            <div class="header">
+                <div class="main-logo">
+                    <img src="{% if branch and branch.logo %}{{ url_for('static', filename=branch.logo) }}{% elif school and school.logo %}{{ url_for('static', filename=school.logo) }}{% elif g.site_logo and g.site_logo.main_logo %}{{ url_for('static', filename=g.site_logo.main_logo) }}{% else %}{{ url_for('static', filename='backend/uploads/images/no_image.jpg') }}{% endif %}" alt="Logo">
+                </div>
+
+                <div class="exam-date">
+                    DATE: {{ now_eat().strftime('%d/%m/%Y') }}
+                </div>
+
+                <div class="school-title">
+                    <h2>{% if branch %}{{ branch.name | upper }}{% elif school %}{{ school.name | upper }}{% endif %}</h2>
+                    <p>{% if branch and branch.title %}{{ branch.title | upper }}{% elif school and school.title %}{{ school.title | upper }}{% endif %}</p>
+                </div>
+            </div>
+
+            <div class="banner-blue">
+                XAADIRINTA IMTIXAANKA (EXAM ATTENDANCE SHEET)
+                {% if branch %} - {{ branch.name }}{% endif %}
+                {% if school %} - {{ school.name }}{% endif %}
+                {% if shift %} - {{ shift|capitalize }} Shift{% endif %}
+            </div>
+
+            <div class="hall-info">
+                <div class="hall-name">{{ hall.name | upper }}</div>
+                <div style="font-size: 13px;">PRINTED BY: {{ current_user.username | upper }}</div>
+            </div>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th rowspan="3" class="th-main no-col">NO</th>
+                        <th rowspan="3" class="th-main student-name-col">STUDENT NAME</th>
+                        <th rowspan="3" class="th-main class-col">CLASS</th>
+                        {% for d in all_dates %}
+                        <th colspan="2" style="background: #f8f9fa !important; color: #000;">
+                            {{ d.strftime('%a') }}<br>{{ d.strftime('%d-%b') }}
+                        </th>
+                        {% endfor %}
+                    </tr>
+                    <tr>
+                        {% for d in all_dates %}
+                            {% set first_student = hall.hall_assignments[0] if hall.hall_assignments else none %}
+                            {% set header_exams = timetable_map[first_student.class_obj.level_id][d] if first_student else [] %}
+                            <th class="subject-title">{{ header_exams[0] if header_exams|length >= 1 else '-' }}</th>
+                            <th class="subject-title">{{ header_exams[1] if header_exams|length >= 2 else '-' }}</th>
+                        {% endfor %}
+                    </tr>
+                    <tr>
+                        {% for d in all_dates %}
+                        <th class="sign-header">SIGN</th>
+                        <th class="sign-header">SIGN</th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for assign in hall.hall_assignments %}
+                    <tr>
+                        <td>{{ loop.index }}</td>
+                        <td class="student-name-col">{{ assign.student.full_name | title }}</td>
+                        <td class="class-col">{{ assign.class_obj.name }}</td>
+                        {% for d in all_dates %}
+                            {% set day_exams = timetable_map[assign.class_obj.level_id][d] %}
+                            <td style="background-color: {{ '#ffffff' if day_exams|length >= 1 else '#f2f2f2' }}; height: 35px;">
+                                {{ '' if day_exams|length >= 1 else '-' }}
+                            </td>
+                            <td style="background-color: {{ '#ffffff' if day_exams|length >= 2 else '#f2f2f2' }}; height: 35px;">
+                                {{ '' if day_exams|length >= 2 else '-' }}
+                            </td>
+                        {% endfor %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <div class="footer-info">
+                <div style="text-transform: uppercase;">{{ school.name }}</div>
+                <div>TEL: {{ branch.phone if branch else school.phone }}</div>
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endfor %}
+
+</body>
+</html>

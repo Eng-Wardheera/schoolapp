@@ -1,0 +1,542 @@
+{% extends 'backend/home/base.html' %}
+{% block content %}
+
+{# 1. TOP 3 OVERLAY ANIMATION #}
+{% set top_students = student_data.values()|list %}
+{% if top_students %}
+
+<div class="page-header d-print-none">
+    <div class="page-header-left d-flex align-items-center">
+        <div class="page-header-title">
+            <h5 class="m-b-10">Academic Analysts Results</h5>
+        </div>
+        <ul class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Home</a></li>
+            <li class="breadcrumb-item"> Academic Exams </li>
+        </ul>
+    </div>
+    <div class="page-header-right ms-auto">
+        <a href="{{ url_for('main.all_exam_results') }}" class="btn btn-primary">
+            <i class="feather-plus me-2"></i> All Academic Exam Results
+        </a>
+    </div>
+</div>
+
+
+
+<div id="victoryOverlay" class="victory-overlay">
+    {# LOGO-GA OO KOR LA SAARAY #}
+    <div class="overlay-school-header animate__animated animate__fadeInDown">
+        <div class="logo-wrapper">
+            <img src="{{ url_for('static', filename=g.site_logo.sub_logo) if g.site_logo and g.site_logo.sub_logo else url_for('static', filename='backend/uploads/images/no_image.jpg') }}" 
+                 class="overlay-logo shadow-lg" alt="Logo">
+        </div>
+        <h3 class="text-white mt-3 fw-bold letter-spacing-1">
+            {% if current_user.role.value == 'branch_admin' %}
+                {{ current_user.branch.name|upper if current_user.branch else 'N/A' }}
+            {% else %}
+                {{ current_user.school.name|upper if current_user.school else 'N/A' }}
+            {% endif %}
+        </h3>
+        <div class="header-divider mx-auto"></div>
+    </div>
+
+    {% for i in range(3) %}
+        {% if top_students[i] %}
+            {% set student = top_students[i] %}
+            {% set avg = (student.grand_total / student.total_out_of * 100) if student.total_out_of > 0 else 0 %}
+            <div id="winner-card-{{ i + 1 }}" class="congrats-content text-center winner-hidden">
+                <div class="rank-badge-top rank-{{ i + 1 }}-bg animate__animated animate__pulse animate__infinite">RANK {{ i + 1 }}</div>
+                
+                <div class="trophy-main trophy-{{ i + 1 }} animate__animated animate__bounceIn">
+                    {% if i == 0 %}🏆{% elif i == 1 %}🥈{% else %}🥉{% endif %}
+                </div>
+
+                <h5 style="font-size: 20px;" class="display-2 fw-black text-white glow-text mb-0">
+                    {% if i == 0 %}PRIDE OF THE YEAR!{% else %}TOP PERFORMER!{% endif %}
+                </h5>
+                
+                <h2 class="winner-name">{{ student.student.full_name }}</h2>
+                
+                <div class="winner-info-wrapper mb-4">
+                    <span class="info-tag class-tag">Class: {{ student.class.name }}</span>
+                    <span class="info-tag score-tag">Average: {{ "%.2f"|format(avg) }}%</span>
+                </div>
+
+                <div class="overlay-progress-container mx-auto shadow">
+                    <div id="progress-bar-{{ i + 1 }}" class="overlay-progress-bar bar-{{ i + 1 }}" style="width: 0%"></div>
+                </div>
+
+                <div class="speech-status mt-4">
+                    <div class="waveform">
+                        <span></span><span></span><span></span><span></span>
+                    </div>
+                    <span class="dynamicSubtitle ms-2">Announcing Winner...</span>
+                </div>
+            </div>
+        {% endif %}
+    {% endfor %}
+    
+    <button class="btn-exit-modern" onclick="closeOverlay()">
+        <i class="feather-x me-2"></i> SKIP & CLOSE REPORT
+    </button>
+</div>
+{% endif %}
+
+<div class="page-content py-4">
+    <div class="container-fluid">
+        {# ACADEMIC YEAR SELECTOR #}
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card border-0 shadow-sm rounded-4">
+                    <div class="card-body p-3">
+                        <form method="GET" action="{{ url_for('main.cumulative_results') }}" class="row align-items-center">
+                            <div class="col-md-4">
+                                <label class="small fw-bold text-muted mb-1 text-uppercase">Select Academic Year</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light border-0"><i class="feather-calendar"></i></span>
+                                    <select name="academic_year_id" class="form-select border-0 bg-light" onchange="this.form.submit()">
+                                        {% for year in all_years %}
+                                            <option value="{{ year.id }}" {{ 'selected' if year.id == active_year.id else '' }}>
+                                                {{ year.year_name }} {{ '(Active)' if year.is_active else '' }}
+                                            </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    {# HEADER SECTION #}
+<div class="header-section mb-5 bg-white p-4 rounded-4 shadow-sm border-start border-primary border-5">
+    <div class="row align-items-center">
+        <div class="col-lg-5">
+            <div class="d-flex align-items-center">
+                <img src="{{ url_for('static', filename=g.site_logo.sub_logo) if g.site_logo and g.site_logo.sub_logo else url_for('static', filename='backend/uploads/images/no_image.jpg') }}" 
+                     class="me-3 shadow-sm rounded-circle border" style="width: 65px; height: 65px; object-fit: contain;">
+                <div>
+                    <h4 class="fw-bold m-0 text-dark">
+                        {{ current_user.branch.name if current_user.role.value == 'branch_admin' else current_user.school.name }}
+                    </h4>
+                    <p class="text-muted m-0 small fw-medium text-uppercase">Academic Merit List {{ active_year.year_name }}</p>
+                </div>
+            </div>
+        </div>
+
+        {# QAYBTA CUSUB: CLASS SELECTOR IYO PRINT #}
+        <div class="col-lg-7 text-lg-end mt-3 mt-lg-0">
+            <div class="d-inline-flex align-items-center gap-2">
+                <div class="text-start me-2">
+                    <label class="small fw-bold text-muted mb-0 d-block text-uppercase" style="font-size: 10px;">Print by Class</label>
+                    <select id="classPrintSelect" class="form-select form-select-sm border-primary shadow-sm" style="min-width: 150px; border-radius: 8px;">
+                        <option value="">-- Select Class --</option>
+                        {% for cls in classes %}
+                            <option value="{{ cls.id }}">{{ cls.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <button class="btn btn-dark rounded-pill px-3 fw-bold mt-3" onclick="printClassReport()">
+                    <i class="feather-printer me-2"></i>PRINT CLASS STUDENTS
+                </button>
+
+                <button class="btn btn-outline-secondary rounded-pill px-3 fw-bold mt-3" onclick="printClassSummariseReport()">
+                    <i class="feather-layers me-2"></i>PRINT ALL CLASS
+                </button>
+                
+                <button class="btn btn-primary rounded-pill px-3 shadow-sm fw-bold mt-3" onclick="location.reload()">
+                    <i class="feather-play me-2"></i>REPLAY
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+        {# MAIN RESULTS TABLE #}
+<div class="card border-0 shadow-lg rounded-4 overflow-hidden">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table id="resultsTable" class="table table-hover align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th class="ps-4"># RANK</th>
+                        <th>STUDENT NAME</th>
+                        <th>CLASS</th>
+                        <th class="text-center">MARKS</th>
+                        <th class="text-center">AVERAGE (%)</th>
+                        <th class="text-center">GRADE</th>
+                        <th class="text-center">RESULT</th>
+                        <th class="text-center pe-4">ACTIONS</th> {# <--- Tiirka cusub #}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for s_id, data in student_data.items() %}
+                    {% set avg = (data.grand_total / data.total_out_of * 100) if data.total_out_of > 0 else 0 %}
+                    <tr>
+                        <td class="ps-4">
+                            <div class="table-rank-badge rank-{{ loop.index if loop.index <= 3 else 'default' }}">
+                                {{ loop.index }}
+                            </div>
+                        </td>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <div class="avatar-letter bg-soft-primary text-primary fw-bold me-3">
+                                    {{ data.student.full_name[0]|upper }}
+                                </div>
+                                <div>
+                                    <div class="fw-bold text-dark">{{ data.student.full_name }}</div>
+                                    <small class="text-muted">Code: {{ data.student.student_code }}</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td><span class="badge bg-light text-dark border-secondary-subtle px-3">{{ data.class.name }}</span></td>
+                        <td class="text-center fw-bold">{{ data.grand_total }} / {{ data.total_out_of }}</td>
+                        <td class="text-center">
+                            <span class="fw-bold text-primary">{{ "%.2f"|format(avg) }}%</span>
+                            <div class="progress mt-1" style="height: 6px; width: 80px; margin: 0 auto;">
+                                <div class="progress-bar bg-primary" style="width: {{ avg }}%"></div>
+                            </div>
+                        </td>
+                        <td class="text-center"><div class="grade-box shadow-sm">{{ data.grade|default('F') }}</div></td>
+                        <td class="text-center">
+                            <span class="status-badge {{ 'pass' if avg >= 50 else 'fail' }}">
+                                {{ 'PROMOTED' if avg >= 50 else 'FAILED' }}
+                            </span>
+                        </td>
+                        <td class="text-center pe-4">
+                            <div class="btn-group shadow-sm" role="group">
+                                <a href="" 
+                                   class="btn btn-sm btn-outline-primary" title="View Report">
+                                    <i class="feather-eye"></i>
+                      <a href="javascript:void(0)" 
+   onclick="openPrintModal('{{ data.student.id }}', '{{ data.student.full_name }}', '{{ active_year.id }}')" 
+   style="display:inline-block; padding:6px 12px; font-size:14px; color:#333; border:1px solid #333; border-radius:4px; text-decoration:none; cursor:pointer; background-color:transparent;"
+   onmouseover="this.style.backgroundColor='#333'; this.style.color='#fff';"
+   onmouseout="this.style.backgroundColor='transparent'; this.style.color='#333';">
+   🖨 Print
+</a>
+
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+     
+    </div>
+</div>
+
+
+<div id="printModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); justify-content:center; align-items:center; z-index:99999; backdrop-filter: blur(4px);">
+    <div style="background:#fff; width:450px; border-radius:12px; overflow:hidden; box-shadow:0 10px 25px rgba(0,0,0,0.3); animation: slideDown 0.3s ease-out;">
+        
+        <div style="padding:15px 20px; border-bottom:1px solid #eee; display:flex; justify-content:space-between; align-items:center; background:#f8f9fa;">
+            <h5 style="margin:0; font-size:18px; font-weight:700; color:#333;">
+                <i class="feather-printer me-2"></i> Print Report Card
+            </h5>
+            <button onclick="closeModal()" style="border:none; background:none; font-size:24px; cursor:pointer; color:#999;">&times;</button>
+        </div>
+
+        <div style="padding:25px 20px;">
+            <div style="margin-bottom:15px; text-align:center;">
+                <small style="color:#666; text-transform:uppercase; font-weight:bold; letter-spacing:1px;">STUDENT NAME</small>
+                <h4 id="modalStudentName" style="margin:5px 0; color:#007bff; font-weight:800;"></h4>
+            </div>
+
+            <label style="display:block; margin-bottom:10px; font-weight:600; color:#444;">Select Report Type:</label>
+            <select id="examSelect" style="width:100%; padding:12px; border:2px solid #e2e8f0; border-radius:8px; font-size:15px; outline:none;">
+                <option value="all" style="font-weight:bold; color:#166534;">--- 📊 Cumulative (All Exams Summary) ---</option>
+                <optgroup label="📄 Single Exams">
+                    {% for ex in available_exams %}
+                        <option value="{{ ex.id }}">{{ ex.exam_name }}</option>
+                    {% endfor %}
+                </optgroup>
+            </select>
+        </div>
+
+        <div style="padding:15px 20px; border-top:1px solid #eee; background:#f8f9fa; text-align:right;">
+            <input type="hidden" id="modalStudentId">
+            <input type="hidden" id="modalYearId"> <button onclick="closeModal()" style="padding:10px 20px; border:1px solid #ddd; background:#fff; border-radius:8px; margin-right:10px; cursor:pointer; font-weight:600;">Cancel</button>
+            <button onclick="processPrint()" style="padding:10px 25px; background:#007bff; color:#fff; border:none; border-radius:8px; cursor:pointer; font-weight:600;">
+                Generate Report
+            </button>
+        </div>
+    </div>
+</div>
+
+
+<script>
+    function printClassReport() {
+        // 1. Hel ID-ga fasalka laga doortay dropdown-ka "Print by Class"
+        const classId = document.getElementById('classPrintSelect').value;
+        
+        // 2. Hel ID-ga sanadka laga doortay dropdown-ka weyn ee sare
+        const yearSelect = document.getElementById('academicYearSelect');
+        const yearId = yearSelect ? yearSelect.value : "{{ active_year.id }}"; 
+
+        if (!classId) {
+            alert("Fadlan dooro fasal aad rabto inaad daabacdo!");
+            return;
+        }
+
+        // 3. Fur URL-ka adigoo raacinaya labada ID
+        const url = `/student/class-merit-report/print?class_id=${classId}&academic_year_id=${yearId}`;
+        window.open(url, '_blank');
+    }
+
+    function printClassSummariseReport() {
+        // 1. Hel ID-ga fasalka laga doortay dropdown-ka "Print by Class"
+        const classId = document.getElementById('classPrintSelect').value;
+        
+        // 2. Hel ID-ga sanadka laga doortay dropdown-ka weyn ee sare
+        const yearSelect = document.getElementById('academicYearSelect');
+        const yearId = yearSelect ? yearSelect.value : "{{ active_year.id }}"; 
+
+        if (!classId) {
+            alert("Fadlan dooro fasal aad rabto inaad daabacdo!");
+            return;
+        }
+
+        // 3. Fur URL-ka adigoo raacinaya labada ID
+        const url = `/student/class-summarise-merit-report/print?class_id=${classId}&academic_year_id=${yearId}`;
+        window.open(url, '_blank');
+    }
+</script>
+
+<script>
+function openPrintModal(studentId, studentName, yearId) {
+    document.getElementById('modalStudentId').value = studentId;
+    document.getElementById('modalStudentName').innerText = studentName;
+    document.getElementById('modalYearId').value = yearId; // Sanadka halkan ku kaydi
+    document.getElementById('printModal').style.display = 'flex';
+}
+
+function closeModal() {
+    document.getElementById('printModal').style.display = 'none';
+}
+
+function processPrint() {
+    const studentId = document.getElementById('modalStudentId').value;
+    const yearId = document.getElementById('modalYearId').value;
+    const examId = document.getElementById('examSelect').value;
+
+    let url = "";
+
+    if (examId === "all") {
+        // Ku dar academic_year_id URL-ka si uu ugu soo baxo sanadka la doortay
+        url = `/student/cumulative-report/print/${studentId}?academic_year_id=${yearId}`;
+    } else {
+        // Sidoo kale hal imtixaan haddii uu yahay
+        url = `/student/exam-report/print/${studentId}/${examId}?academic_year_id=${yearId}`;
+    }
+
+    window.open(url, '_blank');
+    closeModal();
+}
+</script>
+
+
+
+
+
+
+
+<style>
+    :root {
+        --gold: #FFD700; --silver: #E2E8F0; --bronze: #CD7F32;
+        --dark-primary: #0f172a;
+    }
+    
+    .victory-overlay { 
+        position: fixed; inset: 0; background: radial-gradient(circle at center, #1e293b 0%, #020617 100%); 
+        z-index: 99999; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    }
+
+    .overlay-school-header { position: absolute; top: 30px; text-align: center; width: 100%; }
+    .logo-wrapper { 
+        background: white; width: 110px; height: 110px; padding: 10px; 
+        border-radius: 50%; margin: 0 auto; box-shadow: 0 0 30px rgba(67, 97, 238, 0.4);
+    }
+    .overlay-logo { width: 100%; height: 100%; object-fit: contain; }
+    .header-divider { width: 60px; height: 4px; background: var(--gold); border-radius: 10px; margin-top: 10px; }
+
+    .glow-text { text-shadow: 0 0 25px rgba(255,255,255,0.4); font-weight: 900; letter-spacing: -1px; }
+    .winner-name { font-size: 4.5rem; color: var(--gold); font-weight: 800; text-transform: uppercase; margin: 10px 0; }
+    
+    .winner-info-wrapper { display: flex; gap: 15px; justify-content: center; }
+    .info-tag { padding: 8px 25px; border-radius: 50px; font-weight: 700; font-size: 1.1rem; }
+    .class-tag { background: rgba(255,255,255,0.15); color: white; border: 1px solid rgba(255,255,255,0.2); }
+    .score-tag { background: #166534; color: #dcfce7; }
+
+    .overlay-progress-container { width: 450px; height: 14px; background: rgba(255,255,255,0.05); border-radius: 50px; border: 1px solid rgba(255,255,255,0.1); }
+    .overlay-progress-bar { height: 100%; border-radius: 50px; transition: width 0.1s linear; }
+    .bar-1 { background: linear-gradient(90deg, #f59e0b, #fbbf24); box-shadow: 0 0 20px rgba(245, 158, 11, 0.5); }
+
+    .winner-hidden { display: none; }
+    .winner-active { display: block; }
+
+    .table-rank-badge { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-weight: 900; }
+    .rank-1 { background: #fef3c7; color: #92400e; border: 2px solid #f59e0b; }
+    .rank-2 { background: #f1f5f9; color: #334155; border: 2px solid #cbd5e1; }
+    .rank-3 { background: #ffedd5; color: #9a3412; border: 2px solid #d97706; }
+
+    .avatar-letter { width: 42px; height: 42px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; }
+    .grade-box { width: 45px; height: 45px; line-height: 45px; background: #fff; border: 1px solid #dee2e6; border-radius: 10px; font-weight: 800; font-size: 1.2rem; margin: 0 auto; }
+    
+    .status-badge { padding: 6px 16px; border-radius: 50px; font-size: 11px; font-weight: 800; letter-spacing: 0.5px; }
+    .status-badge.pass { background: #dcfce7; color: #15803d; }
+    .status-badge.fail { background: #fee2e2; color: #b91c1c; }
+
+    .btn-exit-modern { 
+        position: absolute; bottom: 50px; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.3); 
+        color: white; padding: 12px 30px; border-radius: 12px; transition: all 0.3s ease; font-weight: 600;
+    }
+    .btn-exit-modern:hover { background: white; color: black; border-color: white; transform: translateY(-3px); }
+
+    .waveform { display: inline-flex; align-items: flex-end; gap: 3px; height: 20px; }
+    .waveform span { width: 3px; background: var(--gold); animation: wave 1s infinite ease-in-out; }
+    .waveform span:nth-child(2) { animation-delay: 0.2s; height: 15px; }
+    .waveform span:nth-child(3) { animation-delay: 0.4s; height: 20px; }
+    .waveform span:nth-child(4) { animation-delay: 0.6s; height: 12px; }
+    @keyframes wave { 0%, 100% { height: 5px; } 50% { height: 20px; } }
+</style>
+
+<script>
+    const clapSound = new Audio("https://www.fesliyanstudios.com/play-mp3/2656");
+    
+    // Students list order is reversed to announce 3rd, then 2nd, then 1st
+    const students = [
+        {% for i in range(2, -1, -1) %}
+            {% if top_students[i] %}
+            {
+                id: {{ i + 1 }},
+                name: "{{ top_students[i].student.full_name }}",
+                class: "{{ top_students[i].class.name }}",
+                avg: {{ (top_students[i].grand_total / top_students[i].total_out_of * 100)|round(2) if top_students[i].total_out_of > 0 else 0 }}
+            },
+            {% endif %}
+        {% endfor %}
+    ];
+
+    function fadeOutClapping() {
+        let fadeAudio = setInterval(() => {
+            if (clapSound.volume > 0.1) {
+                clapSound.volume -= 0.1;
+            } else {
+                clapSound.pause();
+                clearInterval(fadeAudio);
+                clapSound.volume = 1.0;
+            }
+        }, 300);
+    }
+
+    function showWinner(idx) {
+        if (idx >= students.length) { 
+            setTimeout(closeOverlay, 3000); 
+            return; 
+        }
+        
+        document.querySelectorAll('.congrats-content').forEach(c => {
+            c.classList.add('winner-hidden');
+            c.classList.remove('winner-active');
+        });
+        
+        const s = students[idx];
+        const card = document.getElementById(`winner-card-${s.id}`);
+        const progressBar = document.getElementById(`progress-bar-${s.id}`);
+        
+        if (!card) return;
+
+        card.classList.remove('winner-hidden');
+        card.classList.add('winner-active');
+
+        let speechText = "";
+        let isFirstPlace = (s.id === 1);
+
+        if (isFirstPlace) {
+            speechText = `Ladies and gentlemen, the ultimate champion! The first position goes to ${s.name} from class ${s.class}, with a remarkable average of ${s.avg} percent. Hearty congratulations!`;
+            clapSound.currentTime = 0;
+            clapSound.play();
+        } else if (s.id === 2) {
+            speechText = `In second place, we have the brilliant ${s.name} from class ${s.class}, scoring ${s.avg} percent. Well done!`;
+        } else {
+            speechText = `Starting our top three, the third place belongs to ${s.name} from class ${s.class}, with ${s.avg} percent. Great achievement!`;
+        }
+
+        const speech = new SpeechSynthesisUtterance(speechText);
+        speech.lang = 'en-US';
+        speech.rate = 0.95;
+        speech.pitch = 1.0;
+
+        speech.onstart = () => {
+            if (isFirstPlace) setTimeout(fadeOutClapping, 4000);
+        };
+
+        let progressInterval = setInterval(() => {
+            if (window.speechSynthesis.speaking) {
+                let currentWidth = parseFloat(progressBar.style.width) || 0;
+                if (currentWidth < 100) progressBar.style.width = (currentWidth + 0.4) + '%';
+            }
+        }, 50);
+
+        speech.onend = () => {
+            clearInterval(progressInterval);
+            progressBar.style.width = '100%';
+            setTimeout(() => {
+                if(document.getElementById('victoryOverlay')) showWinner(idx + 1);
+            }, 1200);
+        };
+
+        // Kici codka
+        window.speechSynthesis.speak(speech);
+    }
+
+    function closeOverlay() {
+        window.speechSynthesis.cancel(); 
+        clapSound.pause();
+        clapSound.currentTime = 0;
+        
+        const overlay = document.getElementById('victoryOverlay');
+        if (overlay) {
+            overlay.style.opacity = '0';
+            overlay.style.pointerEvents = 'none';
+            setTimeout(() => overlay.remove(), 600);
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        // Markaba hadal bilow marka boggu diyaar yahay
+        // Browser-ka qaar waxay u baahan yihiin hal click
+        if (students.length > 0) {
+            // Isku day inuu hadlo marka uu soo kaco
+            setTimeout(() => {
+                if (!window.speechSynthesis.speaking) {
+                    showWinner(0);
+                }
+            }, 500);
+
+            // Haddii browser-ku diido, markuu qofku meel kasta ka taabto ha bilaabo
+            document.body.addEventListener('click', function startOnInteraction() {
+                if (!window.speechSynthesis.speaking) {
+                    showWinner(0);
+                }
+                document.body.removeEventListener('click', startOnInteraction);
+            }, { once: true });
+        }
+        
+        $('#resultsTable').DataTable({ 
+            pageLength: 30,
+            order: [[0, 'asc']],
+            dom: 'Bfrtip',
+            buttons: ['excel', 'pdf']
+        });
+    });
+</script>
+{% endblock %}

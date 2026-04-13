@@ -1,0 +1,219 @@
+{% extends 'backend/home/base.html' %}
+
+{% block title %}Student Promotion | School Management{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-left d-flex align-items-center">
+        <div class="page-header-title">
+            <h5>Student Promotion</h5>
+        </div>
+        <ul class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Home</a></li>
+            <li class="breadcrumb-item">Promotion</li>
+        </ul>
+    </div>
+</div>
+
+<div class="main-content">
+    <div class="card mb-4 border-0 shadow-sm">
+        <div class="card-header bg-light py-3">
+            <h6 class="mb-0 text-primary fw-bold"><i class="fas fa-filter me-2"></i>Step 1: Filter Students</h6>
+        </div>
+        <div class="card-body">
+            <form method="GET" class="row g-3">
+                <div class="col-md-5">
+                    <label class="form-label fw-semibold">Current Academic Year</label>
+                    <select name="academic_year_id" class="form-select shadow-none border-2" required>
+                        <option value="">-- Choose Year --</option>
+                        {% for id, name in form.current_academic_year_id.choices %}
+                            {% if id != 0 %}
+                            <option value="{{ id }}" {% if id|string == current_year_id|string %}selected{% endif %}>{{ name }}</option>
+                            {% endif %}
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-5">
+                    <label class="form-label fw-semibold">Current Class</label>
+                    <select name="class_id" class="form-select shadow-none border-2" required>
+                        <option value="">-- Choose Class --</option>
+                        {% for id, name in form.current_class_id.choices %}
+                            {% if id != 0 %}
+                            <option value="{{ id }}" {% if id|string == current_class_id|string %}selected{% endif %}>{{ name }}</option>
+                            {% endif %}
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100 py-2 fw-bold">
+                        <i class="fas fa-search me-1"></i> Fetch Students
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {% if students %}
+    <form method="POST" id="promotionForm" action="{{ url_for('main.student_promotion', class_id=current_class_id, academic_year_id=current_year_id) }}">
+        {{ form.csrf_token }}
+        <input type="hidden" name="student_ids" id="student_ids_hidden">
+        
+        <div class="row g-4">
+            <div class="col-lg-8">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-header d-flex justify-content-between align-items-center bg-white py-3 border-bottom">
+                        <h6 class="mb-0 fw-bold text-dark">Eligible Students ({{ students|length }})</h6>
+                        <div class="form-check border px-3 py-1 rounded bg-light">
+                            <input class="form-check-input" type="checkbox" id="selectAll" style="cursor: pointer;">
+                            <label class="form-check-label fw-bold small text-primary mb-0" for="selectAll" style="cursor: pointer; margin-left: 5px;">SELECT ALL</label>
+                        </div>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive" style="max-height: 600px; overflow-y: auto;">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="table-light sticky-top" style="top: 0; z-index: 10;">
+                                    <tr>
+                                        <th style="width: 50px;" class="text-center">Select</th>
+                                        <th>Student Name</th>
+                                        <th class="text-center">Yearly Score</th>
+                                        <th class="text-center">Avg %</th>
+                                        <th class="text-center">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for s in students %}
+                                    <tr class="{% if s.status_decision == 'Fail' %}table-danger-soft{% endif %}">
+                                        <td class="text-center">
+                                            <input class="form-check-input student-checkbox" type="checkbox" value="{{ s.id }}">
+                                        </td>
+                                        <td>
+                                            <div class="fw-bold text-dark">{{ s.full_name }}</div>
+                                            <small class="text-muted">Roll: {{ s.roll_no }}</small>
+                                        </td>
+                                        
+                                        <td class="text-center">
+                                            <div class="fw-bold">{{ s.yearly_total }} / {{ s.total_required }}</div>
+                                            <small class="text-muted small">Wadarta Guud</small>
+                                        </td>
+
+                                        <td class="text-center">
+                                            <div class="fw-bold {% if s.yearly_avg >= 50 %}text-success{% else %}text-danger{% endif %}">{{ s.yearly_avg }}%</div>
+                                        </td>
+
+                                        <td class="text-center">
+                                            <span class="badge rounded-pill {% if s.status_decision == 'Pass' %}bg-success{% else %}bg-danger{% endif %} px-3 py-2">
+                                                {{ s.status_decision|upper }}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4">
+                <div class="card border-0 shadow-sm sticky-top" style="top: 20px;">
+                    <div class="card-header bg-success text-white py-3">
+                        <h6 class="mb-0 fw-bold"><i class="fas fa-paper-plane me-2"></i>Step 2: Promotion Target</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold small text-muted text-uppercase">Promote To Year <span class="text-danger">*</span></label>
+                            {{ form.to_academic_year_id(class="form-select border-2 shadow-none", required=True) }}
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold small text-muted text-uppercase">Promote To Class</label>
+                            {{ form.to_class_id(class="form-select border-2 shadow-none") }}
+                            <div class="form-text text-info small"><i class="fas fa-info-circle me-1"></i> Ka tag haddii ay qalin-jabinayaan.</div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold small text-muted text-uppercase">Target Section (Optional)</label>
+                            {{ form.to_section_id(class="form-select border-2 shadow-none") }}
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold small text-muted text-uppercase">Promotion Type</label>
+                            {{ form.promotion_type(class="form-select border-2 shadow-none") }}
+                            <small class="text-muted d-block mt-1">Haddii ardaygu <b>Fail</b> yahay, si otomaatig ah ayaa loo celinayaa.</small>
+                        </div>
+                        <div class="mb-4">
+                            <label class="form-label fw-bold small text-muted text-uppercase">Remarks</label>
+                            {{ form.remarks(class="form-control border-2 shadow-none", rows="3", placeholder="Notes...") }}
+                        </div>
+                        
+                        <button type="submit" id="submitBtn" class="btn btn-success btn-lg w-100 fw-bold shadow">
+                            <i class="fas fa-rocket me-2"></i> APPLY PROMOTION
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+    {% elif current_class_id %}
+    <div class="card border-0 shadow-sm mt-4">
+        <div class="card-body text-center py-5">
+            <i class="fas fa-user-slash fa-4x opacity-25 mb-3"></i>
+            <h5 class="fw-bold">No Students Found!</h5>
+            <p class="text-muted">Ma jiro arday laga helay fasalkan iyo sanadkan.</p>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const selectAll = document.getElementById('selectAll');
+        const checkboxes = document.querySelectorAll('.student-checkbox');
+        const promotionForm = document.getElementById('promotionForm');
+        const hiddenInput = document.getElementById('student_ids_hidden');
+
+        if (selectAll) {
+            selectAll.addEventListener('change', function() {
+                checkboxes.forEach(cb => {
+                    cb.checked = this.checked;
+                    const row = cb.closest('tr');
+                    if (this.checked) row.classList.add('table-primary-soft');
+                    else row.classList.remove('table-primary-soft');
+                });
+            });
+        }
+
+        checkboxes.forEach(cb => {
+            cb.addEventListener('change', function() {
+                const row = this.closest('tr');
+                if (this.checked) row.classList.add('table-primary-soft');
+                else row.classList.remove('table-primary-soft');
+            });
+        });
+
+        if (promotionForm) {
+            promotionForm.addEventListener('submit', function(e) {
+                const selected = Array.from(document.querySelectorAll('.student-checkbox:checked'))
+                                    .map(cb => parseInt(cb.value));
+
+                if (selected.length === 0) {
+                    e.preventDefault();
+                    alert("Fadlan dooro ugu yaraan hal arday!");
+                    return;
+                }
+
+                hiddenInput.value = JSON.stringify(selected);
+                
+                const btn = document.getElementById('submitBtn');
+                btn.disabled = true;
+                btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Processing...';
+            });
+        }
+    });
+</script>
+
+<style>
+    .table-primary-soft { background-color: rgba(13, 110, 253, 0.05) !important; }
+    .table-danger-soft { background-color: rgba(220, 53, 69, 0.03) !important; }
+    .sticky-top { z-index: 1010; }
+    .badge { font-size: 0.85rem; }
+    .form-select, .form-control { font-size: 0.9rem; }
+</style>
+{% endblock %}

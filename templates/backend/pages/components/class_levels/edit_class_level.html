@@ -1,0 +1,92 @@
+{% extends 'backend/home/base.html' %}
+
+{% block title %}Edit Class Level | School Management{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+    <div class="page-header-left d-flex align-items-center">
+        <div class="page-header-title">
+            <h5>Class Levels</h5>
+        </div>
+        <ul class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Home</a></li>
+            <li class="breadcrumb-item">Edit Class Level</li>
+        </ul>
+    </div>
+</div>
+
+<div class="main-content">
+    <div class="row">
+        <div class="col-lg-8">
+
+            <form method="POST">
+                {{ form.hidden_tag() }}
+
+                <div class="card">
+
+                    <div class="card-header">
+                        <h5>Edit Class Level</h5>
+                    </div>
+
+                    <div class="card-body">
+
+                        <!-- CLASS NAME -->
+                        <div class="mb-4">
+                            {{ form.name.label(class="fw-semibold") }}
+                            {{ form.name(class="form-control") }}
+                            {% for error in form.name.errors %}
+                                <div class="text-danger small">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <!-- PRICE -->
+                        <div class="mb-4">
+                            {{ form.price.label(class="fw-semibold") }}
+                            {{ form.price(class="form-control") }}
+                            {% for error in form.price.errors %}
+                                <div class="text-danger small">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <!-- SCHOOL (Hidden or fixed based on role) -->
+                        {% if current_user.role.value == 'school_admin' %}
+                            {{ form.school_id(class="d-none") }}
+                        {% else %}
+                            <div class="mb-4">
+                                {{ form.school_id.label(class="fw-semibold") }}
+                                {{ form.school_id(class="form-select") }}
+                                {% for error in form.school_id.errors %}
+                                    <div class="text-danger small">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+
+                        <!-- BRANCH (Hidden or fixed based on role) -->
+                        {% if current_user.role.value in ['school_admin', 'branch_admin'] %}
+                            {{ form.branch_id(class="d-none") }}
+                        {% else %}
+                            <div class="mb-4">
+                                {{ form.branch_id.label(class="fw-semibold") }}
+                                {{ form.branch_id(class="form-select") }}
+                                {% for error in form.branch_id.errors %}
+                                    <div class="text-danger small">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+
+                    </div>
+
+                    <div class="card-footer text-center">
+                        {{ form.submit(class="btn btn-success", value="Update") }}
+                    </div>
+
+                </div>
+
+            </form>
+
+        </div>
+    </div>
+</div>
+
+{% endblock %}

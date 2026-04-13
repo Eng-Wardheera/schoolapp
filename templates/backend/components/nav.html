@@ -1,0 +1,601 @@
+ <nav class="nxl-navigation">
+        <div class="navbar-wrapper">
+            <div class="m-header">
+<a href="{{ url_for('main.dashboard') }}" class="b-brand">
+
+    <!-- MAIN LOGO -->
+    <img 
+        src="{{ url_for('static', filename=g.site_logo.main_logo) if g.site_logo and g.site_logo.main_logo else url_for('static', filename='backend/uploads/images/no_image.jpg') }}" 
+        class="logo logo-lg"
+        width="200" height="75"
+    />
+
+    <!-- SUB LOGO -->
+    <img 
+        src="{{ url_for('static', filename=g.site_logo.sub_logo) if g.site_logo and g.site_logo.sub_logo else url_for('static', filename='backend/uploads/images/no_image.jpg') }}" 
+        class="logo logo-sm"
+        width="200" height="75"
+    />
+</a>
+
+
+            </div>
+
+            <div class="navbar-content">
+                <ul class="nxl-navbar">
+                    <li class="nxl-item nxl-caption">
+                        <label>
+                          Navigation 
+                        </label>
+                    </li>
+
+                    {% if current_user.is_authenticated %}
+                   
+
+                    <!-- ================= superadmin ================= -->
+                    {% if current_user.role.value  in ['superadmin'] %}
+
+                    <li class="nxl-item nxl-hasmenu">
+                        <a href="{{ url_for('main.dashboard') }}" class="nxl-link">
+                            <span class="nxl-micon"><i class="feather-airplay"></i></span>
+                            <span class="nxl-mtext">Dashboards</span><span class="nxl-arrow">
+                               
+                            </span>
+                        </a>
+                    
+                    </li>
+                    <li class="nxl-item nxl-hasmenu">
+                        <a href="javascript:void(0);" class="nxl-link">
+                            <span class="nxl-micon"><i class="feather-cast"></i></span>
+                            <span class="nxl-mtext">Manage Schools</span><span class="nxl-arrow"><i class="feather-chevron-right"></i></span>
+                        </a>
+                        <ul class="nxl-submenu">
+                            <li class="nxl-item"><a class="nxl-link" href="{{ url_for('main.all_schools') }}">All Schools</a></li>
+                            <li class="nxl-item"><a class="nxl-link" href="">Add Driver </a></li>
+                        </ul>
+                    </li>
+                    <li class="nxl-item nxl-hasmenu">
+                        <a href="javascript:void(0);" class="nxl-link">
+                            <span class="nxl-micon"><i class="feather-cast"></i></span>
+                            <span class="nxl-mtext">Manage Branches</span><span class="nxl-arrow"><i class="feather-chevron-right"></i></span>
+                        </a>
+                        <ul class="nxl-submenu">
+                            <li class="nxl-item"><a class="nxl-link" href="{{ url_for('main.all_branches') }}">All Branches</a></li>
+                            <li class="nxl-item"><a class="nxl-link" href="{{ url_for('main.add_branch') }}">Add Branches</a></li>
+                        </ul>
+                    </li>
+
+                    <li class="nxl-item nxl-hasmenu">
+                        <a href="javascript:void(0);" class="nxl-link">
+                            <span class="nxl-micon"><i class="feather-users"></i></span>
+                            <span class="nxl-mtext">Manage Users</span><span class="nxl-arrow"><i class="feather-chevron-right"></i></span>
+                        </a>
+                        <ul class="nxl-submenu">
+                            <li class="nxl-item"><a class="nxl-link" href="{{ url_for('main.all_users') }}">All Users</a></li>
+                            <li class="nxl-item"><a class="nxl-link" href="{{ url_for('main.add_user') }}">Add New User </a></li>
+                        </ul>
+                    </li>
+	                
+                     <li class="nxl-item nxl-hasmenu">
+                        <a href="javascript:void(0);" class="nxl-link">
+                            <span class="nxl-micon"><i class="feather-settings"></i></span>
+                            <span class="nxl-mtext">Manage Settings</span>
+                            <span class="nxl-arrow"><i class="feather-chevron-right"></i></span>
+                        </a>
+
+                        <ul class="nxl-submenu">
+
+                           <!-- SERVICES -->
+                            <li class="nxl-item nxl-subtitle">School Site Settings</li>
+                            <li class="nxl-item">
+                                <a class="nxl-link" href="{{ url_for('main.all_school_site_settings') }}">All School Site </a>
+                            </li>
+                            <li class="nxl-item">
+                                <a class="nxl-link" href="{{ url_for('main.add_school_site_settings') }}">Add School Site </a>
+                            </li>
+
+                            <!-- Somali Location -->
+                            <li class="nxl-item nxl-subtitle">Somalia Locations</li>
+                            <li class="nxl-item">
+                                <a class="nxl-link" href="{{ url_for('main.all_somalia_locations') }}">All Somali Locations</a>
+                            </li>
+                           
+                           
+                            <!-- SERVICES -->
+                        
+
+                           
+
+                            <!-- SITE SETTINGS -->
+                            <li class="nxl-item nxl-subtitle">General</li>
+                            <li class="nxl-item">
+                                <a class="nxl-link" href="{{ url_for('main.site_settings') }}">Site Settings</a>
+                            </li>
+
+                        </ul>
+                    </li>
+                   
+                    
+                    {% elif current_user.role.value  in ['school_admin'] %}
+
+                    <li class="nxl-item nxl-hasmenu">
+                        <a href="{{ url_for('main.dashboard') }}" class="nxl-link">
+                            <span class="nxl-micon"><i class="feather-airplay"></i></span>
+                            <span class="nxl-mtext">Dashboards</span><span class="nxl-arrow">
+                               
+                            </span>
+                        </a>
+                    
+                    </li>
+
+                       <li class="nxl-item nxl-hasmenu">
+                        <a href="javascript:void(0);" class="nxl-link">
+                            <span class="nxl-micon"><i class="feather-users"></i></span>
+                            <span class="nxl-mtext">Manage Users</span><span class="nxl-arrow"><i class="feather-chevron-right"></i></span>
+                        </a>
+                        <ul class="nxl-submenu">
+                            <li class="nxl-item"><a class="nxl-link" href="{{ url_for('main.all_users') }}">All Users</a></li>
+                        </ul>
+                    </li>
+
+                    <li class="nxl-item nxl-hasmenu">
+                        <a href="javascript:void(0);" class="nxl-link">
+                            <span class="nxl-micon"><i class="feather-alert-circle"></i></span>
+                            <span class="nxl-mtext">Manage Levels </span><span class="nxl-arrow"><i class="feather-chevron-right"></i></span>
+                        </a>
+                        <ul class="nxl-submenu">
+                            <li class="nxl-item"><a class="nxl-link" href="{{ url_for('main.all_class_levels') }}">All Class Levels</a></li>
+                            <li class="nxl-item"><a class="nxl-link" href="{{ url_for('main.add_class_level') }}">Add Class Level </a></li>
+                        </ul>
+                    </li>
+
+                      <li class="nxl-item nxl-hasmenu">
+                        <a href="javascript:void(0);" class="nxl-link">
+                            <span class="nxl-micon"><i class="feather-layout"></i></span>
+                            <span class="nxl-mtext">Manage Class</span><span class="nxl-arrow"><i class="feather-chevron-right"></i></span>
+                        </a>
+                        <ul class="nxl-submenu">
+                            <li class="nxl-item"><a class="nxl-link" href="{{ url_for('main.all_classes') }}">All Classes</a></li>
+                            <li class="nxl-item"><a class="nxl-link" href="{{ url_for('main.add_class') }}">Add Class</a></li>
+                        </ul>
+                    </li>
+                    
+                     <li class="nxl-item nxl-hasmenu">
+                        <a href="javascript:void(0);" class="nxl-link">
+                            <span class="nxl-micon"><i class="feather-send"></i></span>
+                            <span class="nxl-mtext">Manage Sections</span><span class="nxl-arrow"><i class="feather-chevron-right"></i></span>
+                        </a>
+                        <ul class="nxl-submenu">
+                            <li class="nxl-item"><a class="nxl-link" href="{{ url_for('main.all_sections') }}">All Class Section</a></li>
+                            <li class="nxl-item"><a class="nxl-link" href="{{ url_for('main.add_section') }}">Add Class Sections</a></li>                           
+                        </ul>
+                    </li>
+
+                    <li class="nxl-item nxl-hasmenu">
+                        <a href="javascript:void(0);" class="nxl-link">
+                            <span class="nxl-micon"><i class="feather-cast"></i></span>
+                            <span class="nxl-mtext">Manage Subjects</span><span class="nxl-arrow"><i class="feather-chevron-right"></i></span>
+                        </a>
+                        <ul class="nxl-submenu">
+                            <li class="nxl-item"><a class="nxl-link" href="{{ url_for('main.all_subjects') }}">All Subjects</a></li>
+                            <li class="nxl-item"><a class="nxl-link" href="{{ url_for('main.add_subject') }}">Add Subject </a></li>
+                            <li class="nxl-item"><a class="nxl-link" href="{{ url_for('main.all_class_subjects') }}">Assigned Class -> Subject</a></li>
+                            <li class="nxl-item"><a class="nxl-link" href="{{ url_for('main.add_class_subject') }}">Assign Class -> Subject </a></li>
+                            <!-- <li class="nxl-item"><a class="nxl-link" href="projects-create.html">Projects Create</a></li> -->
+                        </ul>
+                    </li>
+
+                                             
+                    <li class="nxl-item nxl-hasmenu">
+                        <a href="javascript:void(0);" class="nxl-link">
+                            <span class="nxl-micon"><i class="feather-users"></i></span>
+                            <span class="nxl-mtext">Manage Teachers</span><span class="nxl-arrow"><i class="feather-chevron-right"></i></span>
+                        </a>
+                        <ul class="nxl-submenu">
+                            <li class="nxl-item"><a class="nxl-link" href="{{ url_for('main.all_teachers') }}">All Teachers</a></li>
+                            <li class="nxl-item"><a class="nxl-link" href="{{ url_for('main.add_teacher') }}">Add Teacher</a></li>
+                            <li class="nxl-item"><a class="nxl-link" href="{{ url_for('main.all_teacher_assignments') }}">All Teachers Aassignments</a></li>
+                            <li class="nxl-item"><a class="nxl-link" href="{{ url_for('main.add_teacher_assignment') }}">Add Teacher Aassignment</a></li>
+                        </ul>
+                    </li>
+
+                    <li class="nxl-item nxl-hasmenu">
+                        <a href="javascript:void(0);" class="nxl-link">
+                            <span class="nxl-micon"><i class="feather-user-check"></i></span>
+                            <span class="nxl-mtext">Manage Parents </span><span class="nxl-arrow"><i class="feather-chevron-right"></i></span>
+                        </a>
+                        <ul class="nxl-submenu">
+                            <li class="nxl-item"><a class="nxl-link" href="{{ url_for('main.all_parents') }}">All Parents</a></li>
+                            <li class="nxl-item"><a class="nxl-link" href="{{ url_for('main.add_parent') }}">Add Parent </a></li>
+                        </ul>
+                    </li>
+
+                     <li class="nxl-item nxl-hasmenu">
+                        <a href="javascript:void(0);" class="nxl-link">
+                            <span class="nxl-micon"><i class="feather-user-x"></i></span>
+                            <span class="nxl-mtext">Manage Students</span><span class="nxl-arrow"><i class="feather-chevron-right"></i></span>
+                        </a>
+                        <ul class="nxl-submenu">
+                            <li class="nxl-item"><a class="nxl-link" href="{{ url_for('main.all_students') }}">All Students</a></li>
+                            <li class="nxl-item"><a class="nxl-link" href="{{ url_for('main.add_student') }}">Add New Student </a></li>
+                        </ul>
+                    </li>
+
+                      <li class="nxl-item nxl-hasmenu">
+                        <a href="javascript:void(0);" class="nxl-link">
+                            <span class="nxl-micon"><i class="feather-dollar-sign"></i></span>
+                            <span class="nxl-mtext">Manage Fee Collections</span><span class="nxl-arrow"><i class="feather-chevron-right"></i></span>
+                        </a>
+                        <ul class="nxl-submenu">
+                            <li class="nxl-item"><a class="nxl-link" href="{{ url_for('main.all_fee_collections') }}">All Student Fee </a></li>
+                            <li class="nxl-item"><a class="nxl-link" href="{{ url_for('main.add_fee_collection') }}">Add Fee Collection </a></li>
+                            <!-- <li class="nxl-item"><a class="nxl-link" href="projects-create.html">Projects Create</a></li> -->
+                        </ul>
+                    </li>
+
+                      <li class="nxl-item nxl-hasmenu">
+                        <a href="javascript:void(0);" class="nxl-link">
+                            <span class="nxl-micon"><i class="feather-alert-circle"></i></span>
+                            <span class="nxl-mtext">Manage Attendances</span><span class="nxl-arrow"><i class="feather-chevron-right"></i></span>
+                        </a>
+                        <ul class="nxl-submenu">
+                                <li class="nxl-item"><a class="nxl-link" href="{{ url_for('main.all_attendance') }}">All Attendance </a></li>
+                            <li class="nxl-item"><a class="nxl-link" href="{{ url_for('main.take_attendance') }}">Take Attendance </a></li>
+
+                        </ul>
+                    </li>
+                    <li class="nxl-item nxl-hasmenu">
+                        <a href="javascript:void(0);" class="nxl-link">
+                            <span class="nxl-micon"><i class="feather-dollar-sign"></i></span>
+                            <span class="nxl-mtext">Maanage Exams</span><span class="nxl-arrow"><i class="feather-chevron-right"></i></span>
+                        </a>
+                        <ul class="nxl-submenu">
+                            <li class="nxl-item"><a class="nxl-link" href="{{ url_for('main.all_academic_years') }}"> Maanage Academic Years</a></li>
+                            <li class="nxl-item"><a class="nxl-link" href="{{ url_for('main.all_terms') }}">Manage Academic Terms</a></li>
+                            <li class="nxl-item"><a class="nxl-link" href="{{ url_for('main.all_exams') }}">Maanage Term Exams </a></li>
+                            <li class="nxl-item"><a class="nxl-link" href="{{ url_for('main.all_exam_subjects') }}">Maanage Exam Subejcts </a></li>
+                            <li class="nxl-item"><a class="nxl-link" href="{{ url_for('main.all_exam_timetables') }}">Maanage Exam Timetable </a></li>
+                            <li class="nxl-item"><a class="nxl-link" href="{{ url_for('main.all_exam_halls') }}">Maanage Exam Halls </a></li>
+                            <li class="nxl-item">
+                                <a class="nxl-link" href="{{ url_for('main.all_exam_hall_assignments') }}">
+                                    Manage Hall Assign
+                                </a>
+                            </li>
+                             <li class="nxl-item">
+                                <a class="nxl-link" href="{{ url_for('main.all_exam_tickets') }}">
+                                    Manage Exam Card
+                                </a>
+                            </li>
+                            <li class="nxl-item"><a class="nxl-link" href="{{ url_for('main.all_exam_results') }}">All Exam Results</a></li>
+                            <li class="nxl-item"><a class="nxl-link" href="{{ url_for('main.cumulative_results') }}">Academic Exam Results</a></li>
+                            <li class="nxl-item"><a class="nxl-link" href="{{ url_for('main.student_promotion') }}">Student Promotion Classes </a></li>
+                            <li class="nxl-item"><a class="nxl-link" href="{{ url_for('main.multi_publish_exam') }}">Multi Publish Exam </a></li>
+                            <li class="nxl-item"><a class="nxl-link" href="invoice-create.html">Invoice Create</a></li>
+                        </ul>
+                    </li>
+
+                    {% elif current_user.role.value  in ['branch_admin'] %}
+
+                    
+                    <li class="nxl-item nxl-hasmenu">
+                        <a href="{{ url_for('main.dashboard') }}" class="nxl-link">
+                            <span class="nxl-micon"><i class="feather-airplay"></i></span>
+                            <span class="nxl-mtext">Dashboards</span><span class="nxl-arrow">
+                               
+                            </span>
+                        </a>
+                    
+                    </li>
+
+                    <li class="nxl-item nxl-hasmenu">
+                        <a href="javascript:void(0);" class="nxl-link">
+                            <span class="nxl-micon"><i class="feather-users"></i></span>
+                            <span class="nxl-mtext">Manage Users</span><span class="nxl-arrow"><i class="feather-chevron-right"></i></span>
+                        </a>
+                        <ul class="nxl-submenu">
+                            <li class="nxl-item"><a class="nxl-link" href="{{ url_for('main.all_users') }}">All Users</a></li>
+                        </ul>
+                    </li>
+
+                    <li class="nxl-item nxl-hasmenu">
+                        <a href="javascript:void(0);" class="nxl-link">
+                            <span class="nxl-micon"><i class="feather-alert-circle"></i></span>
+                            <span class="nxl-mtext">Manage Levels </span><span class="nxl-arrow"><i class="feather-chevron-right"></i></span>
+                        </a>
+                        <ul class="nxl-submenu">
+                            <li class="nxl-item"><a class="nxl-link" href="{{ url_for('main.all_class_levels') }}">All Class Levels</a></li>
+                            <li class="nxl-item"><a class="nxl-link" href="{{ url_for('main.add_class_level') }}">Add Class Level </a></li>
+                        </ul>
+                    </li>
+
+                      <li class="nxl-item nxl-hasmenu">
+                        <a href="javascript:void(0);" class="nxl-link">
+                            <span class="nxl-micon"><i class="feather-layout"></i></span>
+                            <span class="nxl-mtext">Manage Class</span><span class="nxl-arrow"><i class="feather-chevron-right"></i></span>
+                        </a>
+                        <ul class="nxl-submenu">
+                            <li class="nxl-item"><a class="nxl-link" href="{{ url_for('main.all_classes') }}">All Classes</a></li>
+                            <li class="nxl-item"><a class="nxl-link" href="{{ url_for('main.add_class') }}">Add Class</a></li>
+                        </ul>
+                    </li>
+                    
+                     <li class="nxl-item nxl-hasmenu">
+                        <a href="javascript:void(0);" class="nxl-link">
+                            <span class="nxl-micon"><i class="feather-send"></i></span>
+                            <span class="nxl-mtext">Manage Sections</span><span class="nxl-arrow"><i class="feather-chevron-right"></i></span>
+                        </a>
+                        <ul class="nxl-submenu">
+                            <li class="nxl-item"><a class="nxl-link" href="{{ url_for('main.all_sections') }}">All Class Section</a></li>
+                            <li class="nxl-item"><a class="nxl-link" href="{{ url_for('main.add_section') }}">Add Class Sections</a></li>                           
+                        </ul>
+                    </li>
+
+                   
+                    <li class="nxl-item nxl-hasmenu">
+                        <a href="javascript:void(0);" class="nxl-link">
+                            <span class="nxl-micon"><i class="feather-briefcase"></i></span>
+                            <span class="nxl-mtext">Manage Class Subjects</span><span class="nxl-arrow"><i class="feather-chevron-right"></i></span>
+                        </a>
+                        <ul class="nxl-submenu">
+                            <li class="nxl-item"><a class="nxl-link" href="{{ url_for('main.all_class_subjects') }}">Assigned Class -> Subject</a></li>
+                            <li class="nxl-item"><a class="nxl-link" href="{{ url_for('main.add_class_subject') }}">Assign Class -> Subject </a></li>
+                            <li class="nxl-item"><a class="nxl-link" href="projects-create.html">Projects Create</a></li>
+                        </ul>
+                    </li>
+                    
+                    <li class="nxl-item nxl-hasmenu">
+                        <a href="javascript:void(0);" class="nxl-link">
+                            <span class="nxl-micon"><i class="feather-users"></i></span>
+                            <span class="nxl-mtext">Manage Teachers</span><span class="nxl-arrow"><i class="feather-chevron-right"></i></span>
+                        </a>
+                        <ul class="nxl-submenu">
+                            <li class="nxl-item"><a class="nxl-link" href="{{ url_for('main.all_teachers') }}">All Teachers</a></li>
+                            <li class="nxl-item"><a class="nxl-link" href="{{ url_for('main.add_teacher') }}">Add Teacher</a></li>
+                            <li class="nxl-item"><a class="nxl-link" href="{{ url_for('main.all_teacher_assignments') }}">All Teachers Aassignments</a></li>
+                            <li class="nxl-item"><a class="nxl-link" href="{{ url_for('main.add_teacher_assignment') }}">Add Teacher Aassignment</a></li>
+                        </ul>
+                    </li>
+
+                     <li class="nxl-item nxl-hasmenu">
+                        <a href="javascript:void(0);" class="nxl-link">
+                            <span class="nxl-micon"><i class="feather-alert-circle"></i></span>
+                            <span class="nxl-mtext">Manage Parents </span><span class="nxl-arrow"><i class="feather-chevron-right"></i></span>
+                        </a>
+                        <ul class="nxl-submenu">
+                            <li class="nxl-item"><a class="nxl-link" href="{{ url_for('main.all_parents') }}">All Parents</a></li>
+                            <li class="nxl-item"><a class="nxl-link" href="{{ url_for('main.add_parent') }}">Add Parent </a></li>
+                        </ul>
+                    </li>
+
+                     <li class="nxl-item nxl-hasmenu">
+                        <a href="javascript:void(0);" class="nxl-link">
+                            <span class="nxl-micon"><i class="feather-users"></i></span>
+                            <span class="nxl-mtext">Manage Students</span><span class="nxl-arrow"><i class="feather-chevron-right"></i></span>
+                        </a>
+                        <ul class="nxl-submenu">
+                            <li class="nxl-item"><a class="nxl-link" href="{{ url_for('main.all_students') }}">All Students</a></li>
+                            <li class="nxl-item"><a class="nxl-link" href="{{ url_for('main.add_student') }}">Add New Student </a></li>
+                        </ul>
+                    </li>
+
+                  
+
+                    <li class="nxl-item nxl-hasmenu">
+                        <a href="javascript:void(0);" class="nxl-link">
+                            <span class="nxl-micon"><i class="feather-dollar-sign"></i></span>
+                            <span class="nxl-mtext">Manage Fee Collections</span><span class="nxl-arrow"><i class="feather-chevron-right"></i></span>
+                        </a>
+                        <ul class="nxl-submenu">
+                            <li class="nxl-item"><a class="nxl-link" href="{{ url_for('main.all_fee_collections') }}">All Student Fee </a></li>
+                            <li class="nxl-item"><a class="nxl-link" href="{{ url_for('main.add_fee_collection') }}">Add Fee Collection </a></li>
+                            <!-- <li class="nxl-item"><a class="nxl-link" href="projects-create.html">Projects Create</a></li> -->
+                        </ul>
+                    </li>
+                    
+                     <li class="nxl-item nxl-hasmenu">
+                        <a href="javascript:void(0);" class="nxl-link">
+                            <span class="nxl-micon"><i class="feather-alert-circle"></i></span>
+                            <span class="nxl-mtext">Manage Attendances</span><span class="nxl-arrow"><i class="feather-chevron-right"></i></span>
+                        </a>
+                        <ul class="nxl-submenu">
+                                <li class="nxl-item"><a class="nxl-link" href="{{ url_for('main.all_attendance') }}">All Attendance </a></li>
+                            <li class="nxl-item"><a class="nxl-link" href="{{ url_for('main.take_attendance') }}">Take Attendance </a></li>
+
+                        </ul>
+                    </li>
+
+                     <li class="nxl-item nxl-hasmenu">
+                        <a href="javascript:void(0);" class="nxl-link">
+                            <span class="nxl-micon"><i class="feather-cast"></i></span>
+                            <span class="nxl-mtext">Manage Subjects</span><span class="nxl-arrow"><i class="feather-chevron-right"></i></span>
+                        </a>
+                        <ul class="nxl-submenu">
+                            <li class="nxl-item"><a class="nxl-link" href="{{ url_for('main.all_subjects') }}">All Subjects</a></li>
+                            <li class="nxl-item"><a class="nxl-link" href="{{ url_for('main.add_subject') }}">Add Subject </a></li>
+                        </ul>
+                    </li>
+
+                       <li class="nxl-item nxl-hasmenu">
+                        <a href="javascript:void(0);" class="nxl-link">
+                            <span class="nxl-micon"><i class="feather-dollar-sign"></i></span>
+                            <span class="nxl-mtext">Maanage Exams</span><span class="nxl-arrow"><i class="feather-chevron-right"></i></span>
+                        </a>
+                        <ul class="nxl-submenu">
+                            <li class="nxl-item"><a class="nxl-link" href="{{ url_for('main.all_academic_years') }}"> Maanage Academic Years</a></li>
+                            <li class="nxl-item"><a class="nxl-link" href="{{ url_for('main.all_terms') }}">Manage Academic Terms</a></li>
+                            <li class="nxl-item"><a class="nxl-link" href="{{ url_for('main.all_exams') }}">Maanage Term Exams </a></li>
+                            <li class="nxl-item"><a class="nxl-link" href="{{ url_for('main.all_exam_subjects') }}">Maanage Exam Subejcts </a></li>
+                            <li class="nxl-item"><a class="nxl-link" href="{{ url_for('main.all_exam_timetables') }}">Maanage Exam Timetable </a></li>
+                            <li class="nxl-item"><a class="nxl-link" href="{{ url_for('main.all_exam_halls') }}">Maanage Exam Halls </a></li>
+                            <li class="nxl-item">
+                                <a class="nxl-link" href="{{ url_for('main.all_exam_hall_assignments') }}">
+                                    Manage Hall Assign
+                                </a>
+                            </li>
+                            <li class="nxl-item">
+                                <a class="nxl-link" href="{{ url_for('main.all_exam_tickets') }}">
+                                    Manage Exam Card
+                                </a>
+                            </li>
+                            <li class="nxl-item"><a class="nxl-link" href="{{ url_for('main.all_exam_results') }}">All Exam Results</a></li>
+                            <li class="nxl-item"><a class="nxl-link" href="{{ url_for('main.student_promotion') }}">Student Promotion Classes </a></li>
+                            <li class="nxl-item"><a class="nxl-link" href="{{ url_for('main.multi_publish_exam') }}">Multi Publish Exam </a></li>
+                            <li class="nxl-item"><a class="nxl-link" href="invoice-create.html">Invoice Create</a></li>
+                        </ul>
+                    </li>
+
+
+                    {% elif current_user.role.value  in ['teacher'] %}
+                    <li class="nxl-item nxl-hasmenu">
+                        <a href="{{ url_for('main.dashboard') }}" class="nxl-link">
+                            <span class="nxl-micon"><i class="feather-airplay"></i></span>
+                            <span class="nxl-mtext">Dashboards</span><span class="nxl-arrow">
+                               
+                            </span>
+                        </a>
+                    
+                    </li>
+
+                       <li class="nxl-item nxl-hasmenu">
+                        <a href="javascript:void(0);" class="nxl-link">
+                            <span class="nxl-micon"><i class="feather-users"></i></span>
+                            <span class="nxl-mtext">Manage Attendnace</span><span class="nxl-arrow"><i class="feather-chevron-right"></i></span>
+                        </a>
+                        <ul class="nxl-submenu">
+                            <!-- <li class="nxl-item"><a class="nxl-link" href="{{ url_for('main.all_attendance') }}">All Attendance </a></li> -->
+                            <li class="nxl-item"><a class="nxl-link" href="{{ url_for('main.take_attendance') }}">Take Attendance </a></li>
+                        </ul>
+                    </li>
+
+                     <li class="nxl-item nxl-hasmenu">
+                        <a href="javascript:void(0);" class="nxl-link">
+                            <span class="nxl-micon"><i class="feather-layout"></i></span>
+                            <span class="nxl-mtext">Manage Exams Paper</span><span class="nxl-arrow"><i class="feather-chevron-right"></i></span>
+                        </a>
+                        <ul class="nxl-submenu">
+                            <li class="nxl-item"><a class="nxl-link" href="{{ url_for('main.all_exam_papers') }}">View Exam Papers </a></li>
+                            <li class="nxl-item"><a class="nxl-link" href="{{ url_for('main.add_class') }}">Add Paper Questions</a></li>
+                        </ul>
+                    </li>
+
+                    <li class="nxl-item nxl-hasmenu">
+                        <a href="javascript:void(0);" class="nxl-link">
+                            <span class="nxl-micon"><i class="feather-alert-circle"></i></span>
+                            <span class="nxl-mtext">Manage Exam Results </span><span class="nxl-arrow"><i class="feather-chevron-right"></i></span>
+                        </a>
+                        <ul class="nxl-submenu">
+                            <!-- <li class="nxl-item"><a class="nxl-link" href="{{ url_for('main.all_exam_results') }}">All Exam Results</a></li> -->
+                            <li class="nxl-item"><a class="nxl-link" href="{{ url_for('main.teacher_add_exam_marks') }}">Add Exam Results </a></li>
+                        </ul>
+                    </li>
+
+                     
+                    
+                     <!-- <li class="nxl-item nxl-hasmenu">
+                        <a href="javascript:void(0);" class="nxl-link">
+                            <span class="nxl-micon"><i class="feather-send"></i></span>
+                            <span class="nxl-mtext">Manage Sections</span><span class="nxl-arrow"><i class="feather-chevron-right"></i></span>
+                        </a>
+                        <ul class="nxl-submenu">
+                            <li class="nxl-item"><a class="nxl-link" href="{{ url_for('main.all_sections') }}">All Class Section</a></li>
+                            <li class="nxl-item"><a class="nxl-link" href="{{ url_for('main.add_section') }}">Add Class Sections</a></li>                           
+                        </ul>
+                    </li> -->
+
+                    <li class="nxl-item nxl-hasmenu">
+                        <a href="javascript:void(0);" class="nxl-link">
+                            <span class="nxl-micon"><i class="feather-life-buoy"></i></span>
+                            <span class="nxl-mtext">Help Center</span><span class="nxl-arrow"><i class="feather-chevron-right"></i></span>
+                        </a>
+                        <ul class="nxl-submenu">
+                            <li class="nxl-item"><a class="nxl-link" href="#!">Support</a></li>
+                            <li class="nxl-item"><a class="nxl-link" href="help-knowledgebase.html">KnowledgeBase</a></li>
+                            <li class="nxl-item"><a class="nxl-link" href="/docs/documentations">Documentations</a></li>
+                        </ul>
+                    </li>
+                    
+
+                    {% elif current_user.role.value  in ['parent'] %}
+
+
+                    {% elif current_user.role.value  in ['student'] %}
+
+                      <li class="nxl-item nxl-hasmenu">
+                        <a href="{{ url_for('main.dashboard') }}" class="nxl-link">
+                            <span class="nxl-micon"><i class="feather-airplay"></i></span>
+                            <span class="nxl-mtext">Dashboards</span><span class="nxl-arrow">
+                               
+                            </span>
+                        </a>
+                    
+                    </li>
+
+                       <li class="nxl-item nxl-hasmenu">
+                        <a href="javascript:void(0);" class="nxl-link">
+                            <span class="nxl-micon"><i class="feather-users"></i></span>
+                            <span class="nxl-mtext">View Attendnace</span><span class="nxl-arrow"><i class="feather-chevron-right"></i></span>
+                        </a>
+                        <ul class="nxl-submenu">
+                            <li class="nxl-item"><a class="nxl-link" href="{{ url_for('main.student_attendance_view') }}">View Attendance </a></li>
+                        </ul>
+                    </li>
+
+                      <li class="nxl-item nxl-hasmenu">
+                        <a href="javascript:void(0);" class="nxl-link">
+                            <span class="nxl-micon"><i class="feather-dollar-sign"></i></span>
+                            <span class="nxl-mtext"> View Financial Report </span><span class="nxl-arrow"><i class="feather-chevron-right"></i></span>
+                        </a>
+                        <ul class="nxl-submenu">
+                            <li class="nxl-item"><a class="nxl-link" href="{{ url_for('main.student_financial_statement') }}">financial statement</a></li>
+                            <li class="nxl-item"><a class="nxl-link" href=""> View Finance Report</a></li>
+                          
+                        </ul>
+                    </li>
+
+                    <li class="nxl-item nxl-hasmenu">
+                        <a href="javascript:void(0);" class="nxl-link">
+                            <span class="nxl-micon"><i class="feather-alert-circle"></i></span>
+                            <span class="nxl-mtext">View Exam Results </span><span class="nxl-arrow"><i class="feather-chevron-right"></i></span>
+                        </a>
+                        <ul class="nxl-submenu">
+                            <li class="nxl-item"><a class="nxl-link" href="{{ url_for('main.student_cumulative_view') }}">All Exam Results</a></li>
+                            <!-- <li class="nxl-item"><a class="nxl-link" href="{{ url_for('main.teacher_add_exam_marks') }}">Add Exam Results </a></li> -->
+                        </ul>
+                    </li>
+
+                    <li class="nxl-item nxl-hasmenu">
+                        <a href="javascript:void(0);" class="nxl-link">
+                            <span class="nxl-micon"><i class="feather-life-buoy"></i></span>
+                            <span class="nxl-mtext">Help Center</span><span class="nxl-arrow"><i class="feather-chevron-right"></i></span>
+                        </a>
+                        <ul class="nxl-submenu">
+                            <li class="nxl-item"><a class="nxl-link" href="#!">Support</a></li>
+                            <li class="nxl-item"><a class="nxl-link" href="help-knowledgebase.html">KnowledgeBase</a></li>
+                            <li class="nxl-item"><a class="nxl-link" href="/docs/documentations">Documentations</a></li>
+                        </ul>
+                    </li>
+                   {% endif %}
+
+                {% else %}
+                <!-- NOT LOGGED IN -->
+                    <li class="nxl-item">
+                        <a href="{{ url_for('main.login') }}" class="nxl-link">
+                            <span class="nxl-micon"><i class="feather-log-in"></i></span>
+                            <span class="nxl-mtext">Login</span>
+                        </a>
+                    </li>
+                {% endif %}
+
+                </ul>
+
+                <!-- <div class="card text-center">
+                    <div class="card-body">
+                        <i class="feather-sunrise fs-4 text-dark"></i>
+                        <h6 class="mt-4 text-dark fw-bolder">Downloading Center</h6>
+                        <p class="fs-11 my-3 text-dark">Duralux is a production ready CRM to get started up and running easily.</p>
+                        <a href="https://www.themewagon.com/themes/Duralux-admin" target="_blank" class="btn btn-primary text-dark w-100">Download Now</a>
+                    </div>
+                </div> -->
+            </div>
+        </div>
+    </nav>

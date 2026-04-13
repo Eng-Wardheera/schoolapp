@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="so">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        /* Setup for wkhtmltoimage */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #ffffff;
+            margin: 0;
+            padding: 0;
+            display: block;
+        }
+
+        .page-container {
+            width: 2480px; /* HD A4 Landscape width */
+            padding: 20px;
+            background: #f0f0f0;
+        }
+
+        /* Container-ka Kaarka */
+        .exam-card {
+            width: 1150px; 
+            height: 780px;
+            background-color: #fffde7 !important;
+            border: 8px solid #1e88e5 !important;
+            border-radius: 50px;
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+            margin: 25px;
+            vertical-align: top;
+            box-shadow: 10px 10px 20px rgba(0,0,0,0.1);
+        }
+
+        /* Header Blue oo leh Curve-ka cad */
+        .card-header {
+            background-color: #1e88e5 !important;
+            color: white !important;
+            padding: 40px 20px 40px 240px; 
+            text-align: center;
+            position: relative;
+            z-index: 5;
+        }
+
+        /* Curve-ka cad ee hoose ee header-ka */
+        .card-header::after {
+            content: "";
+            position: absolute;
+            bottom: -50px;
+            right: 0;
+            width: 100%;
+            height: 100px;
+            background: #fffde7;
+            border-top-left-radius: 1000px;
+            z-index: -1;
+        }
+
+        /* Xariiqda Jaalaha ah ee Curve-ka leh */
+        .yellow-stripe {
+            position: absolute;
+            top: 180px;
+            right: 0;
+            width: 80%;
+            height: 15px;
+            background: #ffd600 !important;
+            border-top-left-radius: 50px;
+            border-bottom-left-radius: 50px;
+            z-index: 1;
+        }
+
+        .school-name { font-size: 55px; font-weight: 900; text-transform: uppercase; margin: 0; letter-spacing: 2px; }
+        .school-subname { font-size: 24px; color: #ffd600 !important; margin-top: 5px; font-weight: bold; text-transform: uppercase; }
+
+        /* Logo Box */
+        .logo-box {
+            position: absolute;
+            top: 30px;
+            left: 50px;
+            width: 200px;
+            height: 200px;
+            background: white !important;
+            border-radius: 50%;
+            border: 8px solid #2e7d32 !important;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 20;
+            overflow: hidden;
+        }
+
+        .logo-box img {
+            width: 85%;
+            height: 85%;
+            object-fit: contain;
+        }
+
+        /* Exam Title (MID TERM) */
+        .exam-title {
+            text-align: center;
+            color: #2e7d32 !important;
+            font-size: 90px;
+            font-weight: 900;
+            margin: 60px 0 20px 0;
+            text-transform: uppercase;
+            letter-spacing: 5px;
+        }
+
+        /* Watermark */
+        .watermark {
+            position: absolute;
+            top: 55%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-15deg);
+            font-size: 140px;
+            color: rgba(46, 125, 50, 0.06) !important;
+            font-weight: 900;
+            white-space: nowrap;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        /* Card Body */
+        .card-body { 
+            padding: 20px 80px; 
+            position: relative; 
+            z-index: 2; 
+        }
+        
+        .info-row { 
+            display: flex;
+            align-items: baseline;
+            margin-bottom: 40px; 
+        }
+
+        .label { 
+            font-weight: 800; 
+            font-size: 42px; 
+            color: #333 !important; 
+            white-space: nowrap;
+        }
+
+        .value { 
+            font-size: 45px; 
+            color: #000 !important; 
+            font-weight: 700;
+            margin-left: 20px;
+            flex-grow: 1;
+            border-bottom: 4px dotted #1e88e5 !important;
+            padding-bottom: 5px;
+        }
+
+        .flex-container {
+            display: flex;
+            justify-content: space-between;
+            gap: 40px;
+            margin-bottom: 30px;
+        }
+
+        .flex-item {
+            display: flex;
+            align-items: baseline;
+            flex: 1;
+        }
+
+        /* Signature Section */
+        .signature-area {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            margin-top: 10px;
+        }
+
+        .sig-label { font-size: 40px; font-weight: 800; margin-right: 20px; }
+        
+        .signature-wrap {
+            width: 320px;
+            border-bottom: 5px solid #333;
+            height: 110px;
+            position: relative;
+            text-align: center;
+        }
+
+        .signature-wrap img {
+            max-height: 140px;
+            position: absolute;
+            bottom: 5px;
+            left: 50%;
+            transform: translateX(-50%);
+            mix-blend-mode: multiply;
+        }
+
+        /* Footer Green */
+        .card-footer {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            background-color: #2e7d32 !important;
+            color: white !important;
+            padding: 20px 10px;
+            text-align: center;
+            font-size: 26px;
+            font-weight: 800;
+            border-top: 10px solid #4caf50 !important;
+            line-height: 1.4;
+        }
+
+        .validity-text {
+            font-size: 30px;
+            font-style: italic;
+            color: #444;
+            margin-top: 10px;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+
+<div class="page-container">
+    {% for ticket in tickets %}
+    <div class="exam-card">
+        <div class="watermark">{{ ticket.exam.exam_name }}</div>
+        <div class="yellow-stripe"></div>
+        
+        <div class="logo-box">
+            <img src="{{ url_for('static', filename=g.site_logo.sub_logo, _external=True) if g.site_logo and g.site_logo.sub_logo else url_for('static', filename='backend/uploads/images/no_image.jpg', _external=True) }}" alt="Logo"/>
+        </div>
+
+        <div class="card-header">
+            <div class="school-name">{{ ticket.student.school.name }}</div>
+            <div class="school-subname">DUGSIGA HOOSE, DHEXE IYO SARE EE {{ ticket.student.school.name.split(' ')[0] }}</div>
+        </div>
+
+        <div class="exam-title">{{ ticket.exam.exam_name }}</div>
+
+        <div class="card-body">
+            <div class="info-row">
+                <span class="label">Student Name:</span>
+                <span class="value">{{ ticket.student.full_name }}</span>
+            </div>
+
+            <div class="flex-container">
+                <div class="flex-item">
+                    <span class="label">Class:</span>
+                    <span class="value">{{ ticket.class_obj.name }}</span>
+                </div>
+                <div class="flex-item">
+                    <span class="label">Academic Year:</span>
+                    <span class="value">{{ ticket.exam.academic_year.year_name }}</span>
+                </div>
+            </div>
+
+            <div class="flex-container">
+                <div class="flex-item">
+                    <span class="label">Exam Hall:</span>
+                    <span class="value">{{ ticket.hall.name if ticket.hall else '---' }}</span>
+                </div>
+                <div class="flex-item">
+                    <span class="label">Validity:</span>
+                    <span class="value" style="font-size: 28px;">{{ ticket.exam.start_date.strftime('%d/%m/%Y') }} - {{ ticket.exam.end_date.strftime('%d/%m/%Y') }}</span>
+                </div>
+            </div>
+
+            <div class="signature-area">
+                <span class="sig-label">Sign:</span>
+                <div class="signature-wrap">
+                    <img src="{{ url_for('static', filename=g.site_logo.sign_logo, _external=True) if g.site_logo and g.site_logo.sign_logo else url_for('static', filename='backend/uploads/images/no_image.jpg', _external=True) }}" alt="Sign">
+                </div>
+            </div>
+        </div>
+
+        <div class="card-footer">
+            FADLAN ILAASHO KARKA IMTIXAANKA, HADDII UU KAA LUMO <br>
+            WAXAA ADKAAN DOONTA IN AAD GASHO IMTIXAANKA
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+</body>
+</html>

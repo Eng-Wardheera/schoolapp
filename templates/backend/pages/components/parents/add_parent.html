@@ -1,0 +1,173 @@
+{% extends 'backend/home/base.html' %}
+
+{% block title %}Add New Parent | School Management{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+    <div class="page-header-left d-flex align-items-center">
+        <div class="page-header-title">
+            <h5 class="m-b-10">Parents</h5>
+        </div>
+        <ul class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Home</a></li>
+            <li class="breadcrumb-item">Add Parent</li>
+        </ul>
+    </div>
+</div>
+
+<div class="main-content mt-4">
+    <form method="POST">
+        {{ form.hidden_tag() }}
+        <div class="card border-top-0">
+            <div class="card-header p-0">
+                <ul class="nav nav-tabs flex-wrap w-100 text-center customers-nav-tabs">
+                    <li class="nav-item flex-fill border-top">
+                        <a href="#parentTab" class="nav-link active" data-bs-toggle="tab">Parent Info</a>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="tab-content">
+                <div class="tab-pane fade show active" id="parentTab">
+                    <div class="card-body">
+
+                        <!-- Full Name -->
+                        <div class="row mb-4 align-items-center">
+                            <div class="col-lg-4"><label class="fw-semibold">Full Name:</label></div>
+                            <div class="col-lg-8">
+                                {{ form.full_name(class="form-control", placeholder="Enter Full Name") }}
+                                {% for error in form.full_name.errors %}
+                                    <div class="text-danger small">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <!-- Email -->
+                        <div class="row mb-4 align-items-center">
+                            <div class="col-lg-4"><label class="fw-semibold">Email:</label></div>
+                            <div class="col-lg-8">
+                                {{ form.email(class="form-control", placeholder="Enter Email") }}
+                                {% for error in form.email.errors %}
+                                    <div class="text-danger small">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <!-- Phone -->
+                        <div class="row mb-4 align-items-center">
+                            <div class="col-lg-4"><label class="fw-semibold">Phone:</label></div>
+                            <div class="col-lg-8">
+                                {{ form.phone(class="form-control", placeholder="Enter Phone Number") }}
+                                {% for error in form.phone.errors %}
+                                    <div class="text-danger small">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <!-- Roll No (readonly) -->
+                        <div class="row mb-4 align-items-center">
+                            <div class="col-lg-4"><label class="fw-semibold">Roll No:</label></div>
+                            <div class="col-lg-8">
+                                {{ form.roll_no(class="form-control", readonly=True) }}
+                            </div>
+                        </div>
+
+                        <!-- Relationship -->
+                        <div class="row mb-4 align-items-center">
+                            <div class="col-lg-4"><label class="fw-semibold">Relationship:</label></div>
+                            <div class="col-lg-8">
+                                {{ form.relationship(class="form-select") }}
+                            </div>
+                        </div>
+
+                        <!-- Occupation -->
+                        <div class="row mb-4 align-items-center">
+                            <div class="col-lg-4"><label class="fw-semibold">Occupation:</label></div>
+                            <div class="col-lg-8">
+                                {{ form.occupation(class="form-control", placeholder="Enter Occupation") }}
+                            </div>
+                        </div>
+
+                        <!-- Emergency Contact -->
+                        <div class="row mb-4 align-items-center">
+                            <div class="col-lg-4"><label class="fw-semibold">Emergency Contact:</label></div>
+                            <div class="col-lg-8">
+                                {{ form.emergency_contact(class="form-control", placeholder="Enter Emergency Contact") }}
+                            </div>
+                        </div>
+
+                        <!-- Address -->
+                        <div class="row mb-4 align-items-center">
+                            <div class="col-lg-4"><label class="fw-semibold">Address:</label></div>
+                            <div class="col-lg-8">
+                                {{ form.address(class="form-control", placeholder="Enter Address") }}
+                            </div>
+                        </div>
+
+                        <!-- Gender -->
+                        <div class="row mb-4 align-items-center">
+                            <div class="col-lg-4"><label class="fw-semibold">Gender:</label></div>
+                            <div class="col-lg-8">
+                                {{ form.gender(class="form-select") }}
+                            </div>
+                        </div>
+
+                        <!-- Date of Birth -->
+                        <div class="row mb-4 align-items-center">
+                            <div class="col-lg-4"><label class="fw-semibold">Date of Birth:</label></div>
+                            <div class="col-lg-8">
+                                {{ form.date_of_birth(class="form-control") }}
+                            </div>
+                        </div>
+
+                        <!-- Password -->
+                        <div class="row mb-4 align-items-center">
+                            <div class="col-lg-4"><label class="fw-semibold">Password:</label></div>
+                            <div class="col-lg-8">
+                                {{ form.password(class="form-control", placeholder="Enter Password (auto-generated if empty)") }}
+                                {% for error in form.password.errors %}
+                                    <div class="text-danger small">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <!-- School & Branch -->
+                        <!-- <div class="row mb-4 align-items-center">
+                            <div class="col-lg-4"><label class="fw-semibold">School:</label></div>
+                            <div class="col-lg-8">
+                                {{ form.school_id(class="form-select") }}
+                            </div>
+                        </div>
+
+                        <div class="row mb-4 align-items-center">
+                            <div class="col-lg-4"><label class="fw-semibold">Branch:</label></div>
+                            <div class="col-lg-8">
+                                {{ form.branch_id(class="form-select") }}
+                            </div>
+                        </div> -->
+
+                        <!-- Status -->
+                        <div class="row mb-4 align-items-center">
+                            <div class="col-lg-4"><label class="fw-semibold">Status:</label></div>
+                            <div class="col-lg-8">
+                                {{ form.status(class="form-select") }}
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- Submit -->
+                    <div class="card-footer text-center">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="feather-plus me-1"></i> Add Parent
+                        </button>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+{% endblock %}

@@ -1,0 +1,200 @@
+{% extends 'backend/home/base.html' %}
+
+{% block title %}Site Settings | Logistics System{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+    <div class="page-header-left d-flex align-items-center">
+        <div class="page-header-title">
+            <h5 class="m-b-10">Site Settings</h5>
+        </div>
+        <ul class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Home</a></li>
+            <li class="breadcrumb-item">Site Settings</li>
+        </ul>
+    </div>
+</div>
+
+<div class="main-content">
+    <div class="row">
+        <div class="col-lg-12">
+
+            <form method="POST" enctype="multipart/form-data">
+                {{ form.hidden_tag() }}
+                <div class="card">
+                    <div class="card-header">
+                        <h5>Update Site Settings</h5>
+                    </div>
+
+                    <div class="card-body">
+
+                        <!-- GROUP NAME & ADDRESS -->
+                        <div class="mb-3">
+                            {{ form.group_name.label(class="fw-semibold") }}
+                            {{ form.group_name(class="form-control") }}
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.system_name.label(class="fw-semibold") }}
+                            {{ form.system_name(class="form-control") }}
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.address.label(class="fw-semibold") }}
+                            {{ form.address(class="form-control") }}
+                        </div>
+
+                        <!-- DESCRIPTIONS -->
+                        <div class="mb-3">
+                            {{ form.short_desc.label(class="fw-semibold") }}
+                            {{ form.short_desc(class="form-control", rows="2") }}
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.long_desc.label(class="fw-semibold") }}
+                            {{ form.long_desc(class="form-control", rows="4") }}
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.success_desc.label(class="fw-semibold") }}
+                            {{ form.success_desc(class="form-control", rows="3") }}
+                        </div>
+
+                        <!-- CONTACT -->
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                {{ form.phone1.label(class="fw-semibold") }}
+                                {{ form.phone1(class="form-control") }}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                {{ form.phone2.label(class="fw-semibold") }}
+                                {{ form.phone2(class="form-control") }}
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.email.label(class="fw-semibold") }}
+                            {{ form.email(class="form-control") }}
+                        </div>
+
+                        <!-- SOCIAL LINKS -->
+                        <div class="row">
+                            <div class="col-md-3 mb-3">
+                                {{ form.facebook.label(class="fw-semibold") }}
+                                {{ form.facebook(class="form-control") }}
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                {{ form.twitter.label(class="fw-semibold") }}
+                                {{ form.twitter(class="form-control") }}
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                {{ form.instagram.label(class="fw-semibold") }}
+                                {{ form.instagram(class="form-control") }}
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                {{ form.dribbble.label(class="fw-semibold") }}
+                                {{ form.dribbble(class="form-control") }}
+                            </div>
+                        </div>
+
+                        <!-- VIDEO URL -->
+                        <div class="mb-3">
+                            {{ form.video_url.label(class="fw-semibold") }}
+                            {{ form.video_url(class="form-control") }}
+                        </div>
+
+                        <!-- IMAGES -->
+                        <div class="mb-3">
+                            <label class="fw-semibold">Header Image</label>
+                            <div class="d-flex align-items-center gap-3">
+                                <div style="width:120px;height:120px;border:1px solid #ddd;border-radius:6px;overflow:hidden;">
+                                    {% if settings.head_image %}
+                                    <img id="head_image_preview" src="{{ url_for('static', filename=settings.head_image) }}" class="img-fluid h-100 w-100">
+                                    {% else %}
+                                    <img id="head_image_preview" src="{{ url_for('static', filename='backend/uploads/images/no_image.jpg') }}" class="img-fluid h-100 w-100">
+                                    {% endif %}
+                                </div>
+                                {{ form.head_image(class="form-control", accept="image/*", onchange="previewImage(event,'head_image_preview')") }}
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="fw-semibold">Success Image</label>
+                            <div class="d-flex align-items-center gap-3">
+                                <div style="width:120px;height:120px;border:1px solid #ddd;border-radius:6px;overflow:hidden;">
+                                    {% if settings.image_success %}
+                                    <img id="image_success_preview" src="{{ url_for('static', filename=settings.image_success) }}" class="img-fluid h-100 w-100">
+                                    {% else %}
+                                    <img id="image_success_preview" src="{{ url_for('static', filename='backend/uploads/images/no_image.jpg') }}" class="img-fluid h-100 w-100">
+                                    {% endif %}
+                                </div>
+                                {{ form.image_success(class="form-control", accept="image/*", onchange="previewImage(event,'image_success_preview')") }}
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="fw-semibold">About Image</label>
+                            <div class="d-flex align-items-center gap-3">
+                                <div style="width:120px;height:120px;border:1px solid #ddd;border-radius:6px;overflow:hidden;">
+                                    {% if settings.about_image %}
+                                    <img id="about_image_preview" src="{{ url_for('static', filename=settings.about_image) }}" class="img-fluid h-100 w-100">
+                                    {% else %}
+                                    <img id="about_image_preview" src="{{ url_for('static', filename='backend/uploads/images/no_image.jpg') }}" class="img-fluid h-100 w-100">
+                                    {% endif %}
+                                </div>
+                                {{ form.about_image(class="form-control", accept="image/*", onchange="previewImage(event,'about_image_preview')") }}
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="fw-semibold">Logo Full View</label>
+                            <div class="d-flex align-items-center gap-3">
+                                <div style="width:120px;height:120px;border:1px solid #ddd;border-radius:6px;overflow:hidden;">
+                                    {% if settings.logo %}
+                                    <img id="logo_preview" src="{{ url_for('static', filename=settings.logo) }}" class="img-fluid h-100 w-100">
+                                    {% else %}
+                                    <img id="logo_preview" src="{{ url_for('static', filename='backend/uploads/images/no_image.jpg') }}" class="img-fluid h-100 w-100">
+                                    {% endif %}
+                                </div>
+                                {{ form.logo(class="form-control", accept="image/*", onchange="previewImage(event,'logo_preview')") }}
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="fw-semibold">Logo Collapsed</label>
+                            <div class="d-flex align-items-center gap-3">
+                                <div style="width:120px;height:120px;border:1px solid #ddd;border-radius:6px;overflow:hidden;">
+                                    {% if settings.logo2 %}
+                                    <img id="logo2_preview" src="{{ url_for('static', filename=settings.logo2) }}" class="img-fluid h-100 w-100">
+                                    {% else %}
+                                    <img id="logo2_preview" src="{{ url_for('static', filename='backend/uploads/images/no_image.jpg') }}" class="img-fluid h-100 w-100">
+                                    {% endif %}
+                                </div>
+                                {{ form.logo2(class="form-control", accept="image/*", onchange="previewImage(event,'logo2_preview')") }}
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <div class="card-footer text-center">
+                        <button type="submit" class="btn btn-primary">Update Settings</button>
+                    </div>
+                </div>
+            </form>
+
+        </div>
+    </div>
+</div>
+
+<script>
+    function previewImage(event, previewId){
+        const reader = new FileReader();
+        reader.onload = function(){
+            document.getElementById(previewId).src = reader.result;
+        }
+        reader.readAsDataURL(event.target.files[0]);
+    }
+</script>
+
+{% endblock %}

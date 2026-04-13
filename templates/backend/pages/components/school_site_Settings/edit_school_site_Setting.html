@@ -1,0 +1,285 @@
+{% extends 'backend/home/base.html' %}
+
+{% block title %}Edit School Site Settings | Logistics System{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+    <div class="page-header-left d-flex align-items-center">
+        <div class="page-header-title">
+            <h5 class="m-b-10">School Site Settings</h5>
+        </div>
+
+        <ul class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="{{ url_for('main.dashboard') }}">Home</a>
+            </li>
+            <li class="breadcrumb-item">Edit Site Settings</li>
+        </ul>
+    </div>
+</div>
+
+<div class="main-content">
+    <div class="row">
+        <div class="col-lg-10">
+
+            <form method="POST" enctype="multipart/form-data">
+                {{ form.hidden_tag() }} 
+
+                <div class="card">
+
+                    <div class="card-header">
+                        <h5>Edit School Site Settings</h5>
+                    </div>
+
+                    <div class="card-body">
+
+                        <!-- SCHOOL -->
+                        <div class="mb-4">
+                            {{ form.school_id.label(class="fw-semibold") }}
+                            {{ form.school_id(class="form-select", disabled=true) }}
+                            <small class="text-muted">School cannot be changed after creation.</small>
+                        </div>
+
+                        <!-- BRANCH (Optional) -->
+                        <div class="mb-4">
+                            {{ form.branch_id.label(class="fw-semibold") }}
+                            <select name="{{ form.branch_id.name }}" class="form-select">
+                                {% for value, label in form.branch_id.choices %}
+                                    {% if value == form.branch_id.data %}
+                                        <option value="{{ value }}" selected>{{ label }}</option>
+                                    {% else %}
+                                        <option value="{{ value }}">{{ label }}</option>
+                                    {% endif %}
+                                {% endfor %}
+                            </select>
+                            <small class="text-muted">Branch selection is optional.</small>
+                        </div>
+
+                        <!-- MAIN LOGO -->
+                                <!-- MAIN LOGO -->
+                        <div class="mb-4">
+                            {{ form.main_logo.label(class="fw-semibold") }}
+                            <div class="d-flex align-items-center gap-3">
+                                <div style="width:120px;height:120px;border:1px solid #ddd;border-radius:6px;overflow:hidden;">
+                                    <img
+                                        id="mainLogoPreview"
+                                        src="{{ url_for('static', filename=settings.main_logo) if settings.main_logo else url_for('static', filename='backend/uploads/images/no_image.jpg') }}"
+                                        class="img-fluid h-100 w-100"
+                                    >
+                                </div>
+                                {{ form.main_logo(class="form-control", onchange="previewImage(event,'mainLogoPreview')") }}
+                            </div>
+                        </div>
+
+                        <!-- SUB LOGO -->
+                        <div class="mb-4">
+                            {{ form.sub_logo.label(class="fw-semibold") }}
+                            <div class="d-flex align-items-center gap-3">
+                                <div style="width:120px;height:120px;border:1px solid #ddd;border-radius:6px;overflow:hidden;">
+                                    <img
+                                        id="subLogoPreview"
+                                        src="{{ url_for('static', filename=settings.sub_logo) if settings.sub_logo else url_for('static', filename='backend/uploads/images/no_image.jpg') }}"
+                                        class="img-fluid h-100 w-100"
+                                    >
+                                </div>
+                                {{ form.sub_logo(class="form-control", onchange="previewImage(event,'subLogoPreview')") }}
+                            </div>
+                        </div>
+
+                        <!-- Sign LOGO -->
+                        <div class="mb-4">
+                            {{ form.sign_logo.label(class="fw-semibold") }}
+                            <div class="d-flex align-items-center gap-3">
+                                <div style="width:120px;height:120px;border:1px solid #ddd;border-radius:6px;overflow:hidden;">
+                                    <img
+                                        id="subLogoPreview"
+                                        src="{{ url_for('static', filename=settings.sign_logo) if settings.sign_logo else url_for('static', filename='backend/uploads/images/no_image.jpg') }}"
+                                        class="img-fluid h-100 w-100"
+                                    >
+                                </div>
+                                {{ form.sign_logo(class="form-control", onchange="previewImage(event,'subLogoPreview')") }}
+                            </div>
+                        </div>
+
+                        <!-- SIGNATURE / WHITEBOARD -->
+                        <div class="mb-4">
+                            <label class="fw-semibold">Signature / Whiteboard</label>
+
+                            <!-- Canvas -->
+                            <div style="border:1px solid #ddd; border-radius:6px; background-color:white; width:100%; max-width:500px; height:200px; position:relative;">
+                                <canvas id="signatureCanvas" width="500" height="200" style="width:100%; height:100%;"></canvas>
+                            </div>
+
+                            <!-- Color Swatches -->
+                            <div class="mt-2 d-flex gap-2">
+                                <span class="color-swatch" style="background-color:black;" onclick="setColor('black')"></span>
+                                <span class="color-swatch" style="background-color:blue;" onclick="setColor('blue')"></span>
+                                <span class="color-swatch" style="background-color:green;" onclick="setColor('green')"></span>
+                                <span class="color-swatch" style="background-color:red;" onclick="setColor('red')"></span>
+                            </div>
+
+                            <!-- Buttons -->
+                            <div class="mt-2">
+                                <button type="button" class="btn btn-sm btn-secondary" onclick="clearCanvas()">Clear</button>
+                                <button type="button" class="btn btn-sm btn-success" onclick="downloadCanvas()">Download</button>
+                            </div>
+                        </div>
+
+                        <style>
+                        .color-swatch {
+                            width: 24px;
+                            height: 24px;
+                            border-radius: 50%;
+                            border: 1px solid #ccc;
+                            cursor: pointer;
+                            display: inline-block;
+                            transition: transform 0.2s;
+                        }
+                        .color-swatch:hover {
+                            transform: scale(1.2);
+                            border-color: #000;
+                        }
+                        </style>
+
+                        <script>
+                        const canvas = document.getElementById('signatureCanvas');
+                        const ctx = canvas.getContext('2d');
+
+                        let drawing = false;
+                        let strokeColor = 'black'; // default color
+                        let lastX = 0;
+                        let lastY = 0;
+
+                        // Start drawing
+                        canvas.addEventListener('mousedown', (e) => {
+                            drawing = true;
+                            const rect = canvas.getBoundingClientRect();
+                            lastX = e.clientX - rect.left;
+                            lastY = e.clientY - rect.top;
+                        });
+
+                        canvas.addEventListener('mouseup', () => drawing = false);
+                        canvas.addEventListener('mouseleave', () => drawing = false);
+
+                        // Draw
+                        canvas.addEventListener('mousemove', draw);
+
+                        function draw(e) {
+                            if (!drawing) return;
+                            const rect = canvas.getBoundingClientRect();
+                            const x = e.clientX - rect.left;
+                            const y = e.clientY - rect.top;
+
+                            ctx.strokeStyle = strokeColor;
+                            ctx.lineWidth = 2;
+                            ctx.lineCap = 'round';
+
+                            ctx.beginPath();
+                            ctx.moveTo(lastX, lastY); // start from last position
+                            ctx.lineTo(x, y);         // draw to current position
+                            ctx.stroke();
+
+                            lastX = x;
+                            lastY = y;
+                        }
+
+                        // Change color
+                        function setColor(color) {
+                            strokeColor = color;
+                        }
+
+                        // Clear canvas
+                        function clearCanvas() {
+                            ctx.clearRect(0, 0, canvas.width, canvas.height);
+                        }
+
+                        // Download canvas
+                        function downloadCanvas() {
+                            const link = document.createElement('a');
+                            link.download = 'signature.png';
+                            link.href = canvas.toDataURL('image/png');
+                            link.click();
+                        }
+                        </script>
+
+
+                        <!-- SITE TITLE -->
+                        <div class="mb-4">
+                            {{ form.site_title.label(class="fw-semibold") }}
+                            {{ form.site_title(class="form-control", placeholder="Enter Site Title") }}
+                        </div>
+
+                        <!-- SHORT DESCRIPTION -->
+                        <div class="mb-4">
+                            {{ form.short_desc.label(class="fw-semibold") }}
+                            {{ form.short_desc(class="form-control", rows="3", placeholder="Short Description") }}
+                        </div>
+
+                        <!-- LONG DESCRIPTION -->
+                        <div class="mb-4">
+                            {{ form.long_desc.label(class="fw-semibold") }}
+                            {{ form.long_desc(class="form-control", rows="5", placeholder="Long Description") }}
+                        </div>
+
+                        <!-- ADDRESS -->
+                        <div class="mb-4">
+                            {{ form.address.label(class="fw-semibold") }}
+                            {{ form.address(class="form-control", placeholder="Enter Address") }}
+                        </div>
+
+                        <!-- PHONE -->
+                        <div class="mb-4">
+                            {{ form.phone.label(class="fw-semibold") }}
+                            {{ form.phone(class="form-control", placeholder="Enter Phone") }}
+                        </div>
+
+                        <!-- EMAIL -->
+                        <div class="mb-4">
+                            {{ form.email.label(class="fw-semibold") }}
+                            {{ form.email(class="form-control", placeholder="Enter Email") }}
+                        </div>
+
+                        <!-- SOCIAL LINKS -->
+                        <div class="mb-4">
+                            {{ form.facebook.label(class="fw-semibold") }}
+                            {{ form.facebook(class="form-control", placeholder="Facebook URL") }}
+                        </div>
+
+                        <div class="mb-4">
+                            {{ form.twitter.label(class="fw-semibold") }}
+                            {{ form.twitter(class="form-control", placeholder="Twitter URL") }}
+                        </div>
+
+                        <div class="mb-4">
+                            {{ form.instagram.label(class="fw-semibold") }}
+                            {{ form.instagram(class="form-control", placeholder="Instagram URL") }}
+                        </div>
+
+                    </div>
+
+                    <div class="card-footer text-center">
+                        {{ form.submit(class="btn btn-primary") }}
+                        <a href="{{ url_for('main.all_school_site_settings') }}" class="btn btn-secondary ms-2">Cancel</a>
+                    </div>
+
+                </div>
+
+            </form>
+
+        </div>
+    </div>
+</div>
+
+<!-- IMAGE PREVIEW SCRIPT -->
+<script>
+function previewImage(event, previewId){
+    const reader = new FileReader();
+    reader.onload = function(){
+        document.getElementById(previewId).src = reader.result;
+    }
+    reader.readAsDataURL(event.target.files[0]);
+}
+</script>
+
+{% endblock %}

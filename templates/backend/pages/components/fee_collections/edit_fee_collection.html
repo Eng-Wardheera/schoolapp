@@ -1,0 +1,148 @@
+{% extends 'backend/home/base.html' %}
+
+{% block title %}Edit Fee Collection | School Management{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-left d-flex align-items-center">
+        <div class="page-header-title">
+            <h5>Edit Fee Collection</h5>
+        </div>
+        <ul class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Home</a></li>
+            <li class="breadcrumb-item">Fee Collection</li>
+            <li class="breadcrumb-item active">Edit</li>
+        </ul>
+    </div>
+</div>
+
+<div class="main-content">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <form method="POST">
+                {{ form.hidden_tag() }}
+
+                <div class="card shadow-sm">
+                    <div class="card-header bg-white border-bottom">
+                        <h5 class="mb-0">Update Student Fee Payment</h5>
+                    </div>
+                    <div class="card-body">
+
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold">Roll No</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light"><i class="feather-hash"></i></span>
+                                    <input type="text" class="form-control bg-light" value="{{ students_info[fee_record.student_id].roll_no }}" readonly>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold">Registration Fee</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light">$</span>
+                                    <input type="text" class="form-control bg-light" value="{{ "{:,.2f}".format(students_info[fee_record.student_id].registration_fee) }}" readonly>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold">Tuition Fee</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light">$</span>
+                                    <input type="text" class="form-control bg-light" value="{{ "{:,.2f}".format(students_info[fee_record.student_id].tuition_fee) }}" readonly>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row g-3 mb-4 pt-3 border-top">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold text-primary">Monthly Total (Due)</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-primary text-white">$</span>
+                                    <input type="text" class="form-control fw-bold" id="totalFee" value="{{ students_info[fee_record.student_id].total_fee }}" readonly>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold text-danger">New Monthly Balance</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-danger text-white">$</span>
+                                    <input type="text" class="form-control fw-bold" id="remainingBalance" value="{{ "{:.2f}".format(students_info[fee_record.student_id].total_fee - fee_record.amount_paid) }}" readonly>
+                                </div>
+                                <small class="text-muted">Farqiga u dhexeeya Total Fee iyo New Amount Paid.</small>
+                            </div>
+                        </div>
+
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Amount Paid (Lacagta la bixiyay)</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-success text-white">$</span>
+                                    <input type="number" step="0.01" id="amountPaid" name="amount_paid" class="form-control border-success fw-bold" 
+                                           value="{{ fee_record.amount_paid }}" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                {{ form.payment_date.label(class="form-label fw-bold") }}
+                                {{ form.payment_date(class="form-control") }}
+                                {% for error in form.payment_date.errors %}
+                                    <div class="text-danger small">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-12">
+                                {{ form.remarks.label(class="form-label fw-bold") }}
+                                {{ form.remarks(class="form-control", placeholder="Add any comments or payment references...") }}
+                                {% for error in form.remarks.errors %}
+                                    <div class="text-danger small">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <div class="card-footer bg-light d-flex justify-content-center gap-3">
+                        <button type="submit" class="btn btn-primary px-5">
+                            <i class="feather-save me-1"></i> Update & Save Changes
+                        </button>
+                        <a href="{{ url_for('main.all_fee_collections') }}" class="btn btn-outline-secondary px-5">
+                            <i class="feather-x me-1"></i> Cancel
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const amountInput = document.getElementById('amountPaid');
+    const remainingInput = document.getElementById('remainingBalance');
+    const totalFee = parseFloat(document.getElementById('totalFee').value) || 0;
+
+    function calculateBalance() {
+        let paid = parseFloat(amountInput.value) || 0;
+        let balance = totalFee - paid;
+        
+        // Update the value
+        remainingInput.value = balance.toFixed(2);
+        
+        // Change color based on balance
+        if (balance > 0) {
+            remainingInput.classList.add('text-danger');
+            remainingInput.classList.remove('text-success');
+        } else if (balance < 0) {
+            remainingInput.classList.add('text-success');
+            remainingInput.classList.remove('text-danger');
+        } else {
+            remainingInput.classList.remove('text-danger', 'text-success');
+        }
+    }
+
+    amountInput.addEventListener('input', calculateBalance);
+    
+    // Run once on load to set initial color
+    calculateBalance();
+});
+</script>
+{% endblock %}

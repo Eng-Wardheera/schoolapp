@@ -1,0 +1,183 @@
+{% extends 'backend/home/base.html' %}
+
+{% block title %}Collect Fee | School Management{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+    <div class="page-header-left d-flex align-items-center">
+        <div class="page-header-title">
+            <h5 class="fw-bold">Collect Fee</h5>
+        </div>
+        <ul class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}"><i class="feather-home me-1"></i>Home</a></li>
+            <li class="breadcrumb-item active text-primary">Fee Collection</li>
+        </ul>
+    </div>
+</div>
+
+<div class="main-content">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <form method="POST">
+                {{ form.hidden_tag() }}
+
+                <div class="card shadow-sm border-0">
+                    <div class="card-header bg-primary text-white py-3">
+                        <h5 class="card-title mb-0 text-white"><i class="feather-credit-card me-2"></i>Fee Collection Details</h5>
+                    </div>
+                    <div class="card-body p-4">
+
+                        <div class="row g-4 mb-4">
+                            <div class="col-md-12">
+                                <label class="form-label fw-bold"><i class="feather-user me-1 text-primary"></i> {{ form.student_id.label.text }}</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light"><i class="feather-search"></i></span>
+                                    {{ form.student_id(class="form-select form-select-lg shadow-none", id="student-select") }}
+                                </div>
+                                {% for error in form.student_id.errors %}
+                                    <div class="text-danger small mt-1 animate__animated animate__fadeIn"><i class="feather-alert-circle me-1"></i>{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <div id="student-info" style="display: none;" class="p-3 mb-4 rounded bg-light border">
+                            <h6 class="text-muted mb-3 text-uppercase small fw-bold">Student Summary</h6>
+                            <div class="row g-3">
+                                <div class="col-md-4">
+                                    <label class="form-label text-muted small fw-bold">Roll No</label>
+                                    <input type="text" id="roll-no" class="form-control bg-white fw-bold border-0 shadow-sm" disabled>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label text-muted small fw-bold">Registration Fee</label>
+                                    <div class="input-group input-group-sm">
+                                        <span class="input-group-text border-0">$</span>
+                                        <input type="text" id="reg-fee" class="form-control bg-white border-0 shadow-sm" disabled>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label text-muted small fw-bold">Tuition Fee</label>
+                                    <div class="input-group input-group-sm">
+                                        <span class="input-group-text border-0">$</span>
+                                        <input type="text" id="tuition-fee" class="form-control bg-white border-0 shadow-sm" disabled>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <hr class="my-3 opacity-50">
+
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label text-dark fw-bold">Total Payable Fee</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-white border-0 text-success fw-bold">$</span>
+                                        <input type="text" id="total-fee-display" class="form-control bg-white border-0 fs-5 text-success fw-bold shadow-sm" disabled>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label text-dark fw-bold">New Remaining Balance</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-white border-0 text-danger fw-bold">$</span>
+                                        <input type="text" id="remaining-balance" class="form-control bg-white border-0 fs-5 text-danger fw-bold shadow-sm" disabled>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <hr class="my-4">
+
+                        <div class="row g-4 mb-4">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold"><i class="feather-dollar-sign me-1 text-primary"></i> {{ form.amount_paid.label.text }}</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-primary text-white border-0">$</span>
+                                    {{ form.amount_paid(class="form-control form-control-lg fw-bold text-primary", id="amount-paid", placeholder="0.00") }}
+                                </div>
+                                <div class="form-text text-muted fst-italic"><i class="feather-info me-1"></i> Enter the actual amount being paid today.</div>
+                                {% for error in form.amount_paid.errors %}
+                                    <div class="text-danger small mt-1"><i class="feather-alert-circle me-1"></i>{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold"><i class="feather-calendar me-1 text-primary"></i> {{ form.payment_date.label.text }}</label>
+                                {{ form.payment_date(class="form-control form-control-lg") }}
+                                {% for error in form.payment_date.errors %}
+                                    <div class="text-danger small mt-1"><i class="feather-alert-circle me-1"></i>{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <div class="row mb-2">
+                            <div class="col-md-12">
+                                <label class="form-label fw-bold"><i class="feather-edit-3 me-1 text-primary"></i> {{ form.remarks.label.text }}</label>
+                                {{ form.remarks(class="form-control", rows="3", placeholder="Any notes about this payment...") }}
+                                {% for error in form.remarks.errors %}
+                                    <div class="text-danger small mt-1">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <div class="card-footer bg-light p-4">
+                        <div class="d-flex justify-content-end gap-3">
+                            <a href="{{ url_for('main.all_fee_collections') }}" class="btn btn-outline-secondary px-4">
+                                <i class="feather-x me-1"></i> Discard
+                            </a>
+                            <button type="submit" class="btn btn-primary px-5 shadow-sm">
+                                <i class="feather-check-circle me-1"></i> Save Payment
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+const studentsData = {{ students_info|tojson }};
+const studentSelect = document.getElementById("student-select");
+const studentInfoDiv = document.getElementById("student-info");
+const rollInput = document.getElementById("roll-no");
+const regInput = document.getElementById("reg-fee");
+const tuitionInput = document.getElementById("tuition-fee");
+const totalDisplay = document.getElementById("total-fee-display");
+const remainingInput = document.getElementById("remaining-balance");
+const amountPaidInput = document.getElementById("amount-paid");
+
+function updateStudentInfo() {
+    const studentId = parseInt(studentSelect.value);
+    if (studentId && studentsData[studentId]) {
+        const data = studentsData[studentId];
+        const paidAmount = parseFloat(amountPaidInput.value) || 0;
+        
+        rollInput.value = data.roll_no || "N/A";
+        regInput.value = data.registration_fee.toFixed(2);
+        tuitionInput.value = data.tuition_fee.toFixed(2);
+        totalDisplay.value = data.total_fee.toFixed(2);
+        
+        // Calculation for remaining balance
+        const balance = data.total_fee - paidAmount;
+        remainingInput.value = balance.toFixed(2);
+        
+        studentInfoDiv.style.display = "block";
+    } else {
+        studentInfoDiv.style.display = "none";
+    }
+}
+
+studentSelect.addEventListener("change", updateStudentInfo);
+amountPaidInput.addEventListener("input", updateStudentInfo);
+window.addEventListener("DOMContentLoaded", updateStudentInfo);
+</script>
+
+<style>
+    .input-group-text { border: 1px solid #ced4da; }
+    #student-info { transition: all 0.3s ease-in-out; }
+    .card { border-radius: 12px; overflow: hidden; }
+    .form-control-lg, .form-select-lg { border-radius: 8px; font-size: 1rem; }
+    .btn { border-radius: 8px; font-weight: 600; }
+</style>
+
+{% endblock %}

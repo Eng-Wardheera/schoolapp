@@ -1,0 +1,294 @@
+{% extends 'backend/home/base.html' %}
+
+{% block title %}All Attendance | School Management{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+    <div class="page-header-left d-flex align-items-center">
+        <div class="page-header-title">
+            <h5 class="m-b-10">All Attendance Records</h5>
+        </div>
+        <ul class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Home</a></li>
+            <li class="breadcrumb-item">Attendance</li>
+        </ul>
+    </div>
+</div>
+
+<div class="main-content">
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="card stretch stretch-full">
+                <div class="card-body p-3">
+
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle" id="attendanceTable">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Student</th>
+                                    <th>Class</th>
+                                    <th>Section</th>
+                                    <th>Subject</th>
+                                    <th>Status</th>
+                                    <th>Date</th>
+                                    <th>Teacher</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for a in attendances %}
+                                <tr id="attendanceRow{{ a.id }}">
+                                    <td>{{ loop.index }}</td>
+                                     <td>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <div class="avatar-image avatar-md">
+                                                {% if a.student.photo %}
+                                                    <img src="{{ url_for('static', filename=a.student.photo) }}" class="img-fluid rounded-circle">
+                                                {% else %}
+                                                    <div class="avatar-text bg-soft-primary text-primary rounded-circle">
+                                                        {{ a.student.full_name[0]|upper }}
+                                                    </div>
+                                                {% endif %}
+                                            </div>
+                                            <div>
+                                                <strong>{{ a.student.full_name }}</strong><br>
+                                                <small class="text-muted">{{ a.student.roll_no }}</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>{{ a.class_obj.name }}</td>
+                                    <td>{{ a.section.name if a.section else '-' }}</td>
+                                    <td>{{ a.subject.name }}</td>
+                                    <td id="statusCell{{ a.id }}">
+                                        {% if a.status == 'present' %}
+                                            <span class="badge bg-success">Present</span>
+                                        {% elif a.status == 'absent' %}
+                                            <span class="badge bg-danger">Absent</span>
+                                        {% elif a.status == 'late' %}
+                                            <span class="badge bg-warning text-dark">Late</span>
+                                        {% elif a.status == 'excused' %}
+                                            <span class="badge bg-info text-dark">Excused</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">{{ a.status }}</span>
+                                        {% endif %}
+                                    </td>
+
+                                    <td>{{ a.date.strftime('%Y-%m-%d') }}</td>
+                                    <td>{{ a.teacher.full_name }}</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-primary editStatusBtn"
+                                                data-id="{{ a.id }}" data-status="{{ a.status }}">
+                                            Edit
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="9" class="text-center text-muted">No attendance records found.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Status Modal -->
+<!-- MODAL -->
+<div id="editStatusModal" style="
+    display:none;
+    position:fixed;
+    top:0;
+    left:0;
+    width:100%;
+    height:100%;
+    background:rgba(0,0,0,0.5);
+    z-index:9999;
+">
+
+    <div style="
+        background:#fff;
+        width:400px;
+        margin:100px auto;
+        border-radius:8px;
+        overflow:hidden;
+        box-shadow:0 5px 15px rgba(0,0,0,0.3);
+        animation:fadeIn 0.3s;
+    ">
+
+        <!-- HEADER -->
+        <div style="padding:15px; border-bottom:1px solid #ddd; display:flex; justify-content:space-between;">
+            <h5 style="margin:0;">Edit Attendance Status</h5>
+            <button onclick="closeModal()" style="
+                border:none;
+                background:none;
+                font-size:18px;
+                cursor:pointer;
+            ">✖</button>
+        </div>
+
+        <!-- BODY -->
+        <div style="padding:15px;">
+            <input type="hidden" id="attendanceId">
+
+            <label style="display:block; margin-bottom:5px;">Status</label>
+            <select id="statusSelect" style="
+                width:100%;
+                padding:8px;
+                border:1px solid #ccc;
+                border-radius:5px;
+            ">
+                <option value="present">Present</option>
+                <option value="absent">Absent</option>
+                <option value="late">Late</option>
+                <option value="excused">Excused</option>
+            </select>
+        </div>
+
+        <!-- FOOTER -->
+        <div style="padding:15px; border-top:1px solid #ddd; text-align:right;">
+            <button onclick="submitForm()" style="
+                background:green;
+                color:#fff;
+                border:none;
+                padding:8px 15px;
+                border-radius:5px;
+                cursor:pointer;
+            ">Save</button>
+
+            <button onclick="closeModal()" style="
+                background:#ccc;
+                border:none;
+                padding:8px 15px;
+                border-radius:5px;
+                margin-left:5px;
+                cursor:pointer;
+            ">Cancel</button>
+        </div>
+
+    </div>
+</div>
+
+<!-- ANIMATION -->
+<style>
+@keyframes fadeIn {
+    from {transform:translateY(-20px); opacity:0;}
+    to {transform:translateY(0); opacity:1;}
+}
+</style>
+
+
+<script>
+
+    
+document.addEventListener('DOMContentLoaded', function() {
+
+    // DATATABLE
+    $('#attendanceTable').DataTable({
+        responsive: true,
+        pageLength: 15,
+        lengthChange: true,
+        searching: true,
+        ordering: true,
+        order: [[6, 'desc']],
+        language: {
+            search: "_INPUT_",
+            searchPlaceholder: "Search attendance..."
+        }
+    });
+
+    // ================= MODAL FUNCTIONS =================
+    window.openModal = function(id, status) {
+        document.getElementById("attendanceId").value = id;
+        document.getElementById("statusSelect").value = status;
+        document.getElementById("editStatusModal").style.display = "block";
+    }
+
+    window.closeModal = function() {
+        document.getElementById("editStatusModal").style.display = "none";
+    }
+
+    // ================= BUTTON CLICK =================
+    document.querySelectorAll('.editStatusBtn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            openModal(this.dataset.id, this.dataset.status);
+        });
+    });
+
+    // ================= SUBMIT =================
+   window.submitForm = async function() {
+    const id = document.getElementById("attendanceId").value;
+    const status = document.getElementById("statusSelect").value;
+
+    try {
+        const res = await fetch(`/attendance/update_status/${id}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token() }}'
+            },
+            body: JSON.stringify({ status: status })
+        });
+
+        const data = await res.json();
+
+        if (data.success) {
+
+            // ================= UPDATE BADGE =================
+            let badgeHTML = '';
+            switch(status) {
+                case 'present':
+                    badgeHTML = '<span class="badge bg-success">Present</span>';
+                    break;
+                case 'absent':
+                    badgeHTML = '<span class="badge bg-danger">Absent</span>';
+                    break;
+                case 'late':
+                    badgeHTML = '<span class="badge bg-warning text-dark">Late</span>';
+                    break;
+                case 'excused':
+                    badgeHTML = '<span class="badge bg-info text-dark">Excused</span>';
+                    break;
+                default:
+                    badgeHTML = `<span class="badge bg-secondary">${status}</span>`;
+            }
+
+            document.getElementById(`statusCell${id}`).innerHTML = badgeHTML;
+
+            // UPDATE BUTTON DATA (IMPORTANT)
+            document.querySelector(`[data-id="${id}"]`).dataset.status = status;
+
+            closeModal();
+
+            // SIMPLE ALERT
+            alert("Status updated successfully");
+
+        } else {
+            alert(data.message || "Update failed");
+        }
+
+    } catch (err) {
+        console.error(err);
+        alert("Something went wrong");
+    }
+}
+
+
+    // CLOSE WHEN CLICK OUTSIDE
+    window.onclick = function(e) {
+        const modal = document.getElementById("editStatusModal");
+        if (e.target === modal) {
+            closeModal();
+        }
+    }
+
+});
+</script>
+
+{% endblock %}

@@ -1,0 +1,6 @@
+pip install -r requirements.txt
+
+
+pip install Flask Flask-Cors Flask-Login Flask-Mail Flask-SQLAlchemy Flask-Migrate itsdangerous python-slugify Werkzeug SQLAlchemy email-validator phonenumbers pycountry pytz requests firebase-admin qrcode apscheduler pandas mysql-connector-python
+
+run.py 

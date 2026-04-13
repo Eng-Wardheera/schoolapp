@@ -1,0 +1,217 @@
+{% extends 'backend/home/base.html' %}
+
+{% block title %}Financial Statement{% endblock %}
+
+{% block header_css %}
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
+<style>
+    /* UI Decor & Stats Cards */
+    .bg-soft-success { background-color: #e8f5e9; border: 1px solid #c8e6c9; color: #2e7d32; }
+    .bg-soft-danger { background-color: #ffebee; border: 1px solid #ffcdd2; color: #c62828; }
+    .bg-soft-primary { background-color: #e3f2fd; border: 1px solid #bbdefb; color: #1565c0; }
+    
+    .filter-card { 
+        background: #ffffff; 
+        border-radius: 12px; 
+        border: 1px solid #e9ecef; 
+        padding: 20px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+
+    /* CSS for Disabled Inputs */
+    input[type="date"]:disabled {
+        background-color: #f8f9fa !important;
+        cursor: not-allowed;
+        opacity: 0.7;
+        border: 1px solid #dee2e6;
+    }
+
+    /* Highlight enabled inputs */
+    input[type="date"]:not(:disabled) {
+        border: 2px solid #0d6efd;
+    }
+
+    @media print {
+        .page-header, .filter-card, .btn-print, .dataTables_wrapper .dataTables_length, 
+        .dataTables_wrapper .dataTables_filter, .dataTables_wrapper .dataTables_paginate {
+            display: none !important;
+        }
+        .card { border: none !important; box-shadow: none !important; }
+        .main-content { margin-top: 0 !important; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-left d-flex align-items-center">
+        <div class="page-header-title">
+            <h5 class="fw-bold">Student Statement</h5>
+        </div>
+        <ul class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}"><i class="feather-home me-1"></i>Home</a></li>
+            <li class="breadcrumb-item active text-primary">Financial Statement</li>
+        </ul>
+    </div>
+</div>
+
+<div class="main-content">
+    <div class="filter-card mb-4">
+        <form id="filterForm">
+            <div class="row g-3 align-items-end">
+                <div class="col-md-3">
+                    <label class="form-label fw-bold">Date Range:</label>
+                    <select id="date-filter" name="date_filter" class="form-select shadow-none">
+                        <option value="all" {% if request.args.get('date_filter') == 'all' or not request.args.get('date_filter') %}selected{% endif %}>All Dates</option>
+                        <option value="custom" {% if request.args.get('date_filter') == 'custom' %}selected{% endif %}>Custom </option>
+                    </select>
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label fw-bold">From:</label>
+                    <input type="date" id="from-date" name="from_date" class="form-control shadow-none" 
+                           value="{{ request.args.get('from_date', '') }}" 
+                           {% if request.args.get('date_filter') != 'custom' %}disabled{% endif %}>
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label fw-bold">To:</label>
+                    <input type="date" id="to-date" name="to_date" class="form-control shadow-none" 
+                           value="{{ request.args.get('to_date', '') }}"
+                           {% if request.args.get('date_filter') != 'custom' %}disabled{% endif %}>
+                </div>
+
+                <div class="col-md-3">
+                    <button type="button" id="generate-report" class="btn btn-primary w-100 fw-bold">
+                        <i class="fas fa-sync-alt me-1"></i> GENERATE
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm p-3 bg-soft-primary">
+                <small class="fw-bold d-block mb-1 text-uppercase">Total Invoiced</small>
+                <h3 class="fw-bold mb-0">${{ "{:,.2f}".format(total_invoiced | default(0)) }}</h3>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm p-3 bg-soft-success">
+                <small class="fw-bold d-block mb-1 text-uppercase">Total Paid</small>
+                <h3 class="fw-bold mb-0">${{ "{:,.2f}".format(total_paid | default(0)) }}</h3>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm p-3 bg-soft-danger">
+                <small class="fw-bold d-block mb-1 text-uppercase">Current Balance</small>
+                <h3 class="fw-bold mb-0">${{ "{:,.2f}".format(current_balance | default(0)) }}</h3>
+            </div>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+            <h4 class="card-title mb-0 text-primary fw-bold"><i class="fas fa-history me-2"></i>Transaction History</h4>
+            <button class="btn btn-sm btn-outline-secondary btn-print" onclick="window.print()">
+                <i class="fas fa-print me-1"></i> Print Statement
+            </button>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table id="financial-table" class="table table-striped table-hover align-middle">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Invoice #</th>
+                            <th>Description</th>
+                            <th>Charge</th>
+                            <th>Payment</th>
+                            <th class="text-end">Balance</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for inv in invoices %}
+                        <tr>
+                            <td>{{ inv.date_issued.strftime('%Y-%m-%d') if inv.date_issued else 'N/A' }}</td>
+                            <td><span class="badge bg-light text-dark border">#{{ inv.invoice_number }}</span></td>
+                            <td>{{ inv.type }}</td>
+                            <td class="text-danger fw-bold">${{ "{:,.2f}".format(inv.amount_due | default(0)) }}</td>
+                            <td class="text-success fw-bold">${{ "{:,.2f}".format(inv.amount_paid | default(0)) }}</td>
+                            <td class="text-end fw-bold text-primary">${{ "{:,.2f}".format(inv.running_balance | default(0)) }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+
+<script>
+$(document).ready(function () {
+    // 1. Maanta taariikhdeeda (Current Date)
+    const today = new Date().toISOString().split('T')[0];
+    
+    // Xannib taariikh aan la gaarin (Mustaqbalka)
+    $('#from-date, #to-date').attr('max', today);
+
+    // 2. Initialize DataTable
+    $('#financial-table').DataTable({
+        "order": [[ 0, "desc" ]],
+        "pageLength": 25,
+        "language": {
+            "search": "Raadi:",
+            "lengthMenu": "Muuji _MENU_ saf",
+        }
+    });
+
+    // 3. Toggle Inputs
+    function toggleDateInputs() {
+        const isCustom = ($('#date-filter').val() === 'custom');
+        $("#from-date, #to-date").prop("disabled", !isCustom);
+        if (!isCustom) {
+            $("#from-date, #to-date").val('');
+        }
+    }
+
+    $('#date-filter').on('change', toggleDateInputs);
+
+    // 4. Validation & Submission
+    $('#generate-report').on('click', function () {
+        let dateFilter = $('#date-filter').val();
+        let fromDate = $('#from-date').val();
+        let toDate = $('#to-date').val();
+
+        if (dateFilter === 'custom') {
+            if (!fromDate || !toDate) {
+                alert("Fadlan dooro taariikhda 'From' iyo 'To'!");
+                return;
+            }
+            
+            // Logic: Hubi haddii 'To' ay ka yar tahay 'From'
+            if (fromDate > toDate) {
+                alert("Khalad: Taariikhda 'From' kama dambayn karto taariikhda 'To'!");
+                return;
+            }
+        }
+
+        // Dhis URL-ka
+        let params = new URLSearchParams();
+        params.append('date_filter', dateFilter);
+        if (dateFilter === 'custom') {
+            params.append('from_date', fromDate);
+            params.append('to_date', toDate);
+        }
+
+        window.location.href = "{{ url_for('main.student_financial_statement') }}?" + params.toString();
+    });
+});
+</script>
+{% endblock %}

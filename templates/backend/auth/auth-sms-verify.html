@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<!-- FontAwesome CDN for icons -->
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+
+<style>
+  body {
+    margin: 0;
+    padding: 0;
+    background-color: #f4f7fa;
+    font-family: 'Arial', sans-serif;
+    color: #333333;
+  }
+
+  .container {
+    max-width: 600px;
+    margin: 25px auto;
+    background-color: #ffffff;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+  }
+
+  /* TOP BAR */
+  .topbar {
+    background-color: #1b2a47;
+    color: #ffffff;
+    padding: 10px 15px;
+    text-align: center;
+    font-size: 12px;
+  }
+
+  /* HEADER */
+  .header {
+    background: linear-gradient(135deg, #0066ff, #00c6ff);
+    text-align: center;
+    padding: 30px 20px 20px;
+    color: #ffffff;
+  }
+
+  .header img {
+    max-height: 70px;
+    margin-bottom: 15px;
+    border-radius: 8px;
+  }
+
+  .header h1 {
+    font-size: 24px;
+    margin: 0 0 8px;
+    font-weight: 700;
+  }
+
+  .header p {
+    font-size: 14px;
+    margin: 0;
+    opacity: 0.9;
+  }
+
+  /* BODY */
+  .content {
+    padding: 30px 25px;
+    font-size: 14px;
+    line-height: 1.6;
+  }
+
+  .content p {
+    margin-bottom: 15px;
+  }
+
+  .otp-box {
+    text-align: center;
+    margin: 25px 0;
+  }
+
+  .otp {
+    display: inline-block;
+    background-color: #f0f8ff;
+    border: 2px dashed #0066ff;
+    color: #0066ff;
+    font-size: 28px;
+    font-weight: bold;
+    padding: 12px 28px;
+    border-radius: 8px;
+    letter-spacing: 5px;
+  }
+
+  .info {
+    background-color: #f0f4ff;
+    border-left: 4px solid #0066ff;
+    padding: 12px 15px;
+    font-size: 13px;
+    margin-top: 15px;
+    border-radius: 5px;
+    color: #1a1a1a;
+  }
+
+  /* FOOTER */
+  .footer {
+    background-color: #1b2a47;
+    color: #bbbbbb;
+    padding: 30px 25px;
+    font-size: 13px;
+    line-height: 1.5;
+  }
+
+  .footer a {
+    color: #00c6ff;
+    text-decoration: none;
+  }
+
+  .footer .contact-info {
+    margin-bottom: 20px;
+  }
+
+  .footer .contact-info strong {
+    color: #ffffff;
+    display: block;
+    margin-bottom: 5px;
+  }
+
+  .footer .help-btn {
+    display: inline-block;
+    background: #00c6ff;
+    color: #1b2a47;
+    font-weight: bold;
+    padding: 10px 20px;
+    text-decoration: none;
+    border-radius: 6px;
+    font-size: 13px;
+    margin-top: 10px;
+  }
+
+  .footer .social-icons img {
+    width: 28px;
+    height: 28px;
+    margin-right: 8px;
+    filter: invert(100%);
+    vertical-align: middle;
+  }
+
+  .footer-bottom {
+    text-align: center;
+    margin-top: 20px;
+    border-top: 1px solid #2a3b5a;
+    padding-top: 12px;
+    font-size: 12px;
+    color: #888888;
+  }
+
+  /* Responsive */
+  @media screen and (max-width: 620px) {
+    .container {
+      width: 95% !important;
+    }
+    .header h1 {
+      font-size: 20px;
+    }
+    .otp {
+      font-size: 24px;
+      padding: 10px 20px;
+    }
+  }
+</style>
+
+</head>
+
+<body>
+
+<div class="container">
+
+  <!-- TOP BAR -->
+  <div class="topbar">
+    {% if phone1 %}📞 {{ phone1 }}{% endif %}
+    {% if email_support %} | ✉️ {{ email_support }}{% endif %}
+  </div>
+
+ <!-- HEADER -->
+<div style="background:linear-gradient(135deg,#0066ff,#00c6ff); text-align:center; padding:30px 20px 20px; color:#ffffff;">
+  <!-- {% if logo %}
+    <img src="{{ logo }}" alt="logo" width="80" style="display:block; margin:0 auto 15px; border-radius:8px;">
+  {% else %}
+    <img src="{{ url_for('static', filename='frontend/images/image.bg.png') }}" alt="default logo" width="80" style="display:block; margin:0 auto 15px; border-radius:8px;">
+  {% endif %} -->
+  <h1 style="margin:0 0 8px; font-size:24px; font-weight:700;">{{ system_name if system_name else group_name }}</h1>
+  <p style="margin:0; font-size:14px; opacity:0.9;">Logistics • Travel • Cargo Services</p>
+</div>
+
+<!-- OTP -->
+<div style="padding:30px 25px; font-size:14px; line-height:1.6; color:#333333;">
+  <p>Hello <strong>{{ username }}</strong>,</p>
+  <p>Welcome to <strong>{{ group_name }}</strong>. Please verify your email to continue your process.</p>
+  <p><strong>Email:</strong> {{ email }}</p>
+  <div style="text-align:center; margin:25px 0;">
+    <span style="display:inline-block; background-color:#f0f8ff; border:2px dashed #0066ff; color:#0066ff; font-size:28px; font-weight:bold; padding:12px 28px; border-radius:8px; letter-spacing:5px;">{{ otp_code }}</span>
+  </div>
+  <div style="background-color:#f0f4ff; border-left:4px solid #0066ff; padding:12px 15px; font-size:13px; margin-top:15px; border-radius:5px; color:#1a1a1a;">
+    This code is valid for a short time. Do not share it with anyone.
+  </div>
+  <p>If you did not request this, you can safely ignore this email.</p>
+</div>
+
+<!-- FOOTER -->
+<div style="background-color:#1b2a47; color:#bbbbbb; padding:30px 25px; font-size:13px; line-height:1.5;">
+  <table width="100%" cellspacing="0" cellpadding="0" style="table-layout:fixed;">
+    <tr style="color: #ffffff;">
+      <td valign="top" style="padding-right:10px;  width:50%;">
+        <strong style="color:#ffffff; display:block; margin-bottom:5px;">{{ group_name }}</strong>
+        {% if address %}{{ address }}<br>{% endif %}
+        {% if phone1 %}📞 {{ phone1 }}{% if phone2 %} / {{ phone2 }}{% endif %}<br>{% endif %}
+        {% if email_support %}✉️ <a href="mailto:{{ email_support }}" style="color:#00c6ff; text-decoration:none;">{{ email_support }}</a>{% endif %}
+      </td>
+      <td valign="top" style="padding-left:10px; width:50%; text-align:right;">
+        {% if facebook %}
+          <a href="{{ facebook }}"><img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/facebook.svg" width="28" height="28" alt="Facebook" style="display:inline-block; margin-left:5px;"></a>
+        {% endif %}
+        {% if twitter %}
+          <a href="{{ twitter }}"><img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/twitter.svg" width="28" height="28" alt="Twitter" style="display:inline-block; margin-left:5px;"></a>
+        {% endif %}
+        {% if instagram %}
+          <a href="{{ instagram }}"><img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/instagram.svg" width="28" height="28" alt="Instagram" style="display:inline-block; margin-left:5px;"></a>
+        {% endif %}
+        {% if dribbble %}
+          <a href="{{ dribbble }}"><img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/dribbble.svg" width="28" height="28" alt="Dribbble" style="display:inline-block; margin-left:5px;"></a>
+        {% endif %}
+      </td>
+    </tr>
+  </table>
+
+  <!-- Help Button -->
+  <div style="text-align:center; margin:20px 0;">
+    <a href="{{ reset_link if reset_link else url_for('main.index') }}" 
+       style="display:inline-block; background:#00c6ff; color:#1b2a47; font-weight:bold; padding:12px 25px; text-decoration:none; border-radius:6px; font-size:14px;">
+       Go Visit Site
+    </a>
+  </div>
+
+  <div style="text-align:center; font-size:12px; color:#888888; border-top:1px solid #2a3b5a; padding-top:12px;">
+    &copy; {{ current_year }} {{ group_name }} — All Rights Reserved
+  </div>
+</div>
+
+
+
+</div>
+
+</body>
+</html>

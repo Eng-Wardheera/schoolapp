@@ -1,0 +1,116 @@
+{% extends 'backend/home/base.html' %}
+
+{% block title %}Add New Exam | School Management{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+    <div class="page-header-left d-flex align-items-center">
+        <div class="page-header-title">
+            <h5>Exams</h5>
+        </div>
+        <ul class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Home</a></li>
+            <li class="breadcrumb-item">Add Exam</li>
+        </ul>
+    </div>
+</div>
+
+<div class="main-content">
+    <div class="row">
+        <div class="col-lg-8">
+
+            <form method="POST">
+                {{ form.hidden_tag() }}
+
+                <div class="card">
+
+                    <div class="card-header">
+                        <h5>Add Exam</h5>
+                    </div>
+
+                    <div class="card-body">
+
+                        <!-- EXAM NAME -->
+                        <div class="mb-4">
+                            {{ form.exam_name.label(class="fw-semibold") }}
+                            {{ form.exam_name(class="form-control", placeholder="Enter Exam Name") }}
+                            {% for error in form.exam_name.errors %}
+                                <div class="text-danger small">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <!-- ACADEMIC YEAR -->
+                        <div class="mb-4">
+                            {{ form.academic_year_id.label(class="fw-semibold") }}
+                            {{ form.academic_year_id(class="form-select", onchange="this.form.submit()") }}
+                            {% for error in form.academic_year_id.errors %}
+                                <div class="text-danger small">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <!-- TERM -->
+                        <div class="mb-4">
+                            {{ form.term_id.label(class="fw-semibold") }}
+                            {{ form.term_id(class="form-select", onchange="this.form.submit()") }}
+                            {% for error in form.term_id.errors %}
+                                <div class="text-danger small">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <!-- START DATE -->
+                        <div class="mb-4">
+                            {{ form.start_date.label(class="fw-semibold") }}
+                            {% if term_dates %}
+                                {{ form.start_date(class="form-control", readonly=True, value=term_dates.start_date) }}
+                            {% else %}
+                                {{ form.start_date(class="form-control") }}
+                            {% endif %}
+                            {% for error in form.start_date.errors %}
+                                <div class="text-danger small">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <!-- END DATE -->
+                        <div class="mb-4">
+                            {{ form.end_date.label(class="fw-semibold") }}
+                            {% if term_dates %}
+                                {{ form.end_date(class="form-control", readonly=True, value=term_dates.end_date) }}
+                            {% else %}
+                                {{ form.end_date(class="form-control") }}
+                            {% endif %}
+                            {% for error in form.end_date.errors %}
+                                <div class="text-danger small">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <!-- STATUS -->
+                        <div class="mb-4">
+                            {{ form.status.label(class="fw-semibold") }}
+                            {{ form.status(class="form-select") }}
+                            {% for error in form.status.errors %}
+                                <div class="text-danger small">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <!-- Hidden school/branch -->
+                        {{ form.school_id(class="d-none") }}
+                        {{ form.branch_id(class="d-none") }}
+
+                    </div>
+
+                    <div class="card-footer d-flex justify-content-between">
+                        {{ form.submit(class="btn btn-primary") }}
+                        <a href="{{ url_for('main.all_exams') }}" class="btn btn-secondary">
+                            <i class="feather-arrow-left me-1"></i> Back
+                        </a>
+                    </div>
+
+                </div>
+            </form>
+
+        </div>
+    </div>
+</div>
+
+{% endblock %}

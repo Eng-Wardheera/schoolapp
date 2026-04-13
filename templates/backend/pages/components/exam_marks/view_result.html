@@ -1,0 +1,286 @@
+{% extends 'backend/home/base.html' %}
+
+{% block title %}Natiijada | {{ exam.exam_name }}{% endblock %}
+
+{% block content %}
+
+<div class="page-header d-print-none">
+    <div class="page-header-left d-flex align-items-center">
+        <div class="page-header-title">
+            <h5 class="m-b-10">Exam Results</h5>
+        </div>
+        <ul class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Home</a></li>
+            <li class="breadcrumb-item">All Exam Results </li>
+        </ul>
+    </div>
+    <div class="page-header-right ms-auto">
+        <a href="{{ url_for('main.all_exam_results') }}" class="btn btn-primary">
+            <i class="feather-plus me-2"></i> Add Class
+        </a>
+    </div>
+</div>
+
+
+<div class="page-content">
+    <div class="container-fluid">
+
+        <div class="row">
+            <div class="col-12">
+                <div class="page-title-box d-sm-flex align-items-center justify-content-between">
+                    <h4 class="mb-sm-0 font-size-18">{{ exam.exam_name }} - Natiijada Guud</h4>
+                    <div class="page-title-right d-print-none">
+                        <ol class="breadcrumb m-0">
+                            <li class="breadcrumb-item"><a href="javascript: void(0);">Exams</a></li>
+                            <li class="breadcrumb-item active">View Results</li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mb-4 d-print-none"> 
+            <div class="col-12">
+                <div class="card shadow-sm border-0 rounded-4">
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold">Raadi Arday</label>
+                                <input type="text" id="studentSearch" class="form-control rounded-pill" placeholder="Magaca ama ID-ga...">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold">Shaandhee Fasal</label>
+                                <select id="classFilter" class="form-select rounded-pill">
+                                    <option value="">Dhamaan Fasallada</option>
+                                    {% set seen_classes = [] %}
+                                    {% for result in results %}
+                                        {% if result.class_obj.name not in seen_classes %}
+                                            <option value="{{ result.class_obj.name }}">{{ result.class_obj.name }}</option>
+                                            {% set _ = seen_classes.append(result.class_obj.name) %}
+                                        {% endif %}
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-4 d-flex align-items-end">
+                                <div class="w-100 bg-soft-primary p-2 rounded-pill text-center">
+                                    <span class="text-muted small">Ardayda Muuqata:</span> 
+                                    <span class="fw-bold text-primary" id="liveCounter">{{ results|length }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mb-4">
+            <div class="col-md-4">
+                <div class="card shadow-sm border-0 rounded-4">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <div class="avatar-md flex-shrink-0 bg-soft-primary rounded-circle d-flex align-items-center justify-content-center">
+                                <i class="feather-calendar text-primary fs-3"></i>
+                            </div>
+                            <div class="ms-3">
+                                <p class="text-muted mb-1 text-uppercase fw-semibold" style="font-size: 11px;">Academic Year</p>
+                                <h5 class="mb-0 fw-bold">{{ exam.academic_year.year_name if exam.academic_year else 'N/A' }}</h5>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card shadow-sm border-0 rounded-4">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <div class="avatar-md flex-shrink-0 bg-soft-success rounded-circle d-flex align-items-center justify-content-center">
+                                <i class="feather-tag text-success fs-3"></i>
+                            </div>
+                            <div class="ms-3">
+                                <p class="text-muted mb-1 text-uppercase fw-semibold" style="font-size: 11px;">Term / Period</p>
+                                <h5 class="mb-0 fw-bold">{{ exam.term.term_name if exam.term else 'N/A' }}</h5>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 d-print-none">
+                <div class="card shadow-sm border-0 rounded-4">
+                    <div class="card-body text-end">
+                        <button class="btn btn-primary rounded-pill px-4" onclick="window.print()">
+                            <i class="feather-printer me-2"></i> Print All Results
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-12">
+                <div class="card shadow-sm border-0 rounded-4">
+                    <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+                        <h6 class="card-title mb-0 fw-bold text-dark">
+                            <i class="feather-users me-2 text-primary"></i> Liiska Ardayda iyo Natiijadooda
+                        </h6>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0" id="resultsTable">
+                                <thead class="bg-light shadow-none">
+                                    <tr>
+                                        <th class="ps-4" style="width: 80px;">Rank</th>
+                                        <th>Ardayga</th>
+                                        <th>Fasalka</th>
+                                        <th class="text-center">Total Marks</th>
+                                        <th class="text-center">Average</th>
+                                        <th class="text-center">Grade</th>
+                                        <th class="text-center">Status</th>
+                                        <th class="text-end pe-4 d-print-none">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for result in results %}
+                                    <tr class="result-row">
+                                        <td class="ps-4">
+                                            <div class="rank-value fw-bold {% if loop.index <= 3 %}text-primary{% else %}text-muted{% endif %}">
+                                                {% if loop.index == 1 %}
+                                                    <span class="badge bg-warning text-dark rounded-pill"><i class="feather-award me-1"></i>1st</span>
+                                                {% elif loop.index == 2 %}
+                                                    <span class="badge bg-light text-dark rounded-pill">2nd</span>
+                                                {% elif loop.index == 3 %}
+                                                    <span class="badge bg-light text-dark rounded-pill">3rd</span>
+                                                {% else %}
+                                                    #{{ loop.index }}
+                                                {% endif %}
+                                            </div>
+                                        </td>
+                                        <td class="student-name-cell">
+                                            <div class="d-flex align-items-center">
+                                                <div class="avatar-sm me-3 bg-soft-info rounded-circle d-flex align-items-center justify-content-center text-info fw-bold">
+                                                    {{ result.student.full_name[0] if result.student else 'S' }}
+                                                </div>
+                                                <div>
+                                                    <h6 class="mb-0 text-dark fw-bold student-name">{{ result.student.full_name }} {{ result.student.last_name }}</h6>
+                                                    <small class="text-muted student-code">{{ result.student.student_code }}</small>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="class-name-cell">
+                                            <span class="text-dark fw-medium class-name">{{ result.class_obj.name }}</span>
+                                            {% if result.section %}
+                                                <small class="text-muted d-block">{{ result.section.name }}</small>
+                                            {% endif %}
+                                        </td>
+                                        <td class="text-center">
+                                            <span class="fw-bold text-primary">{{ "%.0f"|format(result.total_marks) }}</span>
+                                            <span class="text-muted">/ {{ "%.0f"|format(max_marks_map.get(result.class_id, 0)) }}</span>
+                                        </td>
+                                        <td class="text-center text-dark">{{ "%.2f"|format(result.average) }}%</td>
+                                        <td class="text-center">
+                                            <span class="badge bg-soft-dark text-dark fw-bold px-3">{{ result.grade }}</span>
+                                        </td>
+                                        <td class="text-center">
+                                            {% if result.decision|upper == 'PASS' %}
+                                                <span class="badge bg-success rounded-pill px-3 py-1">PASS</span>
+                                            {% else %}
+                                                <span class="badge bg-danger rounded-pill px-3 py-1">FAIL</span>
+                                            {% endif %}
+                                        </td>
+                                        <td class="text-end pe-4 d-print-none">
+                                            <div class="btn-group">
+                                                <a href="{{ url_for('main.student_exam_report', student_id=result.student_id, exam_id=exam.id) }}" 
+                                                   class="btn btn-sm btn-soft-info rounded-pill me-2" 
+                                                   title="View Details">
+                                                    <i class="feather-eye"></i>
+                                                </a>
+                                                <a href="" 
+                                                   class="btn btn-sm btn-soft-primary rounded-pill" 
+                                                   title="Print Individual">
+                                                    <i class="feather-printer"></i>
+                                                </a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% else %}
+                                    <tr id="noDataRow">
+                                        <td colspan="8" class="text-center py-5">
+                                            <div class="text-muted">
+                                                <i class="feather-info mb-3 display-4"></i>
+                                                <p>Wax natiijo ah lama helin imtixaankan.</p>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('studentSearch');
+    const classFilter = document.getElementById('classFilter');
+    const liveCounter = document.getElementById('liveCounter');
+    const rows = document.querySelectorAll('.result-row');
+
+    function filterResults() {
+        const searchTerm = searchInput.value.toLowerCase();
+        const selectedClass = classFilter.value.toLowerCase();
+        let visibleCount = 0;
+
+        rows.forEach(row => {
+            const studentName = row.querySelector('.student-name').textContent.toLowerCase();
+            const studentCode = row.querySelector('.student-code').textContent.toLowerCase();
+            const className = row.querySelector('.class-name').textContent.toLowerCase();
+
+            const matchesSearch = studentName.includes(searchTerm) || studentCode.includes(searchTerm);
+            const matchesClass = selectedClass === "" || className === selectedClass;
+
+            if (matchesSearch && matchesClass) {
+                row.style.display = "";
+                visibleCount++;
+            } else {
+                row.style.display = "none";
+            }
+        });
+
+        liveCounter.textContent = visibleCount;
+    }
+
+    if (searchInput) searchInput.addEventListener('input', filterResults);
+    if (classFilter) classFilter.addEventListener('change', filterResults);
+});
+</script>
+
+<style>
+    .bg-soft-primary { background-color: rgba(43, 87, 248, 0.1); color: #2b57f8; }
+    .bg-soft-success { background-color: rgba(52, 195, 143, 0.1); color: #34c38f; }
+    .bg-soft-info { background-color: rgba(80, 165, 241, 0.1); color: #50a5f1; }
+    .bg-soft-dark { background-color: rgba(52, 58, 64, 0.1); color: #343a40; }
+    
+    .btn-soft-info { background-color: rgba(80, 165, 241, 0.1); color: #50a5f1; border: none; }
+    .btn-soft-info:hover { background-color: #50a5f1; color: white; }
+    
+    .btn-soft-primary { background-color: rgba(43, 87, 248, 0.1); color: #2b57f8; border: none; }
+    .btn-soft-primary:hover { background-color: #2b57f8; color: white; }
+
+    .avatar-md { width: 48px; height: 48px; }
+    .avatar-sm { width: 32px; height: 32px; font-size: 12px; }
+    
+    @media print {
+        .page-header, .page-title-box, .btn-primary, .breadcrumb, .d-print-none, .page-title-right, .btn-group { 
+            display: none !important; 
+        }
+        .card { border: 1px solid #eee !important; box-shadow: none !important; }
+        .page-content { padding: 0; }
+        .container-fluid { width: 100% !important; max-width: 100% !important; }
+        .table-responsive { overflow: visible !important; }
+    }
+</style>
+{% endblock %}

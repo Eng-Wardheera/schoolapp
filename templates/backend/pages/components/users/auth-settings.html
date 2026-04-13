@@ -1,0 +1,703 @@
+{% extends 'backend/home/base.html' %}
+
+{% block title %}Profile Update | Logistics System{% endblock %}
+
+{% block content %}
+
+
+
+<!-- [ page-header ] start -->
+<div class="page-header">
+    <div class="page-header-left d-flex align-items-center">
+        <div class="page-header-title">
+            <h5 class="m-b-10">Users</h5>
+        </div>
+        <ul class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Home</a></li>
+            <li class="breadcrumb-item">Two Factor Verify </li>
+        </ul>
+    </div>
+    <div class="page-header-right ms-auto">
+        <div class="page-header-right-items">
+            <div class="d-flex d-md-none">
+                <a href="javascript:void(0)" class="page-header-right-close-toggle">
+                    <i class="feather-arrow-left me-2"></i>
+                    <span>Back</span>
+                </a>
+            </div>
+            <div class="d-flex align-items-center gap-2 page-header-right-items-wrapper">
+                <a href="javascript:void(0);" class="btn btn-light-brand successAlertMessage">
+                    <i class="feather-layers me-2"></i>
+                    <span>Save as Draft</span>
+                </a>
+                <a href="javascript:void(0);" class="btn btn-primary successAlertMessage">
+                    <i class="feather-user-plus me-2"></i>
+                    <span>Create Customer</span>
+                </a>
+            </div>
+        </div>
+        <div class="d-md-none d-flex align-items-center">
+            <a href="javascript:void(0)" class="page-header-right-open-toggle">
+                <i class="feather-align-right fs-20"></i>
+            </a>
+        </div>
+    </div>
+</div>
+<!-- [ page-header ] end -->
+<!-- [ Main Content ] start -->
+
+<!-- [ Main Content ] start -->
+<div class="main-content">
+    <div class="row">
+   <div class="col-md-4">
+  <div class="card shadow-sm rounded-3 text-center p-3">
+
+    <!-- Profile Photo with Hover Actions -->
+    <div class="position-relative mb-3" id="photoWrapper" style="cursor:pointer;">
+      <img id="profile-photo" src="{{ url_for('static', filename=current_user.photo or 'backend/uploads/images/no_image.jpg') }}"
+           class="rounded-circle mx-auto d-block" height="120" width="120" style="object-fit: cover;" alt="Profile Photo">
+
+      {% if current_user.photo %}
+      <div id="photoActions" class="position-absolute top-50 start-50 translate-middle d-none">
+        <button id="viewPhotoBtn" class="btn btn-light p-2 rounded-circle me-2" title="View">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="black" viewBox="0 0 24 24">
+            <path d="M12 5c-7.633 0-11 7-11 7s3.367 7 11 7 11-7 11-7-3.367-7-11-7zm0 12c-2.761 0-5-2.239-5-5s2.239-5 
+                     5-5 5 2.239 5 5-2.239 5-5 5zm0-8c-1.657 0-3 1.343-3 3s1.343 3 
+                     3 3 3-1.343 3-3-1.343-3-3-3z"/>
+          </svg>
+        </button>
+        <form id="removePhotoForm" action="{{ url_for('main.remove_photo') }}" method="POST" class="d-inline">
+          <button type="submit" class="btn btn-danger p-2 rounded-circle" title="Remove">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="white" viewBox="0 0 24 24">
+              <path d="M3 6h18v2H3V6zm2 3h14l-1.5 12.5a1 1 0 01-1 1H8.5a1 1 0 01-1-1L6 9zm5-5h2v2h-2V4z"/>
+            </svg>
+          </button>
+        </form>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Name & Role -->
+    <h5 class="fw-bold mb-0">{{ current_user.fullname }}</h5>
+    <small class="text-muted">Role: {{ current_user.role.name.replace("_", " ").title() }}</small>
+
+    <!-- User Info Table -->
+    <table class="table table-borderless mt-3 mb-0">
+      <tbody>
+        <tr><td class="text-start">Username</td><td class="text-end">{{ current_user.username }}</td></tr>
+        <tr><td class="text-start">Phone</td><td class="text-end">{{ current_user.phone }}</td></tr>
+        <tr><td class="text-start">Country</td><td class="text-end">{{ current_user.country }}</td></tr>
+      </tbody>
+    </table>
+
+
+                <h5 class="mt-4">Active Sessions</h5>
+                <ul class="list-group" style="padding-left:0; list-style:none;">
+                {% for s in user_sessions %}
+                {% set is_current = s.id == session.get('session_id') %}
+                <li style="border:1px solid #ddd; border-radius:6px; padding:12px 15px; margin-bottom:10px;">
+                    
+                    <!-- Device info -->
+                    <div style="padding-left:5px; text-align:left;">
+                        <i class="feather-monitor" style="margin-right:6px;"></i>
+                        {{ s.device or 'Unknown Device' }} -
+                        {{ s.platform or 'Unknown Platform' }} -
+                        <strong>{{ s.browser or 'Unknown Browser' }}</strong><br>
+                        <small style="color:#888; display:block;">
+                            {{ s.ip_address or 'Unknown IP' }},
+                            {% if is_current %}
+                                    <span style="color:#28a745; font-weight:500; font-weight: bolder;">This device</span>
+                                {% else %}
+                                    Last active: 
+                                    <strong class="last-active"
+                                            data-timestamp="{{ s.last_activity.timestamp() }}"
+                                            style="display:inline-block; text-align:left;">
+                                        Loading...
+                                    </strong>
+                                {% endif %}
+                            </small>
+                        
+                    </div>
+
+                    <!-- Status badge -->
+                <!-- Status badge centered -->
+                <div style="margin-top:8px; text-align:center;">
+                    {% set last_ts = s.last_activity.timestamp() if s.last_activity else None %}
+
+                    {% if is_current or s.is_online %}
+                        <span class="badge bg-success text-white session-status"
+                            data-session-id="{{ s.id }}">
+                            Online
+                            {% if last_ts %}
+                                <br><small style="font-weight:normal;">
+                                    {{ s.last_activity.strftime('%d %b %Y, %I:%M %p') }}
+                                </small>
+                            {% endif %}
+                        </span>
+
+                    {% elif last_ts %}
+                        <span class="badge bg-secondary text-white session-status"
+                            data-session-id="{{ s.id }}">
+                            Last Visited:
+                            <br><small style="font-weight:normal;">
+                                {{ s.last_activity.strftime('%d %b %Y, %I:%M %p') }}
+                            </small>
+                        </span>
+
+                    {% else %}
+                        <span class="badge bg-secondary text-white session-status"
+                            data-session-id="{{ s.id }}">
+                            Never
+                        </span>
+                    {% endif %}
+                </div>
+
+                    <!-- Logout -->
+                    {% if not is_current %}
+                    <div style="margin-top:10px;">
+                        <button class="logout-session-btn"
+                                data-session-id="{{ s.id }}"
+                                style="background:#dc3545; color:white; border:none; padding:6px 12px; border-radius:4px; cursor:pointer;">
+                            Log Out
+                        </button>
+                    </div>
+                    {% endif %}
+                </li>
+                {% endfor %}
+                </ul>
+
+                <meta name="csrf-token" content="{{ csrf_token() }}">
+
+
+                <script>
+                (function() {
+                    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+                    // Humanize time difference
+                function humanizeTimeDiff(timestamp) {
+                    const now = new Date();
+                    const diff = now - new Date(timestamp * 1000); // timestamp in seconds
+                    const seconds = Math.floor(diff / 1000);
+
+                    if (seconds < 60) return seconds + (seconds === 1 ? " second ago" : " seconds ago");
+
+                    const minutes = Math.floor(seconds / 60);
+                    if (minutes < 60) return minutes + (minutes === 1 ? " minute ago" : " minutes ago");
+
+                    const hours = Math.floor(minutes / 60);
+                    if (hours < 24) return hours + (hours === 1 ? " hour ago" : " hours ago");
+
+                    const days = Math.floor(hours / 24);
+                    if (days < 7) return days + (days === 1 ? " day ago" : " days ago");
+
+                    const weeks = Math.floor(days / 7);
+                    if (weeks < 4) return weeks + (weeks === 1 ? " week ago" : " weeks ago");
+
+                    const months = Math.floor(days / 30);
+                    if (months < 12) return months + (months === 1 ? " month ago" : " months ago");
+
+                    const years = Math.floor(days / 365);
+                    return years + (years === 1 ? " year ago" : " years ago");
+                }
+
+
+                    // Send heartbeat
+                    async function sendHeartbeat() {
+                        try {
+                            const response = await fetch("/api/heartbeat", {
+                                method: "POST",
+                                headers: {
+                                    "Content-Type": "application/json",
+                                    "X-CSRFToken": csrfToken
+                                },
+                                body: JSON.stringify({})
+                            });
+                            const data = await response.json();
+                            if (data && data.last_active) {
+                                // Save last active to localStorage
+                                localStorage.setItem('last_active', data.last_active);
+                            }
+                            return data;
+                        } catch (e) {
+                            console.error("Heartbeat failed", e);
+                            return null;
+                        }
+                    }
+
+                    // Update all session statuses
+                    function updateSessionStatuses() {
+                        document.querySelectorAll('.last-active').forEach(el => {
+                            const ts = parseFloat(el.dataset.timestamp);
+                            el.textContent = humanizeTimeDiff(ts);
+                        });
+
+                        // Update current device badge
+                        const currentEl = document.querySelector('.current-device');
+                        if (currentEl) {
+                            currentEl.textContent = "Online";
+                            currentEl.classList.add('bg-success', 'text-white');
+                        }
+                    }
+
+                    // Main loop
+                    async function heartbeatLoop() {
+                        await sendHeartbeat();
+                        updateSessionStatuses();
+                    }
+
+                    // Run immediately if last_active exists in localStorage
+                    if (localStorage.getItem('last_active')) {
+                        updateSessionStatuses();
+                        const currentEl = document.querySelector('.current-device');
+                        if (currentEl) currentEl.textContent = "Online";
+                    }
+
+                    // Start heartbeat loop every 5 seconds
+                    heartbeatLoop();
+                    setInterval(heartbeatLoop, 5000);
+
+                    // Handle tab visibility change (pause heartbeat when tab hidden)
+                    document.addEventListener('visibilitychange', function() {
+                        if (!document.hidden) {
+                            heartbeatLoop(); // run immediately when tab returns
+                        }
+                    });
+
+                })();
+                </script>
+
+
+
+
+
+                <!-- Custom modal -->
+                <div id="logoutSessionModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; 
+                        background:rgba(0,0,0,0.6); z-index:1000; justify-content:center; align-items:center;">
+                    <div style="background:white; border-radius:8px; width:350px; max-width:90%; padding:20px; position:relative;">
+                        <h5 style="margin-top:0; margin-bottom:15px;">Confirm Logout</h5>
+                        <p>Please enter your password to log out this session.</p>
+                        <input type="password" id="confirmPassword" placeholder="Password" required 
+                            style="width:100%; padding:8px; margin-bottom:10px; border:1px solid #ccc; border-radius:4px;">
+                        <input type="hidden" id="sessionIdToLogout">
+                        <div style="text-align:right;">
+                            <button id="cancelModal" style="background:#6c757d; color:white; border:none; padding:5px 12px; border-radius:4px; cursor:pointer; margin-right:5px;">Cancel</button>
+                            <button id="confirmLogout" style="background:#dc3545; color:white; border:none; padding:5px 12px; border-radius:4px; cursor:pointer;">Log Out</button>
+                        </div>
+                    </div>
+                </div>
+
+                <script>
+                // ===== Ping server to keep session active =====
+
+                // ===== Logout modal =====
+                document.querySelectorAll('.logout-session-btn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        document.getElementById('sessionIdToLogout').value = btn.dataset.sessionId;
+                        document.getElementById('logoutSessionModal').style.display = 'flex';
+                    });
+                });
+                document.getElementById('cancelModal').addEventListener('click', () => {
+                    document.getElementById('logoutSessionModal').style.display = 'none';
+                });
+                document.getElementById('confirmLogout').addEventListener('click', async () => {
+                    const sessionId = document.getElementById('sessionIdToLogout').value;
+                    const password = document.getElementById('confirmPassword').value;
+
+                    const response = await fetch('{{ url_for("main.logout_other_session") }}', {
+                        method:'POST',
+                        headers:{ 'Content-Type':'application/json', 'X-CSRFToken':'{{ csrf_token() }}' },
+                        body: JSON.stringify({ session_id: sessionId, password: password })
+                    });
+                    const result = await response.json();
+                    if(result.success){
+                        document.getElementById('logoutSessionModal').style.display = 'none';
+                        const btn = document.querySelector(`.logout-session-btn[data-session-id='${sessionId}']`);
+                        if(btn) btn.closest('li').remove();
+                        alert('Session logged out successfully.');
+                    } else {
+                        alert(result.message || 'Password incorrect or error.');
+                    }
+                });
+                </script>
+
+
+
+
+    <!-- Delete Account -->
+    <form id="deleteAccountForm" action="{{ url_for('main.delete_my_account') }}" method="POST">
+      <div class="mt-3">
+        <button type="submit" class="btn btn-danger w-100">Delete My Account</button>
+      </div>
+    </form>
+
+  </div>
+</div>
+
+<!-- Fullscreen Modal -->
+<div id="photoModal" class="modal" tabindex="-1">
+  <div class="modal-dialog modal-fullscreen">
+    <div class="modal-content bg-transparent border-0 position-relative">
+      <div class="modal-header border-0">
+        <button id="closeModalBtn" aria-label="Close" class="btn position-absolute top-0 end-0 m-3 p-2 rounded-circle bg-dark text-white">
+          &times;
+        </button>
+      </div>
+      <div class="modal-body d-flex justify-content-center align-items-center position-relative">
+        <img id="modalImage" src="" alt="Full Profile Photo" style="max-width: 100%; max-height: 100vh; object-fit: contain;">
+        <a id="downloadBtn" href="#" download class="position-absolute bottom-3 end-3 p-2 rounded-circle bg-dark text-white" title="Download Image">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="white" viewBox="0 0 24 24">
+            <path d="M5 20h14v-2H5v2zm7-18v12l5-5h-3V4h-4v5H7l5 5z"/>
+          </svg>
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const photoWrapper = document.getElementById('photoWrapper');
+  const photoActions = document.getElementById('photoActions');
+  const profilePhoto = document.getElementById('profile-photo');
+  const photoModal = document.getElementById('photoModal');
+  const modalImage = document.getElementById('modalImage');
+  const closeModalBtn = document.getElementById('closeModalBtn');
+  const downloadBtn = document.getElementById('downloadBtn');
+
+  photoWrapper.addEventListener('mouseenter', () => photoActions?.classList.remove('d-none'));
+  photoWrapper.addEventListener('mouseleave', () => photoActions?.classList.add('d-none'));
+
+  document.getElementById('viewPhotoBtn')?.addEventListener('click', () => {
+    modalImage.src = profilePhoto.src;
+    photoModal.style.display = 'block';
+    downloadBtn.href = profilePhoto.src;
+  });
+
+  closeModalBtn.addEventListener('click', () => photoModal.style.display = 'none');
+</script>
+
+
+
+    <!-- Form Card with Tabs -->
+          <!-- Right: 2FA Setup -->
+        <div class="col-md-8 mt-4">
+            <div class="card">
+                <div class="card-header"><h4>Two-Factor Authentication (2FA)</h4></div>
+                <div class="card-body">
+
+                    {% if not current_user.two_factor_enabled %}
+                        <!-- Step 1: Enable Button -->
+                        <p id="enable2FAText">
+                            You have not enabled two-factor authentication.<br>
+                            When 2FA is enabled, you will be prompted for a secure, random token during authentication.
+                        </p>
+                        <button type="button" id="startEnable2FA" class="btn btn-primary">Enable 2FA</button>
+
+                        <!-- Password Modal -->
+                        <div id="passwordModal" class="modal" tabindex="-1"
+                             style="display:none; position:fixed; top:0; left:0; width:100%; height:100%;
+                                    background:rgba(0,0,0,0.6); z-index:1000; justify-content:center; align-items:center;">
+                            <div style="background:white; border-radius:8px; width:400px; max-width:90%; padding:20px;">
+                                <h5>Confirm Password</h5>
+                                <input type="password" id="confirmPasswordInput" placeholder="Password" required class="form-control mb-3">
+                                 <div style="text-align:right;">
+                                    <button id="cancelPasswordModal" style="background:#6c757d; color:white; border:none; padding:5px 12px; border-radius:4px; cursor:pointer; margin-right:5px;">Cancel</button>
+                                    <button id="confirmPasswordBtn" style="background:#dc3545; color:white; border:none; padding:5px 12px; border-radius:4px; cursor:pointer;">Confirm Password</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Step 2: QR + OTP -->
+                        <div id="qrAndOtpSection" style="display:none; margin-top:20px;">
+                            <p class="small">
+                                When two factor authentication is enabled, you will be prompted for a secure, random token during authentication. You may retrieve this token from your phone's Google Authenticator application. </p>
+
+                              <p style="font-weight: bold;">  To finish enabling two factor authentication, scan the following QR code using your phone's authenticator application or enter the setup key and provide the generated OTP code.
+
+                                Scan this QR code in your authenticator app and enter the OTP:</p>
+                            <div class="text-center mb-3">
+                                <img id="qrImage" src="" alt="QR Code" style="max-width:200px;">
+                            </div>
+                            <p class="small">Your secret key: <span id="secretCode"></span></p>
+
+                            <form method="POST" action="{{ url_for('main.auth_settings') }}">
+                                {{ twofactor_form.csrf_token }}
+                                {{ twofactor_form.two_factor_enabled(class_="form-check-input", style="display:none;", checked=True) }}
+                                <div class="mb-3">
+                                    {{ twofactor_form.two_factor_code.label(class_="form-label") }}
+                                    {{ twofactor_form.two_factor_code(class_="form-control", placeholder="123456") }}
+                                </div>
+                                {{ twofactor_form.submit(class_="btn btn-success") }}
+                            </form>
+                        </div>
+
+                    {% else %}
+                        <!-- 2FA already enabled -->
+                        <p class="text-success">✅ Two-Factor Authentication is already enabled on your account.</p>
+
+                        <form method="POST" action="{{ url_for('main.auth_settings') }}">
+                            {{ twofactor_form.csrf_token }}
+                            <div class="form-check mb-3">
+                                {{ twofactor_form.two_factor_enabled(class_="form-check-input", id="disable2FA", checked=False) }}
+                                <label class="form-check-label" for="disable2FA">Disable Two-Factor Authentication</label>
+                            </div>
+                            {{ twofactor_form.submit(class_="btn btn-warning") }}
+                        </form>
+                    {% endif %}
+
+                </div>
+            </div>
+        </div>
+
+        <script>
+document.addEventListener('DOMContentLoaded', () => {
+    const startBtn = document.getElementById('startEnable2FA');
+    if(!startBtn) return;
+
+    const passwordModal = document.getElementById('passwordModal');
+    const cancelModal = document.getElementById('cancelPasswordModal');
+    const confirmBtn = document.getElementById('confirmPasswordBtn');
+    const qrSection = document.getElementById('qrAndOtpSection');
+    const qrImage = document.getElementById('qrImage');
+    const secretCodeEl = document.getElementById('secretCode');
+
+    let otpSecret = "{{ secret|default('') }}";
+    let qrB64 = "{{ qr_b64|default('') }}";
+
+    startBtn.addEventListener('click', () => {
+        passwordModal.style.display = 'flex';
+    });
+
+    cancelModal.addEventListener('click', () => {
+        passwordModal.style.display = 'none';
+    });
+
+    confirmBtn.addEventListener('click', () => {
+        const password = document.getElementById('confirmPasswordInput').value;
+        if(!password){
+            alert('Please enter your password');
+            return;
+        }
+
+        // Close modal and show QR + OTP
+        passwordModal.style.display = 'none';
+        qrSection.style.display = 'block';
+        qrImage.src = "data:image/png;base64," + qrB64;
+        secretCodeEl.textContent = otpSecret;
+
+        // Hide enable button and initial text
+        startBtn.style.display = 'none';
+        document.getElementById('enable2FAText').style.display = 'none';
+    });
+});
+</script>
+
+
+</div>
+    </div>
+
+
+
+<!-- password Validation -->
+<script>
+function togglePassword(fieldId, iconContainer) {
+  const input = document.getElementById(fieldId);
+  const icon = iconContainer.querySelector('i');
+
+  if (input.type === "password") {
+    input.type = "text";
+    icon.classList.remove('fa-eye');
+    icon.classList.add('fa-eye-slash');
+  } else {
+    input.type = "password";
+    icon.classList.remove('fa-eye-slash');
+    icon.classList.add('fa-eye');
+  }
+}
+
+function validatePassword() {
+  const password = document.getElementById("new_password").value;
+  const confirmPassword = document.getElementById("confirm_password").value;
+  const requirementsContainer = document.getElementById("passwordRequirements");
+
+  const requirements = [
+    { regex: /.{8,}/, message: "At least 8 characters" },
+    { regex: /[A-Z]/, message: "At least one uppercase letter" },
+    { regex: /[a-z]/, message: "At least one lowercase letter" },
+    { regex: /[0-9]/, message: "At least one number" },
+    { regex: /[!@#$%^&*(),.?\":{}|<>]/, message: "At least one special character" }
+  ];
+
+  if (password.length === 0) {
+    // Hide requirements list if password is empty
+    requirementsContainer.style.display = 'none';
+  } else {
+    // Check if all requirements met
+    const allPassed = requirements.every(req => req.regex.test(password));
+
+    if (allPassed) {
+      // Show strong password message
+      requirementsContainer.style.display = 'block';
+      requirementsContainer.innerHTML = `<li style="color: green; font-weight: bold;">✅ Strong Password</li>`;
+    } else {
+      // Show list with individual checks
+      requirementsContainer.style.display = 'block';
+
+      const listItems = requirements.map(req => {
+        const passed = req.regex.test(password);
+        return `<li style="color:${passed ? 'green' : 'red'};">${passed ? '✅ ' : '❌ '}${req.message}</li>`;
+      });
+      requirementsContainer.innerHTML = listItems.join("");
+    }
+  }
+
+  const feedback = document.getElementById("confirmFeedback");
+  if (confirmPassword && password !== confirmPassword) {
+    feedback.textContent = "Passwords do not match";
+    feedback.classList.add("text-danger");
+    feedback.classList.remove("text-success");
+  } else if (confirmPassword) {
+    feedback.textContent = "Passwords match";
+    feedback.classList.add("text-success");
+    feedback.classList.remove("text-danger");
+  } else {
+    feedback.textContent = "";
+  }
+
+  return requirements.every(req => req.regex.test(password)) && password === confirmPassword;
+}
+
+document.querySelector("form").addEventListener("submit", function (e) {
+  if (!validatePassword()) {
+    e.preventDefault();
+    Swal.fire({
+      icon: "error",
+      title: "Invalid Password",
+      text: "Please fix password errors before submitting."
+    });
+  }
+});
+</script>
+
+<!-- JavaScript Preview Image for dynamic form behavior -->
+ <!-- and  -->
+<!-- Remove Photo Button -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const photoWrapper = document.getElementById('photoWrapper');
+  const photoActions = document.getElementById('photoActions');
+  const viewPhotoBtn = document.getElementById('viewPhotoBtn');
+  const profilePhoto = document.getElementById('profile-photo');
+  const modal = document.getElementById('photoModal');
+  const modalImage = document.getElementById('modalImage');
+  const closeModalBtn = document.getElementById('closeModalBtn');
+  const downloadBtn = document.getElementById('downloadBtn');
+  const removeForm = document.getElementById('removePhotoForm');
+
+  // Toggle overlay buttons on photo click
+  photoWrapper.addEventListener('click', function(e) {
+    e.stopPropagation();
+    if(photoActions.classList.contains('d-none')) {
+      photoActions.classList.remove('d-none');
+    } else {
+      photoActions.classList.add('d-none');
+    }
+  });
+
+  // Hide overlay buttons if clicked outside
+  document.addEventListener('click', function() {
+    if(!photoActions.classList.contains('d-none')) {
+      photoActions.classList.add('d-none');
+    }
+  });
+
+  // View button click - open modal with profile image
+  viewPhotoBtn.addEventListener('click', function(e) {
+    e.preventDefault();
+    modalImage.src = profilePhoto.src;
+    modal.classList.add('show');
+    modal.setAttribute('aria-hidden', 'false');
+
+    // Update download button href and filename
+    downloadBtn.href = profilePhoto.src;
+    let filename = profilePhoto.src.split('/').pop().split('?')[0] || 'profile_image.jpg';
+    downloadBtn.setAttribute('download', filename);
+
+    photoActions.classList.add('d-none');
+  });
+
+  // Close modal button
+  closeModalBtn.addEventListener('click', function() {
+    modal.classList.remove('show');
+    modalImage.src = '';
+    modal.setAttribute('aria-hidden', 'true');
+    downloadBtn.href = '#';
+  });
+
+  // Close modal on click outside image
+  modal.addEventListener('click', function(e) {
+    if (e.target === modal) {
+      modal.classList.remove('show');
+      modalImage.src = '';
+      modal.setAttribute('aria-hidden', 'true');
+      downloadBtn.href = '#';
+    }
+  });
+
+  // Close modal on Escape key
+  document.addEventListener('keydown', function(e) {
+    if (e.key === "Escape" && modal.classList.contains('show')) {
+      modal.classList.remove('show');
+      modalImage.src = '';
+      modal.setAttribute('aria-hidden', 'true');
+      downloadBtn.href = '#';
+    }
+  });
+
+  // SweetAlert confirmation before removing photo
+  if(removeForm){
+    removeForm.addEventListener('submit', function(event){
+      event.preventDefault();
+      Swal.fire({
+        title: 'Are you sure?',
+        text: "This will permanently remove your profile photo.",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Yes, remove it!',
+        cancelButtonText: 'Cancel'
+      }).then((result) => {
+        if (result.isConfirmed) {
+          event.target.submit();
+        }
+      });
+    });
+  }
+});
+</script>
+
+
+<!-- Delete Account SweetAlert2 Script for Confirmation -->
+<script>
+    document.getElementById('deleteAccountForm').addEventListener('submit', function (event) {
+        event.preventDefault(); // Prevent the form from being submitted immediately
+
+        Swal.fire({
+            title: 'Are you sure?',
+            text: "This action cannot be undone.",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, delete it!',
+            cancelButtonText: 'Cancel',
+            reverseButtons: true
+        }).then((result) => {
+            if (result.isConfirmed) {
+                // If confirmed, submit the form
+                this.submit();
+            }
+        });
+    });
+</script>
+
+
+{% endblock %}

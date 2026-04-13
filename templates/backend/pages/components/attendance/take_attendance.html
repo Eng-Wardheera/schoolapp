@@ -1,0 +1,293 @@
+{% extends 'backend/home/base.html' %}
+
+{% block title %}Take Attendance | School Management{% endblock %}
+
+{% block content %}
+<style>
+    /* Advanced UI Enhancements */
+    .attendance-card { border-radius: 15px; border: none; box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
+    .table thead { position: sticky; top: 0; background: #f8f9fa; z-index: 10; }
+    .student-row { cursor: pointer; transition: all 0.2s; }
+    .student-row:hover { background-color: rgba(52, 152, 219, 0.05); }
+    .row-selected { background-color: rgba(46, 204, 113, 0.1) !important; }
+    .custom-checkbox { width: 20px; height: 20px; cursor: pointer; }
+    .status-badge { font-size: 0.8rem; padding: 5px 10px; border-radius: 30px; }
+</style>
+
+<div class="page-header mb-4">
+    <div class="page-header-left d-flex align-items-center">
+        <div class="page-header-title">
+            <h5 class="mb-0"><i class="fas fa-calendar-check me-2 text-primary"></i>Take Attendance</h5>
+        </div>
+        <ul class="breadcrumb mb-0 ms-3">
+            <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Home</a></li>
+            <li class="breadcrumb-item active">Attendance</li>
+        </ul>
+    </div>
+</div>
+
+<div class="main-content">
+    <div class="row justify-content-center">
+        <div class="col-lg-11">
+            <div id="attendanceAlert" class="alert alert-danger d-none shadow-sm border-0 mb-4 animate__animated animate__fadeIn"></div>
+
+            <form method="POST" id="attendanceForm">
+                {{ form.hidden_tag() }}
+                
+                <div class="card attendance-card mb-4">
+                    <div class="card-header bg-white py-3">
+                        <h6 class="mb-0 fw-bold"><i class="fas fa-filter me-2 text-secondary"></i>Filter Selection</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                {{ form.class_id.label(class="form-label fw-semibold small") }}
+                                {{ form.class_id(class="form-select shadow-none", id="classSelect") }}
+                            </div>
+                            <div class="col-md-4" id="sectionContainer" style="display:none;">
+                                {{ form.section_id.label(class="form-label fw-semibold small") }}
+                                {{ form.section_id(class="form-select shadow-none", id="sectionSelect") }}
+                            </div>
+                            <div class="col-md-4">
+                                {{ form.subject_id.label(class="form-label fw-semibold small") }}
+                                {{ form.subject_id(class="form-select shadow-none", id="subjectSelect") }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card attendance-card">
+                    <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0 fw-bold text-dark">Student List</h6>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="headerCheckAll">
+                            <label class="form-check-label fw-bold small" for="headerCheckAll">Mark All Present</label>
+                        </div>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive" style="max-height: 600px;">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th class="ps-4" style="width: 80px;">S/N</th>
+                                        <th style="width: 100px;">Present</th>
+                                        <th>Student Full Name</th>
+                                        <th style="width: 200px;">Status Type</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="studentsTable">
+                                    <tr>
+                                        <td colspan="4" class="text-center py-5 text-muted">
+                                            <i class="fas fa-users fa-3x mb-3 opacity-25"></i>
+                                            <p>Please select filters to load students.</p>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="card-footer bg-white py-3 text-end">
+                        <button type="submit" id="saveAttendanceBtn" class="btn btn-primary px-5 shadow-sm rounded-pill">
+                            <i class="fas fa-save me-2"></i>Save Attendance
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const classSelect = document.getElementById("classSelect");
+    const sectionSelect = document.getElementById("sectionSelect");
+    const subjectSelect = document.getElementById("subjectSelect");
+    const studentsTable = document.getElementById("studentsTable");
+    const headerCheckAll = document.getElementById("headerCheckAll");
+    const saveBtn = document.getElementById("saveAttendanceBtn");
+    const alertDiv = document.getElementById("attendanceAlert");
+
+    // ===== LOAD SECTIONS =====
+    async function loadSections(classId) {
+        if (!classId) {
+            sectionSelect.innerHTML = "";
+            document.getElementById("sectionContainer").style.display = "none";
+            return;
+        }
+        const res = await fetch(`/get-attendance-sections/${classId}`);
+        const sections = await res.json();
+        if (sections.length > 0) {
+            document.getElementById("sectionContainer").style.display = "block";
+            sectionSelect.innerHTML = '<option value="">Select Section</option>';
+            sections.forEach(sec => {
+                sectionSelect.innerHTML += `<option value="${sec.id}">${sec.name}</option>`;
+            });
+        } else {
+            document.getElementById("sectionContainer").style.display = "none";
+        }
+    }
+
+    // ===== LOAD SUBJECTS =====
+    async function loadSubjects() {
+        const classId = classSelect.value;
+        const sectionId = sectionSelect.value;
+        if (!classId) return;
+        let url = `/get-subjects?class_id=${classId}`;
+        if (sectionId) url += `&section_id=${sectionId}`;
+        const res = await fetch(url);
+        const subjects = await res.json();
+        subjectSelect.innerHTML = '<option value="">Select Subject</option>';
+        subjects.forEach(sub => {
+            subjectSelect.innerHTML += `<option value="${sub.id}">${sub.name}</option>`;
+        });
+    }
+
+    // ===== LOAD STUDENTS =====
+    async function loadStudents() {
+        const classId = classSelect.value;
+        const sectionId = sectionSelect.value;
+        if (!classId) return;
+
+        studentsTable.innerHTML = '<tr><td colspan="4" class="text-center py-5"><div class="spinner-border text-primary"></div></td></tr>';
+
+        let url = `/get-students?class_id=${classId}`;
+        if (sectionId) url += `&section_id=${sectionId}`;
+        const res = await fetch(url);
+        let students = await res.json();
+
+        students.sort((a,b) => (a.roll_no||0) - (b.roll_no||0));
+        studentsTable.innerHTML = "";
+        headerCheckAll.checked = false;
+
+        students.forEach((student, index) => {
+            const status = student.status || 'absent';
+            const isPresent = status === 'present';
+            
+            const tr = document.createElement('tr');
+            tr.className = `student-row ${isPresent ? 'row-selected' : ''}`;
+            tr.dataset.index = index;
+            tr.innerHTML = `
+                <td class="ps-4 fw-bold text-muted">${index + 1}</td>
+                <td>
+                    <input type="checkbox" class="student-check custom-checkbox" data-index="${index}" ${isPresent ? 'checked' : ''}>
+                    <input type="hidden" name="students[${index}][student_id]" value="${student.id}">
+                    <input type="hidden" class="status-input" name="students[${index}][status]" data-index="${index}" value="${status}">
+                </td>
+                <td class="fw-semibold text-dark">${student.name}</td>
+                <td>
+                    <select class="form-select form-select-sm student-status shadow-none" data-index="${index}">
+                        <option value="present" ${status==='present'?'selected':''}>Present</option>
+                        <option value="absent" ${status==='absent'?'selected':''}>Absent</option>
+                        <option value="late" ${status==='late'?'selected':''}>Late</option>
+                        <option value="excused" ${status==='excused'?'selected':''}>Excused</option>
+                    </select>
+                </td>
+            `;
+            studentsTable.appendChild(tr);
+        });
+        setupInteractiveEvents();
+    }
+
+    // ===== INTERACTIVE UI LOGIC =====
+    function setupInteractiveEvents() {
+        // Row Click Toggle
+        document.querySelectorAll('.student-row').forEach(row => {
+            row.addEventListener('click', function(e) {
+                // Af uusan saameyn hadii select box la taabto
+                if (e.target.tagName === 'SELECT' || e.target.type === 'checkbox') return;
+                
+                const cb = this.querySelector('.student-check');
+                cb.checked = !cb.checked;
+                handleAttendanceChange(cb.dataset.index, cb.checked);
+            });
+        });
+
+        // Checkbox Direct Change
+        document.querySelectorAll('.student-check').forEach(cb => {
+            cb.addEventListener('change', function() {
+                handleAttendanceChange(this.dataset.index, this.checked);
+            });
+        });
+
+        // Select Status Change
+        document.querySelectorAll('.student-status').forEach(select => {
+            select.addEventListener('change', function() {
+                const index = this.dataset.index;
+                const statusInput = document.querySelector(`.status-input[data-index="${index}"]`);
+                const cb = document.querySelector(`.student-check[data-index="${index}"]`);
+                const row = cb.closest('tr');
+
+                statusInput.value = this.value;
+                cb.checked = (this.value === 'present');
+                
+                if(this.value === 'present') row.classList.add('row-selected');
+                else row.classList.remove('row-selected');
+
+                updateHeaderCheck();
+            });
+        });
+    }
+
+    function handleAttendanceChange(index, isChecked) {
+        const row = document.querySelector(`.student-row[data-index="${index}"]`);
+        const statusInput = document.querySelector(`.status-input[data-index="${index}"]`);
+        const select = document.querySelector(`.student-status[data-index="${index}"]`);
+        const cb = document.querySelector(`.student-check[data-index="${index}"]`);
+
+        cb.checked = isChecked;
+        if (isChecked) {
+            row.classList.add('row-selected');
+            statusInput.value = 'present';
+            select.value = 'present';
+        } else {
+            row.classList.remove('row-selected');
+            statusInput.value = 'absent';
+            select.value = 'absent';
+        }
+        updateHeaderCheck();
+    }
+
+    function updateHeaderCheck() {
+        const all = document.querySelectorAll('.student-check');
+        if (!all.length) return;
+        headerCheckAll.checked = [...all].every(cb => cb.checked);
+    }
+
+    headerCheckAll.addEventListener("change", function() {
+        document.querySelectorAll('.student-check').forEach(cb => {
+            handleAttendanceChange(cb.dataset.index, this.checked);
+        });
+    });
+
+    // ===== STATUS CHECKER =====
+    async function updateAttendanceStatus() {
+        const classId = classSelect.value;
+        const sectionId = sectionSelect.value || '';
+        const subjectId = subjectSelect.value;
+
+        if (!classId || !subjectId) return;
+
+        const url = `/check-attendance?class_id=${classId}&section_id=${sectionId}&subject_id=${subjectId}`;
+        const res = await fetch(url);
+        const data = await res.json();
+
+        if (data.submitted) {
+            alertDiv.innerHTML = `<i class="fas fa-exclamation-triangle me-2"></i> Attendance already submitted for this selection today.`;
+            alertDiv.classList.remove("d-none");
+            saveBtn.disabled = true;
+            studentsTable.innerHTML = '<tr><td colspan="4" class="text-center py-5 text-muted">Attendance Closed</td></tr>';
+        } else {
+            alertDiv.classList.add("d-none");
+            saveBtn.disabled = false;
+            await loadStudents();
+        }
+    }
+
+    // ===== MAIN EVENTS =====
+    classSelect.addEventListener("change", async () => { await loadSections(classSelect.value); await loadSubjects(); });
+    sectionSelect.addEventListener("change", loadSubjects);
+    subjectSelect.addEventListener("change", updateAttendanceStatus);
+
+});
+</script>
+{% endblock %}

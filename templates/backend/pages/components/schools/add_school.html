@@ -1,0 +1,145 @@
+{% extends 'backend/home/base.html' %}
+
+{% block title %}Add New School | Logistics System{% endblock %}
+
+{% block content %}
+
+<!-- [ page-header ] start -->
+<div class="page-header">
+    <div class="page-header-left d-flex align-items-center">
+        <div class="page-header-title">
+            <h5 class="m-b-10">Schools</h5>
+        </div>
+        <ul class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Home</a></li>
+            <li class="breadcrumb-item">Create</li>
+        </ul>
+    </div>
+    <div class="page-header-right ms-auto">
+        <div class="d-flex align-items-center gap-2">
+            <a href="{{ url_for('main.all_schools') }}" class="btn btn-light">
+                <i class="feather-arrow-left me-1"></i> Back to Schools
+            </a>
+        </div>
+    </div>
+</div>
+<!-- [ page-header ] end -->
+
+<!-- [ Main Content ] start -->
+<div class="main-content">
+    <div class="row">
+        <div class="col-lg-12">
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <form method="POST" enctype="multipart/form-data">
+                {{ form.hidden_tag() }}
+                <div class="card border-top-0">
+                    <div class="card-header">
+                        <h5 class="mb-0">Add New School</h5>
+                    </div>
+                    <div class="card-body">
+
+                        <!-- School Name -->
+                        <div class="row mb-4">
+                            <div class="col-lg-4">
+                                <label for="nameInput" class="fw-semibold">School Name:</label>
+                            </div>
+                            <div class="col-lg-8">
+                                {{ form.name(class="form-control", id="nameInput", placeholder="Enter School Name") }}
+                                {% if form.name.errors %}
+                                    <div class="text-danger fs-12 mt-1">
+                                        {{ form.name.errors[0] }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <!-- School Title -->
+                        <div class="row mb-4">
+                            <div class="col-lg-4">
+                                <label for="nameInput" class="fw-semibold">School Title:</label>
+                            </div>
+                            <div class="col-lg-8">
+                                {{ form.title(class="form-control", id="nameInput", placeholder="Enter School Title") }}
+                                {% if form.title.errors %}
+                                    <div class="text-danger fs-12 mt-1">
+                                        {{ form.title.errors[0] }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Email -->
+                        <div class="row mb-4">
+                            <div class="col-lg-4">
+                                <label for="emailInput" class="fw-semibold">Email:</label>
+                            </div>
+                            <div class="col-lg-8">
+                                {{ form.email(class="form-control", id="emailInput", placeholder="Enter Email") }}
+                                {% if form.email.errors %}
+                                    <div class="text-danger fs-12 mt-1">
+                                        {{ form.email.errors[0] }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Phone -->
+                        <div class="row mb-4">
+                            <div class="col-lg-4">
+                                <label for="phoneInput" class="fw-semibold">Phone:</label>
+                            </div>
+                            <div class="col-lg-8">
+                                {{ form.phone(class="form-control", id="phoneInput", placeholder="Enter Phone") }}
+                                {% if form.phone.errors %}
+                                    <div class="text-danger fs-12 mt-1">
+                                        {{ form.phone.errors[0] }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Status -->
+                        <div class="row mb-4">
+                            <div class="col-lg-4">
+                                <label for="statusSelect" class="fw-semibold">Status:</label>
+                            </div>
+                            <div class="col-lg-8">
+                                {{ form.status(class="form-control", id="statusSelect") }}
+                                {% if form.status.errors %}
+                                    <div class="text-danger fs-12 mt-1">
+                                        {{ form.status.errors[0] }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <div class="row">
+                            <div class="col-lg-12 text-center">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="feather-plus-circle me-1"></i> Add School
+                                </button>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </form>
+
+        </div>
+    </div>
+</div>
+<!-- [ Main Content ] end -->
+
+{% endblock %}

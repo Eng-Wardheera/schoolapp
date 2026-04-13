@@ -1,0 +1,141 @@
+{% extends 'backend/home/base.html' %}
+
+{% block title %}Assign Subjects to Classes | School Management{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+    <div class="page-header-left d-flex align-items-center">
+        <div class="page-header-title">
+            <h5>Class Subjects</h5>
+        </div>
+        <ul class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Home</a></li>
+            <li class="breadcrumb-item">Assign Subjects</li>
+        </ul>
+    </div>
+</div>
+
+<div class="main-content">
+    <div class="row">
+        <div class="col-lg-8">
+           <form method="POST">
+               {{ form.hidden_tag() }}
+
+               <div class="card">
+                   <div class="card-header"><h5>Assign Subjects to Classes</h5></div>
+                   <div class="card-body">
+
+                       <!-- MULTI-SELECT CLASSES -->
+                       <div class="mb-4">
+                           {{ form.class_ids.label(class="fw-semibold") }}
+                           {{ form.class_ids(class="form-select", multiple=True, size=6) }}
+                              <span class="text-primary small d-block mt-1">
+                                Qaab multiple ka loo sameeyo: qabo <strong>Ctrl</strong> key, kadib dooro classes-ka aad u baahan tahay.
+                            </span>
+                           {% for error in form.class_ids.errors %}
+                               <div class="text-danger small">{{ error }}</div>
+                           {% endfor %}
+                       </div>
+
+                       <!-- MULTI-SELECT SUBJECTS -->
+                       <div class="mb-4">
+                           {{ form.subject_ids.label(class="fw-semibold") }}
+                           {{ form.subject_ids(class="form-select", multiple=True, size=6) }}
+                            <span class="text-primary small d-block mt-1">
+                                Qaab multiple ka loo sameeyo: qabo <strong>Ctrl</strong> key, kadib dooro subjects-ka aad u baahan tahay.
+                            </span>
+                           {% for error in form.subject_ids.errors %}
+                               <div class="text-danger small">{{ error }}</div>
+                           {% endfor %}
+                       </div>
+
+                       <!-- HIDDEN SCHOOL & BRANCH -->
+                       {{ form.school_id(type="hidden") }}
+                       {{ form.branch_id(type="hidden") }}
+
+
+                                          <!-- SUMMARY -->
+                    <div class="mb-4">
+                        <h6>Summary</h6>
+                        <p class="small mb-1">Classes selected: <span id="class-count">0</span></p>
+                        <ul id="class-summary" class="small"></ul>
+
+                        <p class="small mt-2 mb-1">Subjects selected: <span id="subject-count">0</span></p>
+                        <ul id="subject-summary" class="small"></ul>
+                    </div>
+                    <p class="small mt-2 mb-1">
+                        Total Subjects Assigning: 
+                        <span id="total-assignments">0</span>
+                    </p>
+
+
+                   </div>
+
+
+
+                 
+                    <div class="card-footer d-flex justify-content-center gap-2">
+                       <button type="submit" class="btn btn-primary">
+                           <i class="feather-save me-1"></i> Save Assignment
+                       </button>
+                       <a href="{{ url_for('main.all_class_subjects') }}" class="btn btn-secondary">
+                           <i class="feather-x me-1"></i> Cancel
+                       </a>
+                   </div>
+               </div>
+           </form>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const classSelect = document.querySelector('select[name="class_ids"]');
+    const subjectSelect = document.querySelector('select[name="subject_ids"]');
+
+    const classCountEl = document.getElementById('class-count');
+    const subjectCountEl = document.getElementById('subject-count');
+    const totalAssignmentsEl = document.getElementById('total-assignments');
+
+    const classSummaryEl = document.getElementById('class-summary');
+    const subjectSummaryEl = document.getElementById('subject-summary');
+
+    function updateSummary() {
+        const selectedClasses = Array.from(classSelect.selectedOptions);
+        const selectedSubjects = Array.from(subjectSelect.selectedOptions);
+
+        // Update counts
+        classCountEl.textContent = selectedClasses.length;
+        subjectCountEl.textContent = selectedSubjects.length;
+
+        // Update summary lists
+        classSummaryEl.innerHTML = '';
+        selectedClasses.forEach(opt => {
+            const li = document.createElement('li');
+            li.textContent = opt.text;
+            classSummaryEl.appendChild(li);
+        });
+
+        subjectSummaryEl.innerHTML = '';
+        selectedSubjects.forEach(opt => {
+            const li = document.createElement('li');
+            li.textContent = opt.text;
+            subjectSummaryEl.appendChild(li);
+        });
+
+        // Update total assignments
+        totalAssignmentsEl.textContent = selectedClasses.length * selectedSubjects.length;
+    }
+
+    // Initial update
+    updateSummary();
+
+    // Listen to changes
+    classSelect.addEventListener('change', updateSummary);
+    subjectSelect.addEventListener('change', updateSummary);
+});
+</script>
+
+
+{% endblock %}

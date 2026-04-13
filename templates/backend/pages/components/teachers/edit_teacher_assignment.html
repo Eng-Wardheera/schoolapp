@@ -1,0 +1,189 @@
+{% extends 'backend/home/base.html' %}
+{% block title %}Edit Teacher Assignment{% endblock %}
+
+
+<div class="page-header">
+    <div class="page-header-left d-flex align-items-center">
+        <div class="page-header-title">
+            <h5>Teacher Assignment</h5>
+        </div>
+        <ul class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Home</a></li>
+            <li class="breadcrumb-item"><a href="{{ url_for('main.all_teacher_assignments') }}">All Teacher Assigned</a></li>
+            <li class="breadcrumb-item">Edit Teacher Assignments</li>
+        </ul>
+    </div>
+</div>
+
+
+{% block content %}
+<div class="main-content">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <form method="POST" id="assignForm">
+                {{ form.hidden_tag() }}
+                <div class="card shadow-sm border-0">
+                    <div class="card-header bg-white py-3">
+                        <h5 class="mb-0 text-primary"><i class="feather-edit me-2"></i>Edit Teacher Assignment</h5>
+                    </div>
+                    <div class="card-body p-4">
+                        <div class="mb-4">
+                            {{ form.teacher_id.label(class="fw-bold mb-2") }}
+                            {{ form.teacher_id(class="form-select bg-light", disabled=True) }} 
+                            <input type="hidden" name="teacher_id" value="{{ form.teacher_id.data }}">
+                        </div>
+
+                        <div id="classSubjectContainer">
+                            </div>
+
+                        <button type="button" class="btn btn-outline-primary mt-3 shadow-sm" id="addClassBtn">
+                            <i class="feather-plus me-1"></i> Add Another Class
+                        </button>
+                    </div>
+                    <div class="card-footer bg-light p-3 d-flex gap-2">
+                        <button type="submit" class="btn btn-primary px-4">Update Changes</button>
+                        <a href="{{ url_for('main.all_teacher_assignments') }}" class="btn btn-secondary px-4">Cancel</a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<template id="classSubjectTemplate">
+    <div class="mb-3 border p-3 rounded class-subject-pair bg-white shadow-sm position-relative">
+        <div class="row g-3 align-items-start">
+            <div class="col-md-3">
+                <label class="fw-bold small mb-1">Class</label>
+                <select class="form-select class-select" required>
+                    <option value="">Select Class</option>
+                    {% for c in classes %}
+                        <option value="{{ c.id }}">{{ c.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3 section-col" style="display:none;">
+                <label class="fw-bold small mb-1">Section</label>
+                <select class="form-select section-select">
+                    <option value="">Select Section</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="fw-bold small mb-1">Subjects</label>
+                <select class="form-select subject-select select2-lib" multiple required>
+                    {% for s in subjects %}
+                        <option value="{{ s.id }}">{{ s.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2 align-self-end text-end">
+                <button type="button" class="btn btn-outline-danger btn-sm remove-pair-btn">
+                    <i class="feather-trash-2"></i> Remove
+                </button>
+            </div>
+        </div>
+    </div>
+</template>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const container = document.getElementById("classSubjectContainer");
+    const template = document.getElementById("classSubjectTemplate");
+    const addBtn = document.getElementById("addClassBtn");
+    let pairIndex = 0;
+
+    // Ka soo qaad xogta Python adoo isticmaalaya filter-ka safe
+    const existingPairs = {{ existing_pairs_json | safe }};
+
+    function addPair(data = null) {
+        const clone = template.content.cloneNode(true);
+        const pairDiv = clone.querySelector(".class-subject-pair");
+        const classSelect = clone.querySelector(".class-select");
+        const sectionCol = clone.querySelector(".section-col");
+        const sectionSelect = clone.querySelector(".section-select");
+        const subjectSelect = clone.querySelector(".subject-select");
+        const removeBtn = clone.querySelector(".remove-pair-btn");
+
+        // Dynamic naming for Flask
+        classSelect.name = `pairs[${pairIndex}][class_id]`;
+        sectionSelect.name = `pairs[${pairIndex}][section_id]`;
+        subjectSelect.name = `pairs[${pairIndex}][subject_ids][]`;
+
+        // Function-ka Load Sections (Sidaada oo kale laakiin asynced si fiican)
+        async function loadSections(classId, targetSelect, preSelectedId = null) {
+            if (!classId) {
+                targetSelect.closest(".section-col").style.display = "none";
+                return;
+            }
+            try {
+                const res = await fetch(`/get-sections/${classId}`);
+                const sections = await res.json();
+                
+                targetSelect.innerHTML = '<option value="">Select Section</option>';
+                if (sections.length > 0) {
+                    sections.forEach(s => {
+                        const opt = new Option(s.name, s.id);
+                        if (preSelectedId && s.id == preSelectedId) opt.selected = true;
+                        targetSelect.add(opt);
+                    });
+                    targetSelect.closest(".section-col").style.display = "block";
+                } else {
+                    targetSelect.closest(".section-col").style.display = "none";
+                }
+            } catch (err) { console.error("Error loading sections:", err); }
+        }
+
+        classSelect.addEventListener("change", function() {
+            loadSections(this.value, sectionSelect);
+        });
+
+        // Pre-fill Logic
+        if (data) {
+            classSelect.value = data.class_id;
+            loadSections(data.class_id, sectionSelect, data.section_id);
+            
+            // Prefill Subjects (Convert to strings to be safe)
+            const subjectIds = (data.subject_ids || []).map(id => id.toString());
+            Array.from(subjectSelect.options).forEach(opt => {
+                if (subjectIds.includes(opt.value)) opt.selected = true;
+            });
+        }
+
+        removeBtn.addEventListener("click", function() {
+            pairDiv.remove();
+        });
+
+        container.appendChild(clone);
+        
+        // HADDII AAD ISTICMAALAYSO SELECT2 (Lagula taliyey maaddooyinka badan)
+        if (typeof jQuery !== 'undefined' && typeof jQuery().select2 !== 'undefined') {
+            $(subjectSelect).select2({
+                placeholder: "Select Subjects",
+                width: '100%'
+            });
+        }
+
+        pairIndex++;
+    }
+
+    addBtn.addEventListener("click", () => addPair());
+
+    // Initial Load
+    if (Array.isArray(existingPairs) && existingPairs.length > 0) {
+        existingPairs.forEach(pair => addPair(pair));
+    } else {
+        addPair(); 
+    }
+});
+</script>
+
+<style>
+    .class-subject-pair { transition: all 0.3s ease; }
+    .class-subject-pair:hover { border-color: #4e73df !important; }
+    .remove-pair-btn { font-size: 0.8rem; }
+    .select2-container--default .select2-selection--multiple {
+        border: 1px solid #dee2e6;
+        min-height: 38px;
+    }
+</style>
+{% endblock %}

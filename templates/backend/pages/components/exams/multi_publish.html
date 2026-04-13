@@ -1,0 +1,233 @@
+{% extends 'backend/home/base.html' %}
+
+{% block title %}Publish Exam | School Management{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-left d-flex align-items-center">
+        <div class="page-header-title">
+            <h5 class="m-b-10">Publish Exam to Teachers</h5>
+        </div>
+        <ul class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Home</a></li>
+            <li class="breadcrumb-item">Exams</li>
+            <li class="breadcrumb-item">Multi-Publish</li>
+        </ul>
+    </div>
+</div>
+
+<div class="main-content">
+    <form method="POST" id="publishForm">
+        {{ form.hidden_tag() }}
+        {{ form.teacher_ids_hidden(id="teacher_ids_hidden") }}
+
+        <div class="row g-4">
+            <div class="col-lg-8">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-header d-flex justify-content-between align-items-center bg-white py-3 border-bottom">
+                        <h6 class="mb-0 fw-bold text-dark"><i class="fas fa-users me-2"></i>Select Teachers</h6>
+                        <div class="form-check border px-3 py-1 rounded bg-light">
+                            <input class="form-check-input" type="checkbox" id="selectAll" style="cursor: pointer;">
+                            <label class="form-check-label fw-bold small text-primary mb-0" for="selectAll" style="cursor: pointer; margin-left: 5px;">SELECT ALL</label>
+                        </div>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive" style="max-height: 650px; overflow-y: auto;">
+                            <table class="table table-hover align-middle mb-0" id="teachersTable">
+                                <thead class="table-light sticky-top" style="top: 0; z-index: 10;">
+                                    <tr>
+                                        <th style="width: 50px;" class="text-center">Select</th>
+                                        <th>Teacher Name</th>
+                                        <th>Role</th>
+                                        <th class="text-center">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for t in teachers %}
+                                    <tr class="teacher-row" style="cursor: pointer;" data-id="{{ t.id }}">
+                                        <td class="text-center">
+                                            <input class="form-check-input teacher-checkbox" type="checkbox" value="{{ t.id }}">
+                                        </td>
+                                        <td>
+                                            <div class="fw-bold text-dark">{{ t.full_name }}</div>
+                                            <small class="text-muted">ID: #{{ t.id }}</small>
+                                        </td>
+                                        <td><span class="text-muted small">Faculty Member</span></td>
+                                        <td class="text-center">
+                                            <span class="badge bg-label-success px-3 py-2">ACTIVE</span>
+                                        </td>
+                                    </tr>
+                                    {% else %}
+                                    <tr>
+                                        <td colspan="4" class="text-center py-5 text-muted">
+                                            <i class="fas fa-user-slash d-block mb-2 fa-2x"></i>
+                                            Ma jiraan macalimiin la heli karo.
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4">
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-header bg-primary text-white py-3">
+                        <h6 class="mb-0 fw-bold"><i class="fas fa-cog me-2"></i>Publish Settings</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold small text-muted text-uppercase">Exam Session <span class="text-danger">*</span></label>
+                            {{ form.exam_id(class="form-select border-2 shadow-none") }}
+                            {% for error in form.exam_id.errors %}
+                                <small class="text-danger d-block mt-1">{{ error }}</small>
+                            {% endfor %}
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label fw-bold small text-muted text-uppercase">Duration (Minutes) <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-white border-2 border-end-0"><i class="feather-clock text-primary"></i></span>
+                                {{ form.duration_minutes(class="form-control border-2 shadow-none border-start-0", placeholder="e.g. 60") }}
+                            </div>
+                            {% for error in form.duration_minutes.errors %}
+                                <small class="text-danger d-block mt-1">{{ error }}</small>
+                            {% endfor %}
+                            <div class="form-text small">Waqtiga imtixaanka uu soconayo (e.g. 60, 90, 120).</div>
+                        </div>
+
+                        <div class="alert alert-info border-0 small shadow-sm mb-4">
+                            <i class="fas fa-info-circle me-1"></i> 
+                            Warqadaha waxaa loo dhalin doonaa macalimiinta la doortay.
+                        </div>
+
+                        <button type="submit" class="btn btn-primary btn-lg w-100 fw-bold shadow" id="submitBtn">
+                            <i class="fas fa-paper-plane me-1"></i> Publish Exam
+                        </button>
+                    </div>
+                </div>
+
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-white py-3 border-bottom">
+                        <h6 class="mb-0 fw-bold text-dark"><i class="fas fa-history me-2 text-warning"></i>Recently Published</h6>
+                    </div>
+                    <div class="card-body p-0">
+                        <ul class="list-group list-group-flush" id="recentActivityList">
+                            {% if recent_papers %}
+                                {% for paper in recent_papers %}
+                                <li class="list-group-item border-0 py-3 border-bottom-dashed">
+                                    <div class="d-flex align-items-center">
+                                        <div class="avatar-sm me-3 bg-label-primary rounded-circle d-flex align-items-center justify-content-center" style="width: 38px; height: 38px;">
+                                            <span class="fw-bold">{{ paper.teacher.full_name[:1] if paper.teacher else '?' }}</span>
+                                        </div>
+                                        <div class="flex-grow-1">
+                                            <h6 class="mb-0 small fw-bold text-dark">{{ paper.teacher.full_name if paper.teacher else 'Unknown' }}</h6>
+                                            <div class="d-flex justify-content-between">
+                                                <small class="text-muted" style="font-size: 0.7rem;">
+                                                    {{ paper.exam_subject.subject.subject_name if paper.exam_subject else 'No Subject' }}
+                                                </small>
+                                                <small class="text-success fw-bold" style="font-size: 0.7rem;">{{ paper.created_at.strftime('%I:%M %p') }}</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </li>
+                                {% endfor %}
+                            {% else %}
+                                <div class="p-4 text-center">
+                                    <small class="text-muted">Dhaqdhaqaaq dhowaan dhacay ma jiro.</small>
+                                </div>
+                            {% endif %}
+                        </ul>
+                    </div>
+                    <div class="card-footer bg-white border-0 text-center py-3">
+                        <a href="{{ url_for('main.all_exam_papers') }}" class="small fw-bold text-decoration-none text-primary">View All Papers <i class="fas fa-arrow-right ms-1"></i></a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const selectAll = document.getElementById('selectAll');
+        const checkboxes = document.querySelectorAll('.teacher-checkbox');
+        const publishForm = document.getElementById('publishForm');
+        const hiddenInput = document.getElementById('teacher_ids_hidden');
+        const submitBtn = document.getElementById('submitBtn');
+
+        // Style helper for selected rows
+        function updateRowStyle(cb) {
+            const row = cb.closest('tr');
+            if (cb.checked) {
+                row.classList.add('table-primary-soft');
+            } else {
+                row.classList.remove('table-primary-soft');
+            }
+        }
+
+        // Click row to toggle checkbox
+        document.querySelectorAll('.teacher-row').forEach(row => {
+            row.addEventListener('click', function(e) {
+                if (e.target.type !== 'checkbox') {
+                    const cb = this.querySelector('.teacher-checkbox');
+                    cb.checked = !cb.checked;
+                    updateRowStyle(cb);
+                }
+            });
+        });
+
+        // Individual checkbox change
+        checkboxes.forEach(cb => {
+            cb.addEventListener('change', function() {
+                updateRowStyle(this);
+            });
+        });
+
+        // Select All functionality
+        if (selectAll) {
+            selectAll.addEventListener('change', function() {
+                checkboxes.forEach(cb => {
+                    cb.checked = this.checked;
+                    updateRowStyle(cb);
+                });
+            });
+        }
+
+        // Form Submission Logic
+        if (publishForm) {
+            publishForm.addEventListener('submit', function(e) {
+                const selected = Array.from(document.querySelectorAll('.teacher-checkbox:checked'))
+                                     .map(cb => parseInt(cb.value));
+
+                if (selected.length === 0) {
+                    e.preventDefault();
+                    alert("Fadlan dooro ugu yaraan hal macalin!");
+                    return false;
+                }
+
+                // Fill the hidden field with JSON array of teacher IDs
+                hiddenInput.value = JSON.stringify(selected);
+                
+                // Visual feedback
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Processing...';
+            });
+        }
+    });
+</script>
+
+<style>
+    .table-primary-soft { background-color: rgba(13, 110, 253, 0.08) !important; }
+    .border-bottom-dashed { border-bottom: 1px dashed #e9ecef !important; }
+    .bg-label-primary { background-color: #e7f1ff; color: #0d6efd; }
+    .avatar-sm { font-size: 0.85rem; }
+    .badge { font-size: 0.75rem; font-weight: 600; }
+    .bg-label-success { background-color: #e8fadf; color: #71dd37; }
+    .sticky-top { z-index: 1020; }
+    .form-select, .form-control { border-radius: 8px; padding: 10px 15px; }
+    .input-group-text { border-radius: 8px 0 0 8px; }
+</style>
+{% endblock %}

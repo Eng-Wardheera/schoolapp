@@ -1,0 +1,228 @@
+{% extends 'backend/home/base.html' %}
+
+{% block title %}Report Card | {{ student.full_name }}{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+    <div class="page-header-left d-flex align-items-center">
+        <div class="page-header-title">
+            <h5 class="m-b-10">Student Exam Results</h5>
+        </div>
+        <ul class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Home</a></li>
+            <li class="breadcrumb-item">Exam Results for {{ student.full_name }}</li>
+        </ul>
+    </div>
+</div>
+
+
+<div class="page-content">
+    <div class="container-fluid">
+
+        <div class="row mb-3 d-print-none">
+            <div class="col-12 text-end">
+                <a href="javascript:window.history.back();" class="btn btn-light rounded-pill me-2 shadow-sm">
+                    <i class="feather-arrow-left me-1"></i> Back
+                </a>
+                <button class="btn btn-primary rounded-pill shadow-sm" onclick="window.print()">
+                    <i class="feather-printer me-1"></i> Print Report Card
+                </button>
+            </div>
+        </div>
+
+        <div class="card shadow-lg border-0 rounded-4 overflow-hidden result-card-print">
+            
+            <div class="card-header bg-white border-bottom py-4 text-center">
+                <div class="d-flex align-items-center justify-content-center mb-2">
+                    <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center me-3 d-print-none" style="width: 60px; height: 60px;">
+                        <i class="feather-book-open text-white fs-2"></i>
+                    </div>
+                    <div>
+                        <h3 class="fw-bold mb-0 text-uppercase">{{ student.school.school_name }}</h3>
+                        <p class="text-muted mb-0">
+                            {{ exam.academic_year.year_name }} | {{ exam.exam_name }} 
+                            {% if student.branch %} | {{ student.branch.branch_name }}{% endif %}
+                        </p>
+                    </div>
+                </div>
+                <div class="badge bg-soft-primary text-primary px-4 py-2 rounded-pill mt-2 fw-bold">OFFICIAL STUDENT REPORT CARD</div>
+            </div>
+
+            <div class="card-body p-4">
+                <div class="row mb-4 border p-3 rounded-3 bg-light-subtle shadow-sm">
+                    <div class="col-md-6">
+                        <table class="table table-sm table-borderless mb-0">
+                            <tr>
+                                <td class="fw-bold text-muted" style="width: 140px;">Student Name:</td>
+                                <td class="fw-bold text-dark text-uppercase">{{ student.full_name }}</td>
+                            </tr>
+                            <tr>
+                                <td class="fw-bold text-muted">Student ID:</td>
+                                <td class="text-dark">{{ student.student_id or 'N/A' }}</td>
+                            </tr>
+                            <tr>
+                                <td class="fw-bold text-muted">Class & Section:</td>
+                                <td class="text-dark">
+                                    {# ✅ SAXID: class_rel ayaa la isticmaalayaa #}
+                                    {{ result.class_rel.name if result.class_rel else 'N/A' }} 
+                                    {% if result.section %}({{ result.section.name }}){% endif %}
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6 border-start-md">
+                        <table class="table table-sm table-borderless mb-0">
+                            <tr>
+                                <td class="fw-bold text-muted" style="width: 130px;">Gender:</td>
+                                <td class="text-dark">{{ student.gender }}</td>
+                            </tr>
+                            <tr>
+                                <td class="fw-bold text-muted">Term / Exam:</td>
+                                <td class="text-dark">{{ exam.exam_name }}</td>
+                            </tr>
+                            <tr>
+                                <td class="fw-bold text-muted">Result Status:</td>
+                                <td>
+                                    {# ✅ SAXID: Decision-ka Python-ka laga soo diray #}
+                                    <span class="badge {{ 'bg-success' if decision|upper == 'PASS' else 'bg-danger' }} rounded-pill">
+                                        {{ decision }}
+                                    </span>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-bordered align-middle text-center table-hover">
+                        <thead class="bg-light">
+                            <tr>
+                                <th class="text-start ps-3">Subject Name</th>
+                                <th style="width: 120px;">Max Marks</th>
+                                <th style="width: 120px;">Pass Marks</th>
+                                <th style="width: 140px;">Marks Obtained</th>
+                                <th style="width: 120px;">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for mark in subject_marks %}
+                            <tr>
+                                <td class="text-start ps-3 fw-medium text-dark">
+                                    {{ mark.exam_subject.subject.name }}
+                                </td>
+                                <td>{{ "%.0f"|format(mark.exam_subject.total_marks) }}</td>
+                                <td>{{ "%.0f"|format(mark.exam_subject.pass_marks) }}</td>
+                                <td class="fw-bold {{ 'text-danger' if mark.marks_obtained < mark.exam_subject.pass_marks else 'text-dark' }}">
+                                    {{ "%.1f"|format(mark.marks_obtained) }}
+                                </td>
+                                <td>
+                                    {% if mark.marks_obtained >= mark.exam_subject.pass_marks %}
+                                        <i class="feather-check-circle text-success me-1"></i><span class="text-success fw-bold">Pass</span>
+                                    {% else %}
+                                        <i class="feather-x-circle text-danger me-1"></i><span class="text-danger fw-bold">Fail</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                        <tfoot class="bg-light fw-bold text-dark border-top-2">
+                            <tr>
+                                <td class="text-end pe-3">GRAND TOTAL / RESULT:</td>
+                                <td>{{ "%.0f"|format(total_possible) }}</td>
+                                <td>-</td>
+                                <td class="text-primary fs-5">{{ "%.1f"|format(result.total_marks) }}</td>
+                                <td>
+                                    <span class="{{ 'text-success' if decision|upper == 'PASS' else 'text-danger' }}">
+                                        {{ decision.upper() }}
+                                    </span>
+                                </td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+
+                <div class="row mt-4 g-3">
+                    <div class="col-md-3 col-6">
+                        <div class="border rounded-3 p-3 text-center bg-white shadow-sm">
+                            <small class="text-muted d-block text-uppercase fw-bold mb-1">Percentage</small>
+                            <h4 class="mb-0 fw-bold">{{ percentage }}%</h4>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-6">
+                        <div class="border rounded-3 p-3 text-center bg-white shadow-sm">
+                            <small class="text-muted d-block text-uppercase fw-bold mb-1">Grade</small>
+                            <h4 class="mb-0 fw-bold text-info">{{ grade }}</h4>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-6">
+                        <div class="border rounded-3 p-3 text-center bg-white shadow-sm">
+                            <small class="text-muted d-block text-uppercase fw-bold mb-1">Class Rank</small>
+                            <h4 class="mb-0 fw-bold text-primary">#{{ result.class_position or '-' }}</h4>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-6">
+                        <div class="border rounded-3 p-3 text-center bg-white shadow-sm">
+                            <small class="text-muted d-block text-uppercase fw-bold mb-1">Final Outcome</small>
+                            <h4 class="mb-0 fw-bold {{ 'text-success' if decision|upper == 'PASS' else 'text-danger' }}">
+                                {{ decision.upper() }}
+                            </h4>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row mt-5 pt-4 mb-2">
+                    <div class="col-4 text-center">
+                        <div class="border-top pt-2 mx-auto" style="width: 80%;">
+                            <small class="fw-bold d-block">Class Teacher</small>
+                            <span class="small text-dark">{{ class_teacher }}</span>
+                        </div>
+                    </div>
+                    <div class="col-4 text-center">
+                        <div class="border-top pt-2 mx-auto" style="width: 80%;">
+                            <small class="fw-bold d-block">Headmaster / Principal</small>
+                            <span class="small text-dark">{{ user.username if user.is_authenticated else 'Authorized Sign' }}</span>
+                        </div>
+                    </div>
+                    <div class="col-4 text-center">
+                        <div class="border-top pt-2 mx-auto" style="width: 80%;">
+                            <small class="fw-bold d-block">Parent Signature</small>
+                            <span class="small text-muted">________________</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-footer bg-white border-top py-3">
+                <p class="text-muted small text-center mb-0">
+                    This is a computer-generated report. Issued by: {{ student.school.name }} | 
+                    {# ✅ SAXID: now_eat looma wacayo sidii function #}
+                    Printed on: {{ now_eat.strftime('%d-%m-%Y %H:%M') if now_eat.strftime else now_eat }}
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .bg-soft-primary { background-color: rgba(43, 87, 248, 0.1); }
+    .text-primary { color: #2b57f8 !important; }
+    .bg-light-subtle { background-color: #f8f9fa !important; }
+    .border-top-2 { border-top: 2px solid #dee2e6 !important; }
+    
+    @media print {
+        @page { size: A4; margin: 1cm; }
+        body { background: white !important; -webkit-print-color-adjust: exact !important; }
+        .page-content { padding: 0 !important; }
+        .card { border: none !important; box-shadow: none !important; }
+        .result-card-print { border: 1px solid #333 !important; }
+        .d-print-none { display: none !important; }
+        .table thead th { background-color: #f8f9fa !important; color: black !important; }
+        .bg-light-subtle { background-color: #f8f9fa !important; border: 1px solid #ddd !important; }
+    }
+
+    @media (min-width: 768px) {
+        .border-start-md { border-left: 1px solid #dee2e6 !important; }
+    }
+</style>
+{% endblock %}

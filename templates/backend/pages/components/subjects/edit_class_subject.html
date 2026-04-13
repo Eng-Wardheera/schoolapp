@@ -1,0 +1,71 @@
+{% extends 'backend/home/base.html' %}
+
+{% block title %}Edit Class-Subject Assignment | School Management{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-left d-flex align-items-center">
+        <div class="page-header-title">
+            <h5>Edit Class-Subject Assignment</h5>
+        </div>
+        <ul class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Home</a></li>
+            <li class="breadcrumb-item">Edit Assignment</li>
+        </ul>
+    </div>
+</div>
+
+<div class="main-content">
+    <div class="row">
+        <div class="col-lg-8">
+           <form method="POST">
+               {{ form.hidden_tag() }}
+
+               <div class="card">
+                   <div class="card-header"><h5>Edit Assignment</h5></div>
+                   <div class="card-body">
+
+                       <!-- MULTI-SELECT CLASSES -->
+                       <div class="mb-4">
+                           {{ form.class_ids.label(class="fw-semibold") }}
+                           {{ form.class_ids(class="form-select", multiple=True, size=6) }}
+                             <span class="text-primary small d-block mt-1">
+                                Qaab multiple ka loo sameeyo: qabo <strong>Ctrl</strong> key, kadib dooro classes-ka aad u baahan tahay.
+                            </span>
+                           {% for error in form.class_ids.errors %}
+                               <div class="text-danger small">{{ error }}</div>
+                           {% endfor %}
+                       </div>
+
+                       <!-- MULTI-SELECT SUBJECTS -->
+                       <div class="mb-4">
+                           {{ form.subject_ids.label(class="fw-semibold") }}
+                           {{ form.subject_ids(class="form-select", multiple=True, size=6) }}
+                            <span class="text-primary small d-block mt-1">
+                                Qaab multiple ka loo sameeyo: qabo <strong>Ctrl</strong> key, kadib dooro subjects-ka aad u baahan tahay.
+                            </span>
+                           {% for error in form.subject_ids.errors %}
+                               <div class="text-danger small">{{ error }}</div>
+                           {% endfor %}
+                       </div>
+
+                       <!-- HIDDEN SCHOOL & BRANCH -->
+                       {{ form.school_id(type="hidden") }}
+                       {{ form.branch_id(type="hidden") }}
+
+                   </div>
+
+                    <div class="card-footer d-flex justify-content-center gap-2">
+                       <button type="submit" class="btn btn-primary">
+                           <i class="feather-save me-1"></i> Update Assignment
+                       </button>
+                       <a href="{{ url_for('main.all_class_subjects') }}" class="btn btn-secondary">
+                           <i class="feather-x me-1"></i> Cancel
+                       </a>
+                   </div>
+               </div>
+           </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Report Card - {{ student.full_name }}</title>
+    <style>
+        /* BASE SETTINGS */
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            margin: 0; 
+            padding: 0; 
+            background-color: #f5f5f5; 
+            color: #333;
+        }
+
+        @media print {
+            body { background: white; padding: 0; }
+            .no-print { display: none !important; }
+            .report-container { 
+                border: 2px solid #2e7d32 !important; 
+                box-shadow: none !important; 
+                margin: 0 !important; 
+                width: 100% !important; 
+                padding: 10mm !important;
+            }
+            @page { size: A4 portrait; margin: 0; }
+        }
+
+        .report-container {
+            background: #fff;
+            width: 210mm; 
+            min-height: 297mm;
+            margin: 20px auto;
+            padding: 15mm;
+            border: 4px double #2e7d32;
+            box-sizing: border-box;
+            position: relative;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+
+        /* 1. FULL WIDTH LOGO */
+        .top-full-logo {
+            width: 100%;
+            margin-bottom: 10px;
+        }
+        .top-full-logo img {
+            width: 100%; 
+            height: auto;
+            display: block;
+            border-radius: 4px;
+        }
+
+        /* 2. SCHOOL INFO SECTION */
+        .school-info-header {
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        .school-info-header h2 { 
+            margin: 5px 0; 
+            color: #2e7d32; 
+            font-size: 26px; 
+            text-transform: uppercase;
+        }
+        .school-info-header p { 
+            margin: 2px 0; 
+            font-weight: bold; 
+            font-size: 15px; 
+            color: #555;
+        }
+        .contact-details { font-size: 13px; color: #777; margin-top: 5px; }
+
+        /* 3. FULL WIDTH HEADER LINE */
+        .header-line {
+            height: 4px;
+            background-color: #2e7d32;
+            margin: 10px 0;
+            width: 100%;
+        }
+
+        .date-row {
+            text-align: right;
+            font-weight: bold;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+
+        .report-title-box {
+            background: #f9f9f9;
+            border-top: 2px solid #333;
+            border-bottom: 2px solid #333;
+            text-align: center;
+            padding: 8px;
+            margin: 15px 0;
+            font-weight: bold;
+            font-size: 17px;
+            text-transform: uppercase;
+        }
+
+        /* STUDENT PROFILE */
+        .student-profile { 
+            display: grid; 
+            grid-template-columns: 1fr 1fr; 
+            gap: 15px; 
+            margin-bottom: 20px; 
+            padding: 12px; 
+            border: 1px solid #ddd;
+        }
+        .profile-item { font-size: 14px; margin-bottom: 5px; border-bottom: 1px dashed #eee; padding-bottom: 3px; }
+        .profile-label { font-weight: bold; color: #2e7d32; width: 130px; display: inline-block; }
+
+        /* TABLE */
+        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+        th { background: #2e7d32; color: white; padding: 10px; border: 1px solid #1b5e20; text-transform: uppercase; font-size: 12px; }
+        td { padding: 10px; border: 1px solid #ccc; text-align: center; font-size: 14px; }
+        .subject-name { text-align: left; font-weight: bold; padding-left: 15px; }
+
+        /* SUMMARY */
+        .summary-wrapper { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+        .marks-summary { border: 1px solid #2e7d32; border-radius: 4px; overflow: hidden; }
+        .summary-header { background: #2e7d32; color: white; padding: 6px; text-align: center; font-weight: bold; font-size: 13px; }
+        .summary-row { display: flex; justify-content: space-between; padding: 8px 12px; border-bottom: 1px solid #eee; font-size: 14px; }
+
+        .remarks-section { border: 1px solid #ccc; padding: 12px; margin-bottom: 20px; border-radius: 4px; background: #fff; }
+        .remarks-title { font-weight: bold; text-decoration: underline; margin-bottom: 5px; font-size: 14px; }
+        .remarks-content { font-style: italic; font-size: 13px; color: #444; }
+
+        /* 8. FOOTER SIGNATURES WITH LINES ABOVE */
+        .footer-sigs { 
+            display: flex; 
+            justify-content: center; 
+            margin-top: 60px; 
+            padding: 0 10px;
+        }
+        .sig-box { 
+            width: 30%; 
+            text-align: center; 
+        }
+        .sig-line {
+            border-top: 2px solid #333;
+            margin-bottom: 8px;
+            width: 100%;
+        }
+        .sig-text {
+            font-size: 14px;
+            font-weight: bold;
+            color: #333;
+        }
+        .principal-sig-img {
+            height: 35px;
+            display: block;
+            margin: 0 auto -5px auto; 
+        }
+
+        .printed-info {
+            margin-top: 30px;
+            font-size: 11px;
+            text-align: center;
+            color: #888;
+            border-top: 1px dashed #ccc;
+            padding-top: 10px;
+        }
+
+        .no-print-btn { background: #2e7d32; color: white; padding: 12px 30px; border: none; cursor: pointer; font-weight: bold; border-radius: 5px; margin: 20px; }
+    </style>
+</head>
+<body>
+
+    <div class="no-print" style="text-align: center;">
+        <button class="no-print-btn" onclick="window.print()">🖨️ PRINT REPORT CARD</button>
+    </div>
+
+    <div class="report-container">
+        
+        <div class="top-full-logo">
+            <img src="{% if g.site_logo and g.site_logo.main_logo %}{{ url_for('static', filename=g.site_logo.main_logo) }}{% elif branch and branch.logo %}{{ url_for('static', filename=branch.logo) }}{% elif school and school.logo %}{{ url_for('static', filename=school.logo) }}{% else %}{{ url_for('static', filename='backend/uploads/images/no_image.jpg') }}{% endif %}" alt="School Banner">
+        </div>
+
+        <div class="school-info-header">
+            <h2>
+                {% if g.site_logo and g.site_logo.site_title %} {{ g.site_logo.site_title | upper }}
+                {% elif branch %} {{ branch.name | upper }} 
+                {% elif school %} {{ school.name | upper }} 
+                {% endif %}
+            </h2>
+            <p>
+                {% if branch and branch.title %} {{ branch.title | upper }} 
+                {% elif school and school.title %} {{ school.title | upper }} 
+                {% else %} PRIMARY, MIDDLE AND SECONDARY SCHOOL {% endif %}
+            </p>
+            <div class="contact-details">
+                {% if g.site_logo and g.site_logo.address %} {{ g.site_logo.address }} 
+                {% else %} Kismayo - Somalia {% endif %}
+                
+                | 
+                
+                {% if g.site_logo and g.site_logo.phone %} Tel: {{ g.site_logo.phone }}
+                {% elif branch and branch.phone %} Tel: {{ branch.phone }} 
+                {% elif school and school.phone %} Tel: {{ school.phone }} {% endif %}
+
+                {% if g.site_logo and g.site_logo.email %}
+                | Email: {{ g.site_logo.email }}
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="header-line"></div>
+
+        <div class="date-row">
+            Date: {{ now_eat.strftime('%d/%m/%Y') }}
+        </div>
+
+        <div class="report-title-box">
+            Student Progress Report / Official Academic Transcript
+        </div>
+
+        <div class="student-profile">
+            <div>
+                <div class="profile-item"><span class="profile-label">Student Name:</span> <strong>{{ student.full_name | upper }}</strong></div>
+                <div class="profile-item"><span class="profile-label">Student ID:</span> {{ student.roll_no }}</div>
+                <div class="profile-item"><span class="profile-label">Class:</span> {{ result.class_rel.name }}</div>
+            </div>
+            <div>
+                <div class="profile-item"><span class="profile-label">Academic Year:</span> {{ result.year_rel.year_name }}</div>
+                <div class="profile-item"><span class="profile-label">Examination:</span> {{ result.exam_rel.exam_name }}</div>
+                <div class="profile-item"><span class="profile-label">Date of Issue:</span> {{ now_eat.strftime('%d/%m/%Y') }}</div>
+            </div>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th width="5%">#</th>
+                    <th width="45%" style="text-align: left; padding-left: 15px;">Subject Name</th>
+                    <th width="12%">Max Marks</th>
+                    <th width="12%">Obtained</th>
+                    <th width="10%">Grade</th>
+                    <th width="16%">Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for mark in subject_marks %}
+                {% set sub_avg = (mark.marks_obtained | float / mark.exam_subject.total_marks | float * 100) if mark.exam_subject.total_marks > 0 else 0 %}
+                <tr>
+                    <td>{{ loop.index }}</td>
+                    <td class="subject-name">{{ mark.exam_subject.subject.name }}</td>
+                    <td>{{ mark.exam_subject.total_marks | int }}</td>
+                    <td style="font-weight: bold;">{{ mark.marks_obtained | int }}</td>
+                    <td>
+                        {% if sub_avg >= 95 %} A+
+                        {% elif sub_avg >= 90 %} A
+                        {% elif sub_avg >= 85 %} A-
+                        {% elif sub_avg >= 80 %} B+
+                        {% elif sub_avg >= 75 %} B
+                        {% elif sub_avg >= 70 %} B-
+                        {% elif sub_avg >= 65 %} C+
+                        {% elif sub_avg >= 60 %} C
+                        {% elif sub_avg >= 50 %} C-
+                        {% elif sub_avg >= 40 %} D
+                        {% elif sub_avg >= 20 %} E
+                        {% else %} F {% endif %}
+                    </td>
+                    <td style="font-weight: bold; color: {{ '#2e7d32' if mark.marks_obtained|float >= mark.exam_subject.pass_marks|float else '#d32f2f' }};">
+                        {{ 'PASSED' if mark.marks_obtained|float >= mark.exam_subject.pass_marks|float else 'FAILED' }}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div class="summary-wrapper">
+            <div class="marks-summary">
+                <div class="summary-header">Academic Summary</div>
+                <div class="summary-row"><span>Total Possible Marks:</span> <strong>{{ total_possible | int }}</strong></div>
+                <div class="summary-row"><span>Total Marks Obtained:</span> <strong>{{ result.total_marks | int }}</strong></div>
+                {% set percentage = (result.total_marks | float / total_possible | float * 100) if total_possible > 0 else 0 %}
+                <div class="summary-row"><span>Overall Percentage:</span> <strong>{{ percentage | round(2) }}%</strong></div>
+            </div>
+
+            <div class="marks-summary">
+                <div class="summary-header">Final Result</div>
+                <div class="summary-row"><span>Class Rank:</span> <strong>{{ result.class_position or '-' }}</strong></div>
+                <div class="summary-row">
+                    <span>Result Status:</span> 
+                    <strong style="color: {{ '#2e7d32' if percentage >= 50 else '#d32f2f' }}">
+                        {{ 'PROMOTED / PASS' if percentage >= 50 else 'DETAINED / FAIL' }}
+                    </strong>
+                </div>
+            </div>
+        </div>
+
+        <div class="remarks-section">
+            <div class="remarks-title">General Remarks:</div>
+            <div class="remarks-content">
+                {% if percentage >= 80 %}
+                    Excellent achievement! Maintain this standard in the coming academic terms.
+                {% elif percentage >= 60 %}
+                    Good effort. Focus more on challenging subjects for better results.
+                {% elif percentage >= 50 %}
+                    Average performance. Hard work and consistent study are required.
+                {% else %}
+                    Poor performance. Student needs serious academic support and follow-up.
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="footer-sigs">
+            <!-- <div class="sig-box">
+                <div class="sig-line"></div>
+                <div class="sig-text">Teacher's Signature</div>
+            </div>
+            <div class="sig-box">
+                <div class="sig-line"></div>
+                <div class="sig-text">Parent's Signature</div>
+            </div> -->
+            <div class="sig-box">
+                {% if g.site_logo and g.site_logo.sign_logo %}
+                    <img src="{{ url_for('static', filename=g.site_logo.sign_logo) }}" class="principal-sig-img">
+                {% endif %}
+                <div class="sig-line"></div>
+                <div class="sig-text">Principal's Seal & Signature</div>
+            </div>
+        </div>
+
+        <div class="printed-info">
+            Printed by: {{ current_user.username | upper if current_user else 'SYSTEM' }} 
+            | Date: {{ now_eat.strftime('%d %b, %Y %I:%M %p') }} 
+            | This is a computer-generated document.
+        </div>
+
+    </div>
+</body>
+</html>

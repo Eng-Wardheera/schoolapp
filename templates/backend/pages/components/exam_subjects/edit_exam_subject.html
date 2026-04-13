@@ -1,0 +1,212 @@
+{% extends 'backend/home/base.html' %}
+
+{% block title %}Edit Exam Subject | School Management{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+    <div class="page-header-left d-flex align-items-center">
+        <div class="page-header-title">
+            <h5>Exam Subjects</h5>
+        </div>
+        <ul class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Home</a></li>
+            <li class="breadcrumb-item"><a href="{{ url_for('main.all_exam_subjects') }}">All Exam Subjects</a></li>
+            <li class="breadcrumb-item">Edit Exam Subject</li>
+        </ul>
+    </div>
+</div>
+
+<div class="main-content">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+
+            <form method="POST" id="editExamSubjectForm">
+                {{ form.hidden_tag() }}
+
+                <div class="card shadow-sm border-0">
+                    <div class="card-header bg-white py-3 border-bottom">
+                        <h5 class="mb-0 text-primary"><i class="feather-edit-3 me-2"></i>Update Exam Subject Setup</h5>
+                    </div>
+
+                    <div class="card-body p-4">
+                        <div class="row">
+                            <div class="col-md-6 mb-4">
+                                {{ form.academic_year_id.label(class="fw-bold mb-2") }}
+                                {{ form.academic_year_id(class="form-select select2-simple", id="academic_year_id") }}
+                                {% for error in form.academic_year_id.errors %}
+                                    <div class="text-danger small mt-1"><i class="feather-alert-circle me-1"></i>{{ error }}</div>
+                                {% endfor %}
+                            </div>
+
+                            <div class="col-md-6 mb-4">
+                                {{ form.exam_id.label(class="fw-bold mb-2") }}
+                                {{ form.exam_id(class="form-select select2-simple", id="exam_id") }}
+                                <div id="exam-loader" class="small text-muted d-none mt-1">
+                                    <span class="spinner-border spinner-border-sm text-primary me-1"></span> Loading exams...
+                                </div>
+                                {% for error in form.exam_id.errors %}
+                                    <div class="text-danger small mt-1"><i class="feather-alert-circle me-1"></i>{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-4">
+                                <label class="fw-bold mb-2">Fasalka (Class)</label>
+                                {{ form.class_ids(class="form-select select2-edit-single", id="class_id") }}
+                                <div class="form-text mt-2 text-muted small">Fasalka loo qoondeeyay maaddadan.</div>
+                                {% for error in form.class_ids.errors %}
+                                    <div class="text-danger small mt-1"><i class="feather-alert-circle me-1"></i>{{ error }}</div>
+                                {% endfor %}
+                            </div>
+
+                            <div class="col-md-6 mb-4">
+                                <label class="fw-bold mb-2">Maaddada (Subject)</label>
+                                {{ form.subject_ids(class="form-select select2-edit-single", id="subject_id") }}
+                                <div class="form-text mt-2 text-muted small">Maaddada imtixaankan laga qaadayo.</div>
+                                {% for error in form.subject_ids.errors %}
+                                    <div class="text-danger small mt-1"><i class="feather-alert-circle me-1"></i>{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-4">
+                                {{ form.total_marks.label(class="fw-bold mb-2") }}
+                                {{ form.total_marks(class="form-control form-control-lg", placeholder="E.g. 100") }}
+                                {% for error in form.total_marks.errors %}
+                                    <div class="text-danger small mt-1">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+
+                            <div class="col-md-6 mb-4">
+                                {{ form.pass_marks.label(class="fw-bold mb-2") }}
+                                {{ form.pass_marks(class="form-control form-control-lg", placeholder="E.g. 50") }}
+                                {% for error in form.pass_marks.errors %}
+                                    <div class="text-danger small mt-1">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        {{ form.school_id() }}
+                        {{ form.branch_id() }}
+                    </div>
+
+                    <div class="card-footer bg-light p-4 d-flex justify-content-between">
+                        <a href="{{ url_for('main.all_exam_subjects') }}" class="btn btn-outline-secondary px-4 border-2">
+                            <i class="feather-x me-2"></i> Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary px-5 shadow-sm">
+                            <i class="feather-check-circle me-2"></i> Update Changes
+                        </button>
+                    </div>
+                </div>
+            </form>
+
+        </div>
+    </div>
+</div>
+
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+<script>
+    $(document).ready(function() {
+        // Initialize Select2
+        function initSelect2() {
+            $('.select2-simple').select2({
+                width: '100%',
+                theme: 'classic'
+            });
+
+            // U isticmaal Edit-ka single selection maaddaama hal row la beddelayo
+            $('.select2-edit-single').select2({
+                placeholder: "  Select One",
+                allowClear: true,
+                width: '100%',
+                maximumSelectionLength: 1, 
+                theme: 'classic'
+            });
+        }
+
+        initSelect2();
+
+        // AJAX: Update Exams when Academic Year changes
+        $('#academic_year_id').on('change', function() {
+            const yearId = $(this).val();
+            const examSelect = $('#exam_id');
+            const loader = $('#exam-loader');
+
+            if (yearId) {
+                loader.removeClass('d-none');
+                fetch(`/get-exams/${yearId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        loader.addClass('d-none');
+                        examSelect.empty().append('<option value="">-- Select Exam --</option>');
+                        if (data.exams && data.exams.length > 0) {
+                            data.exams.forEach(exam => {
+                                examSelect.append(new Option(exam.name, exam.id));
+                            });
+                        }
+                        examSelect.trigger('change.select2');
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        loader.addClass('d-none');
+                    });
+            }
+        });
+    });
+</script>
+
+<style>
+    .select2-container--classic .select2-selection--multiple, 
+    .select2-container--classic .select2-selection--single {
+        border: 1px solid #dee2e6 !important;
+        min-height: 48px !important;
+        border-radius: 8px !important;
+        padding-top: 6px !important;
+        background-color: #fff !important;
+    }
+    
+    .select2-container--classic.select2-container--focus .select2-selection--multiple,
+    .select2-container--classic.select2-container--focus .select2-selection--single {
+        border-color: #86b7fe !important;
+        box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25) !important;
+    }
+
+    .form-control-lg {
+        min-height: 48px;
+        border-radius: 8px;
+    }
+
+    .card {
+        border-radius: 15px;
+        overflow: hidden;
+    }
+
+    .btn {
+        border-radius: 10px;
+        font-weight: 600;
+        transition: all 0.3s;
+    }
+
+    .btn-primary {
+        background-color: #4e73df;
+        border: none;
+    }
+
+    /* Styling for single select tags in multiple-type fields */
+    .select2-container--classic .select2-selection--multiple .select2-selection__choice {
+        background-color: #4e73df !important;
+        color: white !important;
+        border: none !important;
+        border-radius: 5px !important;
+        padding: 2px 8px !important;
+    }
+</style>
+
+{% endblock %}

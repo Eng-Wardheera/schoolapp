@@ -1,0 +1,72 @@
+{% extends 'backend/home/base.html' %}
+
+{% block title %}Add New Class Level | School Management{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+    <div class="page-header-left d-flex align-items-center">
+        <div class="page-header-title">
+            <h5>Class Levels</h5>
+        </div>
+        <ul class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Home</a></li>
+            <li class="breadcrumb-item">Add Class Level</li>
+        </ul>
+    </div>
+</div>
+
+<div class="main-content">
+    <div class="row">
+        <div class="col-lg-8">
+
+            <form method="POST">
+                {{ form.hidden_tag() }} 
+
+                <div class="card">
+
+                    <div class="card-header">
+                        <h5>Add Class Level</h5>
+                    </div>
+
+                    <div class="card-body">
+
+                        <!-- CLASS NAME -->
+                        <div class="mb-4">
+                            {{ form.name.label(class="fw-semibold") }}
+                            {{ form.name(class="form-control", placeholder="Enter Class Name") }}
+                            {% for error in form.name.errors %}
+                                <div class="text-danger small">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <!-- PRICE -->
+                        <div class="mb-4">
+                            {{ form.price.label(class="fw-semibold") }}
+                            {{ form.price(class="form-control", placeholder="Enter Price") }}
+                            {% for error in form.price.errors %}
+                                <div class="text-danger small">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <!-- SCHOOL (Hidden, auto-set from backend) -->
+                        {{ form.school_id(class="d-none") }}
+
+                        <!-- BRANCH (Hidden, auto-set from backend) -->
+                        {{ form.branch_id(class="d-none") }}
+
+                    </div>
+
+                    <div class="card-footer text-center">
+                        {{ form.submit(class="btn btn-primary") }}
+                    </div>
+
+                </div>
+
+            </form>
+
+        </div>
+    </div>
+</div>
+
+{% endblock %}

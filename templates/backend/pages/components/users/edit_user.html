@@ -1,0 +1,697 @@
+{% extends 'backend/home/base.html' %}
+
+{% block title %}{{ user.fullname }} Profile | Logistics System{% endblock %}
+
+{% block content %}
+
+
+<!-- [ page-header ] start -->
+<div class="page-header">
+    <div class="page-header-left d-flex align-items-center">
+        <div class="page-header-title">
+            <h5 class="m-b-10">Users</h5>
+        </div>
+        <ul class="breadcrumb">
+            <li class="breadcrumb-item"><a href="index.html">Home</a></li>
+            <li class="breadcrumb-item">Edit</li>
+        </ul>
+    </div>
+    <div class="page-header-right ms-auto">
+        <div class="page-header-right-items">
+            <div class="d-flex d-md-none">
+                <a href="javascript:void(0)" class="page-header-right-close-toggle">
+                    <i class="feather-arrow-left me-2"></i>
+                    <span>Back</span>
+                </a>
+            </div>
+            <div class="d-flex align-items-center gap-2 page-header-right-items-wrapper">
+                <a href="javascript:void(0);" class="btn btn-light-brand successAlertMessage">
+                    <i class="feather-layers me-2"></i>
+                    <span>Save as Draft</span>
+                </a>
+                <a href="javascript:void(0);" class="btn btn-primary successAlertMessage">
+                    <i class="feather-user-plus me-2"></i>
+                    <span>Create User</span>
+                </a>
+            </div>
+        </div>
+        <div class="d-md-none d-flex align-items-center">
+            <a href="javascript:void(0)" class="page-header-right-open-toggle">
+                <i class="feather-align-right fs-20"></i>
+            </a>
+        </div>
+    </div>
+</div>
+<!-- [ page-header ] end -->
+<!-- [ Main Content ] start -->
+<div class="main-content">
+  <div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="card-title">Edit User Form</h4>
+            </div>
+            <div class="card-body">
+                <form method="POST" enctype="multipart/form-data">
+                             {{ form.hidden_tag() }}
+                    {% if user.role == UserRole.superadmin %}
+                    <div class="row">
+                        <!-- School -->
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="school">School</label>
+                                <select id="school" name="school_id" class="form-control">
+                                    <option value="" disabled selected>Select School</option>
+                                    {% for school in schools %}
+                                        <option value="{{ school.id }}" data-has-branches="{{ '1' if school.branches|length > 0 else '0' }}"
+                                            {% if user.school_id == school.id %}selected{% endif %}>
+                                            {{ school.name }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Branch -->
+                        <div class="col-md-6" id="branch-container" style="display:none;">
+                            <div class="form-group">
+                                <label for="branch">Branch</label>
+                                <select class="form-control" id="branch-dropdown" name="branch_id">
+                                    <option value="" disabled>Select Branch</option>
+                                    {% for branch in branches %}
+                                        <option value="{{ branch.id }}" data-school-id="{{ branch.school_id }}"
+                                            {% if user.branch_id == branch.id %}selected{% endif %}>
+                                            {{ branch.name }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <script>
+                    document.addEventListener('DOMContentLoaded', function() {
+                        const schoolSelect = document.getElementById('school');
+                        const branchContainer = document.getElementById('branch-container');
+                        const branchDropdown = document.getElementById('branch-dropdown');
+
+                        function updateBranches() {
+                            const selectedOption = schoolSelect.options[schoolSelect.selectedIndex];
+                            const hasBranches = selectedOption.dataset.hasBranches === '1';
+                            const schoolId = selectedOption.value;
+
+                            if (hasBranches) {
+                                branchContainer.style.display = 'block';
+                                Array.from(branchDropdown.options).forEach(option => {
+                                    if (option.dataset.schoolId === schoolId || option.value === "") {
+                                        option.style.display = 'block';
+                                    } else {
+                                        option.style.display = 'none';
+                                    }
+                                });
+                            } else {
+                                branchContainer.style.display = 'none';
+                            }
+                        }
+
+                        schoolSelect.addEventListener('change', updateBranches);
+                        updateBranches(); // initialize on page load
+                    });
+                    </script>
+
+                    <div class="row">
+                        <!-- Username -->
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="username">Username</label>
+                                <input type="text" class="form-control" id="username" name="username" value="{{ user.username }}" required placeholder="Enter username">
+                            </div>
+                        </div>
+
+                        <!-- Full Name -->
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="fullname">Full Name</label>
+                                <input type="text" class="form-control" id="fullname" name="fullname" value="{{ user.fullname }}" required placeholder="Enter full name">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <!-- Email -->
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="email">Email</label>
+                                <input type="email" class="form-control" id="email" name="email" value="{{ user.email }}" required placeholder="Enter email">
+                            </div>
+                        </div>
+                    <!-- Role -->
+                    <div class="col-md-6">
+                    <div class="form-group">
+                    <label for="role">Role</label>
+
+                    {% if user and user.role|lower in ['superadmin'] %}
+                        <!-- Admin/Superadmin: read-only -->
+                        <input type="text" class="form-control" value="{{ user.role | capitalize }}" disabled>
+                        <input type="hidden" name="role" value="{{ user.role | lower }}">
+                    
+                    {% elif user %}
+                        <!-- Editable if user exists but is not admin/superadmin -->
+                        <select class="form-control" id="role" name="role" required>
+                            <option value="" disabled>Select Role</option>
+                            {% for role in roles %}
+                                <option value="{{ role.name }}"
+                                        {% if user.role.value == role.name %}selected{% endif %}>
+                                    {{ role.name | capitalize }}
+                                </option>
+                            {% endfor %}
+                        </select>
+
+                    {% else %}
+                        <!-- New user (no existing user): show dropdown -->
+                        <select class="form-control" id="role" name="role" required>
+                            <option value="" disabled selected>Select Role</option>
+                            {% for role in roles %}
+                                <option value="{{ role.name }}">{{ role.name | capitalize }}</option>
+                            {% endfor %}
+                        </select>
+                    {% endif %}
+                </div>
+
+
+
+                    </div>
+                    </div>
+
+                    <div class="row">
+                    <!-- Country -->
+                    <!-- Country -->
+                    <div class="col-md-6">
+                    <div class="form-group">
+                    <label for="country">Country</label>
+                    <select id="country" name="country" class="form-control" required>
+                        <option value="" disabled>Select Country</option>
+                        {% for country in all_countries %}
+                        <option value="{{ country.name }}"
+                            data-phone-code="{{ country.code }}"
+                            data-min-length="{{ country.min_length }}"
+                            data-max-length="{{ country.max_length }}"
+                            {% if user.country == country.name %}selected{% endif %}>
+                            {{ country.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                    </div>
+                    </div>
+
+                        <!-- Region / State -->
+                        <div class="col-md-6">
+                             <div class="form-group">
+                            <label for="state-dropdown">Region/State</label>
+                            <select class="form-control" id="state-dropdown" name="state" style="display: none;">
+                                <option value="" disabled selected>Select Region</option>
+                                {% for region in somalia_regions.keys() %}
+                                    <option value="{{ region }}" {% if user.state == region %}selected{% endif %}>{{ region }}</option>
+                                {% endfor %}
+                            </select>
+
+                            <input type="text" class="form-control mt-2" id="state-text" name="state_text" placeholder="Enter Region/State"
+                                   value="{% if user.country != 'Somalia' %}{{ user.state }}{% endif %}">
+                        </div>
+                        </div>
+
+                      
+                    </div>
+
+                    <div class="row">
+
+                          <!-- City / District -->
+                        <div class="col-md-6">
+                             <div class="form-group">
+                            <label for="city-dropdown">City/District</label>
+                            <select class="form-control" id="city-dropdown" name="city" style="display: none;">
+                                {% if user.country == 'Somalia' and user.state in somalia_regions %}
+                                    <option value="" disabled>Select City</option>
+                                    {% for city in somalia_regions[user.state] %}
+                                        <option value="{{ city }}" {% if user.city == city %}selected{% endif %}>{{ city }}</option>
+                                    {% endfor %}
+                                    <option value="Other" {% if user.city_text %}selected{% endif %}>Other</option>
+                                {% endif %}
+                            </select>
+
+                            <input type="text" class="form-control mt-2" id="city-text" name="city_text" placeholder="Enter City"
+                                   value="{{ user.city_text or user.city }}">
+                        </div>
+                    </div>
+                    
+                          <!-- Phone -->
+
+                       <div class="col-md-6">
+                         <div class="form-group">
+                        <label for="phone">Phone</label>
+                        <div class="input-group">
+                            <span class="input-group-text" id="country-code">+{{ user_country_code or 'XXX' }}</span>
+                            <input type="text" id="phone" name="phone" class="form-control"
+                            value="{{ phone_without_code  or '' }}" 
+                            aria-describedby="country-code"
+                                                pattern="\d*"
+                            placeholder="Enter phone number" aria-describedby="country-code" required>
+                        </div>
+                        </div>
+                       </div>
+                       
+
+                    </div>
+
+                    <!-- Status -->
+                  <!-- Status -->
+                    <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                        <label for="status">User Status</label>
+
+                        {% if user.role in ['superadmin'] %}
+                            <!-- Show disabled dropdown for UI -->
+                            <select class="form-control" id="status" disabled>
+                            <option value="1" {% if user.status %}selected{% endif %}>Active</option>
+                            <option value="0" {% if not user.status %}selected{% endif %}>Inactive</option>
+                            </select>
+                            <!-- Send actual status value using hidden input -->
+                            <input type="hidden" name="status" value="{{ 1 if user.status else 0 }}">
+                        {% else %}
+                            <select class="form-control" id="status" name="status" required>
+                            <option value="" disabled {% if user.status is none %}selected{% endif %}>Select Status</option>
+                            <option value="1" {% if user.status %}selected{% endif %}>Active</option>
+                            <option value="0" {% if not user.status %}selected{% endif %}>Inactive</option>
+                            </select>
+                        {% endif %}
+                        
+                        </div>
+                    </div>
+
+
+                
+
+
+             
+
+                    </div>
+                   
+
+                    <!-- Password -->
+                    <div class="row">
+                        <div class="col-md-6">
+                              <!-- Password Field -->
+                      <!-- Password Field -->
+                      <div class="form-group position-relative">
+                        <label for="new_password">New Password (Leave empty if no change)</label>
+                        <input type="password" name="new_password" id="new_password" class="form-control" placeholder="Enter a strong password" oninput="validatePassword()">
+                        <span class="position-absolute password-toggle" onclick="togglePassword('new_password', this)" style="top: 48px; right: 16px; cursor: pointer;"> 
+                          <i class="fas fa-eye"></i>
+                        </span>
+                        <ul id="passwordRequirements" class="text-danger small mt-2 pl-3"></ul>
+                      </div>
+
+                        </div>
+
+                        <div class="col-md-6">
+                              <!-- Confirm Password -->
+                        <div class="form-group position-relative">
+                        <label for="confirm_password">Confirm Password</label>
+                        <input type="password" id="confirm_password" name="confirm_password"
+                                class="form-control" placeholder="Confirm password" oninput="validatePassword()">
+                        <span class="position-absolute password-toggle" 
+                                onclick="togglePassword('confirm_password', this)" 
+                                style="top: 48px; right: 16px; cursor: pointer;">
+                            <i class="fas fa-eye"></i>
+                        </span>
+                        <div id="confirmFeedback" class="mt-1 small"></div>
+                        </div>
+
+                        </div>
+                    </div>
+
+                    <div class="card-action text-center">
+                        <button type="submit" class="btn btn-success">Update User</button>
+                        <a href="{{ url_for('main.all_users') }}" class="btn btn-danger">Cancel</a>
+                    </div>
+                </form>
+
+                
+            </div>
+        </div>
+    </div>
+</div>
+
+
+</div>
+<!-- [ Main Content ] end -->
+
+
+<!-- Include jQuery + Select2 -->
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+
+<!-- password Validation -->
+<!-- <script>
+function togglePassword(fieldId, iconContainer) {
+  const input = document.getElementById(fieldId);
+  const icon = iconContainer.querySelector('i');
+
+  if (input.type === "password") {
+    input.type = "text";
+    icon.classList.remove('fa-eye');
+    icon.classList.add('fa-eye-slash');
+  } else {
+    input.type = "password";
+    icon.classList.remove('fa-eye-slash');
+    icon.classList.add('fa-eye');
+  }
+}
+
+function validatePassword() {
+  const password = document.getElementById("new_password").value;
+  const confirmPassword = document.getElementById("confirm_password").value;
+  const requirementsContainer = document.getElementById("passwordRequirements");
+
+  const requirements = [
+    { regex: /.{8,}/, message: "At least 8 characters" },
+    { regex: /[A-Z]/, message: "At least one uppercase letter" },
+    { regex: /[a-z]/, message: "At least one lowercase letter" },
+    { regex: /[0-9]/, message: "At least one number" },
+    { regex: /[!@#$%^&*(),.?\":{}|<>]/, message: "At least one special character" }
+  ];
+
+  if (password.length === 0) {
+    // Hide requirements list if password is empty
+    requirementsContainer.style.display = 'none';
+  } else {
+    // Check if all requirements met
+    const allPassed = requirements.every(req => req.regex.test(password));
+
+    if (allPassed) {
+      // Show strong password message
+      requirementsContainer.style.display = 'block';
+      requirementsContainer.innerHTML = `<li style="color: green; font-weight: bold;">✅ Strong Password</li>`;
+    } else {
+      // Show list with individual checks
+      requirementsContainer.style.display = 'block';
+
+      const listItems = requirements.map(req => {
+        const passed = req.regex.test(password);
+        return `<li style="color:${passed ? 'green' : 'red'};">${passed ? '✅ ' : '❌ '}${req.message}</li>`;
+      });
+      requirementsContainer.innerHTML = listItems.join("");
+    }
+  }
+
+  const feedback = document.getElementById("confirmFeedback");
+  if (confirmPassword && password !== confirmPassword) {
+    feedback.textContent = "Passwords do not match";
+    feedback.classList.add("text-danger");
+    feedback.classList.remove("text-success");
+  } else if (confirmPassword) {
+    feedback.textContent = "Passwords match";
+    feedback.classList.add("text-success");
+    feedback.classList.remove("text-danger");
+  } else {
+    feedback.textContent = "";
+  }
+
+  return requirements.every(req => req.regex.test(password)) && password === confirmPassword;
+}
+
+document.querySelector("form").addEventListener("submit", function (e) {
+  if (!validatePassword()) {
+    e.preventDefault();
+    Swal.fire({
+      icon: "error",
+      title: "Invalid Password",
+      text: "Please fix password errors before submitting."
+    });
+  }
+});
+</script> -->
+
+
+<!-- photo allowed Validation -->
+<script>
+document.getElementById('photo').addEventListener('change', function () {
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png'];
+    const file = this.files[0];
+
+    if (file && !allowedTypes.includes(file.type)) {
+        this.value = ''; // Clear file input
+        Swal.fire({
+            icon: 'error',
+            title: 'Invalid File Type',
+            text: 'Only PNG, JPG, and JPEG files are allowed.',
+        });
+    }
+});
+</script>
+
+<!-- full name Validation -->
+<script>
+  document.querySelector('form').addEventListener('submit', function (e) {
+    const nameInput = document.querySelector('input[name="fullname"]');
+    const namePattern = /^[A-Za-z\s.'-]+$/;
+
+    if (!namePattern.test(nameInput.value.trim())) {
+      e.preventDefault();
+      Swal.fire({
+        icon: 'error',
+        title: 'Invalid Full Name',
+        text: 'Please enter a valid name using only letters, spaces, dots, apostrophes, and dashes.',
+      });
+      nameInput.focus();
+    }
+  });
+</script>
+
+<!-- state validation -->
+<script>
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const countrySelect = document.getElementById('country');
+        const stateDropdown = document.getElementById('state-dropdown');
+        const stateText = document.getElementById('state-text');
+        const cityDropdown = document.getElementById('city-dropdown');
+        const cityText = document.getElementById('city-text');
+        const somaliaRegions = {{ somalia_regions | tojson }};
+        const selectedCity = "{{ user.city }}";
+
+        function toggleLocationInputs() {
+            const country = countrySelect.value.toLowerCase();
+
+            if (country === 'somalia') {
+                stateDropdown.style.display = 'block';
+                stateDropdown.name = 'state';
+                stateDropdown.required = true;
+
+                stateText.style.display = 'none';
+                stateText.name = '';
+                stateText.required = false;
+                stateText.value = '';
+
+                cityDropdown.style.display = 'block';
+                cityDropdown.name = 'city';
+                cityDropdown.required = true;
+
+                if (cityDropdown.value === 'Other') {
+                    cityText.style.display = 'block';
+                    cityText.name = 'city_text';
+                    cityText.required = true;
+                } else {
+                    cityText.style.display = 'none';
+                    cityText.name = '';
+                    cityText.required = false;
+                    cityText.value = '';
+                }
+            } else {
+                stateDropdown.style.display = 'none';
+                stateDropdown.name = '';
+                stateDropdown.required = false;
+                stateDropdown.selectedIndex = 0;
+
+                cityDropdown.style.display = 'none';
+                cityDropdown.name = '';
+                cityDropdown.required = false;
+                cityDropdown.innerHTML = '';
+
+                stateText.style.display = 'block';
+                stateText.name = 'state_text';
+                stateText.required = true;
+
+                cityText.style.display = 'block';
+                cityText.name = 'city_text';
+                cityText.required = true;
+            }
+        }
+
+         stateDropdown.addEventListener('change', () => {
+            const selectedRegion = stateDropdown.value;
+            cityDropdown.innerHTML = '<option value="" disabled selected>Select City</option>';
+
+            if (somaliaRegions[selectedRegion]) {
+                let foundInDropdown = false;
+                somaliaRegions[selectedRegion].forEach(city => {
+                    const option = document.createElement('option');
+                    option.value = city;
+                    option.textContent = city;
+                    if (city === selectedCity) {
+                        option.selected = true;
+                        foundInDropdown = true;
+                    }
+                    cityDropdown.appendChild(option);
+                });
+
+                const otherOption = document.createElement('option');
+                otherOption.value = 'Other';
+                otherOption.textContent = 'Other';
+                cityDropdown.appendChild(otherOption);
+
+                cityDropdown.disabled = false;
+
+                if (foundInDropdown) {
+                    cityText.style.display = 'none';
+                    cityText.name = '';
+                    cityText.required = false;
+                    cityText.value = '';
+                } else {
+                    // Haddii city-ga DB ka aanu ku jirin dropdown-ka (sida “Other”)
+                    cityDropdown.value = 'Other';
+                    cityText.style.display = 'block';
+                    cityText.name = 'city_text';
+                    cityText.required = true;
+                    cityText.value = selectedCity;  // Halkan qiimaha city_text ka la dhigaa city-ga DB
+                }
+            } else {
+                cityDropdown.disabled = true;
+                cityText.style.display = 'block';
+                cityText.name = 'city_text';
+                cityText.required = true;
+                cityText.value = selectedCity;
+            }
+        });
+
+        cityDropdown.addEventListener('change', () => {
+            if (cityDropdown.value === 'Other') {
+                cityText.style.display = 'block';
+                cityText.name = 'city_text';
+                cityText.required = true;
+            } else {
+                cityText.style.display = 'none';
+                cityText.name = '';
+                cityText.required = false;
+                cityText.value = '';
+            }
+        });
+
+        countrySelect.addEventListener('change', () => {
+            toggleLocationInputs();
+        });
+
+        // Init on load
+        toggleLocationInputs();
+
+        // Trigger region change to populate city on load
+        if (countrySelect.value.toLowerCase() === 'somalia' && stateDropdown.value) {
+            stateDropdown.dispatchEvent(new Event('change'));
+        }
+    });
+</script>
+
+<!-- phone number Validation -->
+<script>
+const countrySelect = document.getElementById("country");
+const phoneInput = document.getElementById("phone");
+const countryCodeSpan = document.getElementById("country-code");
+
+phoneInput.addEventListener("input", function () {
+    // Tirooyin keliya ayaa la oggol yahay
+    this.value = this.value.replace(/\D/g, "");
+});
+
+let previousCountryCode = null;
+let initialLoad = true;  // Flag to track initial page load
+
+function updatePhoneInputAttributes() {
+  const selectedOption = countrySelect.options[countrySelect.selectedIndex];
+  const phoneCode = selectedOption.getAttribute("data-phone-code");
+  const minLength = parseInt(selectedOption.getAttribute("data-min-length"));
+  const maxLength = parseInt(selectedOption.getAttribute("data-max-length"));
+
+  // Clear phone input only if NOT initial load AND country code changed
+  if (!initialLoad && phoneCode !== previousCountryCode) {
+    phoneInput.value = "";
+  }
+  previousCountryCode = phoneCode;
+
+  countryCodeSpan.textContent = phoneCode ? `+${phoneCode}` : "+XXX";
+
+  if (!isNaN(minLength) && !isNaN(maxLength)) {
+    phoneInput.disabled = false;
+    phoneInput.setAttribute("minlength", minLength);
+    phoneInput.setAttribute("maxlength", maxLength);
+    phoneInput.setAttribute("pattern", `\\d{${minLength},${maxLength}}`);
+    phoneInput.setAttribute("placeholder", `Enter ${minLength}-${maxLength} digits`);
+  } else {
+    phoneInput.disabled = false;
+    phoneInput.removeAttribute("minlength");
+    phoneInput.removeAttribute("maxlength");
+    phoneInput.removeAttribute("pattern");
+    phoneInput.setAttribute("placeholder", "Enter phone number");
+  }
+
+  initialLoad = false;  // After first run, mark initialLoad false
+}
+
+// Limit digits input and strip non-digit chars on input
+phoneInput.addEventListener("input", (e) => {
+  const maxLength = parseInt(phoneInput.getAttribute("maxlength"));
+  if (!maxLength) return;
+
+  let digitsOnly = e.target.value.replace(/\D/g, "");
+
+  if (digitsOnly.length > maxLength) {
+    digitsOnly = digitsOnly.slice(0, maxLength);
+  }
+
+  e.target.value = digitsOnly;
+});
+
+// Prevent paste with more digits than maxlength
+phoneInput.addEventListener("paste", (e) => {
+  e.preventDefault();
+  const maxLength = parseInt(phoneInput.getAttribute("maxlength")) || 1000;
+  const pastedData = (e.clipboardData || window.clipboardData).getData("text");
+  let digitsOnly = pastedData.replace(/\D/g, "").slice(0, maxLength);
+  document.execCommand("insertText", false, digitsOnly);
+});
+
+countrySelect.addEventListener("change", updatePhoneInputAttributes);
+
+// Initialize on page load
+if (!countrySelect.value) {
+  phoneInput.disabled = true;
+} else {
+  updatePhoneInputAttributes();
+}
+
+</script>
+
+
+
+<!-- CSS -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.19/css/intlTelInput.min.css"/>
+
+<!-- JS -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.19/js/intlTelInput.min.js"></script>
+
+
+
+{% endblock %}

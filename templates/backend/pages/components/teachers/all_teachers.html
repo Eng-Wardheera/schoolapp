@@ -1,0 +1,196 @@
+{% extends 'backend/home/base.html' %}
+
+{% block title %}All Teachers | School System{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-left d-flex align-items-center">
+        <div class="page-header-title"><h5>Teachers</h5></div>
+        <ul class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Home</a></li>
+            <li class="breadcrumb-item">All Teachers</li>
+        </ul>
+    </div>
+    <div class="page-header-right ms-auto">
+        <a href="{{ url_for('main.add_teacher') }}" class="btn btn-primary">
+            <i class="feather-plus me-1"></i> Add Teacher
+        </a>
+    </div>
+</div>
+
+<div class="container-fluid py-4">
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-body p-3">
+
+                    <!-- Actions -->
+                    <div class="d-flex gap-2 justify-content-end">
+                        <a href="{{ url_for('main.export_teachers') }}" class="btn btn-success">
+                            <i class="feather-download me-2"></i> Export CSV
+                        </a>
+
+                        <form action="{{ url_for('main.import_teachers') }}" method="POST" enctype="multipart/form-data" class="d-inline-flex align-items-center">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <input type="file" name="file" accept=".csv" required class="form-control form-control-sm me-1">
+                            <button type="submit" class="btn btn-info btn-sm">
+                                <i class="feather-upload me-1"></i> Import CSV
+                            </button>
+                        </form>
+                    </div>
+
+                    <br><hr>
+
+                    <!-- Table -->
+                    <div class="table-responsive">
+                        <table class="table table-hover" id="teacherList">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>#</th>
+                                    <th>Teacher</th>
+                                    <th>Specialization</th>
+                                    <th>Email</th>
+                                    <th>Phone</th>
+                                    <th>Status</th>
+                                    <th class="text-end">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for teacher in teachers %}
+                                <tr>
+                                    <td>{{ loop.index }}</td>
+
+                                    <!-- Teacher Info -->
+                                    <td>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <div class="avatar-image avatar-md">
+                                                {% if teacher.photo %}
+                                                    <img src="{{ url_for('static', filename=teacher.photo) }}" class="img-fluid rounded-circle">
+                                                {% else %}
+                                                    <div class="avatar-text bg-soft-primary text-primary rounded-circle">
+                                                        {{ teacher.full_name[0]|upper }}
+                                                    </div>
+                                                {% endif %}
+                                            </div>
+                                            <div>
+                                                <strong>{{ teacher.full_name }}</strong><br>
+                                                <small class="text-muted">{{ teacher.roll_no }}</small>
+                                            </div>
+                                        </div>
+                                    </td>
+
+                                    <td>{{ teacher.specialization }}</td>
+                                    <td>{{ teacher.email }}</td>
+                                    <td>{{ teacher.phone or '-' }}</td>
+
+                                    <!-- Status -->
+                                    <td>
+                                        <span class="badge bg-success">Active</span>
+                                    </td>
+
+                                    <!-- Actions -->
+                                    <td class="text-end">
+                                        <div class="btn-group">
+                                            <!-- <button 
+    class="btn btn-sm btn-light"
+    data-bs-toggle="modal"
+    data-bs-target="#editTeacherModal"
+    data-id="{{ teacher.id }}"
+    data-name="{{ teacher.full_name }}"
+    data-email="{{ teacher.email }}"
+    data-phone="{{ teacher.phone }}"
+    data-specialization="{{ teacher.specialization }}"
+>
+    <i class="feather-edit"></i>
+</button> -->
+
+                                            <a href="{{ url_for('main.edit_teacher', teacher_id=teacher.id) }}" class="btn btn-sm btn-light">
+                                                <i class="feather-edit"></i>
+                                            </a>
+                                            <form action="{{ url_for('main.delete_teacher', teacher_id=teacher.id) }}" method="POST">
+                                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                <button type="submit" class="btn btn-sm btn-danger"
+                                                    onclick="return confirm('Delete this teacher?')">
+                                                    <i class="feather-trash"></i>
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </td>
+
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+
+<div class="modal fade" id="editTeacherModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+
+      <form method="POST" action="{{ url_for('main.update_teacher_profile') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="teacher_id" id="edit_teacher_id">
+
+        <div class="modal-header">
+          <h5 class="modal-title">Edit Teacher</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+
+        <div class="modal-body">
+
+          <div class="mb-2">
+            <label>Name</label>
+            <input type="text" name="full_name" id="edit_name" class="form-control">
+          </div>
+
+          <div class="mb-2">
+            <label>Email</label>
+            <input type="email" name="email" id="edit_email" class="form-control">
+          </div>
+
+          <div class="mb-2">
+            <label>Phone</label>
+            <input type="text" name="phone" id="edit_phone" class="form-control">
+          </div>
+
+          <div class="mb-2">
+            <label>Specialization</label>
+            <input type="text" name="specialization" id="edit_specialization" class="form-control">
+          </div>
+
+        </div>
+
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-primary">Update</button>
+        </div>
+
+      </form>
+
+    </div>
+  </div>
+</div>
+
+<!-- DataTable -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    $('#teacherList').DataTable({
+        responsive: true,
+        pageLength: 10,
+        order: [[0, 'asc']],
+        language: {
+            searchPlaceholder: "Search teachers..."
+        }
+    });
+});
+</script>
+
+{% endblock %}

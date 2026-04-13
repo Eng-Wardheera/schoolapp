@@ -1,0 +1,230 @@
+{% extends 'backend/home/base.html' %}
+{% block title %}Student Exam Results View | School Management{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+    <div class="page-header-left d-flex align-items-center">
+        <div class="page-header-title">
+            <h5>Result</h5>
+        </div>
+        <ul class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="{{ url_for('main.dashboard') }}">Home</a>
+            </li>
+            <li class="breadcrumb-item">View Exam Results</li>
+        </ul>
+    </div>
+</div>
+
+<div class="main-content">
+
+    <div class="container-fluid py-4 bg-light">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+                <div class="card-header text-center py-2" style="background-color: #393185;">
+                    <h6 class="text-white mb-0 fw-bold">Student Information</h6>
+                </div>
+                <div class="card-body p-0">
+                    <div class="row g-0">
+                       <div class="col-md-3 bg-primary text-white p-4 text-center d-flex flex-column justify-content-center">
+    <div class="avatar-circle mx-auto mb-3 shadow">
+        <i class="fas fa-user-graduate fa-3x"></i>
+    </div>
+    <h5 class="fw-bold mb-0 text-uppercase">{{ current_user.fullname }}</h5>
+    
+    <div class="mt-2">
+        {% if student %}
+            {% if student.status == 'active' %}
+                <span class="badge bg-success shadow-sm">Active</span>
+            {% elif student.status == 'graduated' %}
+                <span class="badge bg-info text-dark shadow-sm">Graduated</span>
+            {% elif student.status == 'suspended' %}
+                <span class="badge bg-danger shadow-sm">Suspended</span>
+            {% else %}
+                <span class="badge bg-secondary shadow-sm">Inactive</span>
+            {% endif %}
+        {% else %}
+            <span class="badge bg-dark">N/A</span>
+        {% endif %}
+    </div>
+
+    <small class="opacity-75 mt-2">ID: {{ student.roll_no if student else 'N/A' }}</small>
+</div>
+                        <div class="col-md-9 p-4 bg-white">
+                            <div class="row g-4">
+                                <div class="col-sm-4">
+                                    <label class="text-muted small text-uppercase d-block">Gender</label>
+                                    <span class="fw-bold">{{ student.gender if student else 'N/A' }}</span>
+                                </div>
+                                <div class="col-sm-4">
+                                    <label class="text-muted small text-uppercase d-block">Current Class</label>
+                                    <span class="fw-bold text-primary">
+                                        {{ student_current_class.name }} 
+                                        {% if student.section %} - ({{ student.section.name }}){% endif %}
+                                    </span>
+                                </div>
+                                <div class="col-sm-4">
+                                    <label class="text-muted small text-uppercase d-block">Parent Name</label>
+                                    <span class="fw-bold">{{ student.parent.full_name }}</span>
+                                </div>
+                               
+                                <div class="col-sm-4">
+                                    <label class="text-muted small text-uppercase d-block">Academic Year</label>
+                                    <span class="fw-bold text-dark">{{ active_year.year_name if active_year else 'N/A' }}</span>
+                                </div>
+                                <div class="col-sm-4">
+                                    <label class="text-muted small text-uppercase d-block">Status</label>
+                                    <span class="badge {{ 'bg-soft-success text-success' if status == 'Pass' else 'bg-soft-danger text-danger' }} rounded-pill px-3">
+                                        {{ status }}
+                                    </span>
+                                </div>
+                                 <div class="col-sm-4">
+                                    <label class="text-muted small text-uppercase d-block">Parent Phone</label>
+                                    <span class="fw-bold">{{ student.parent.phone }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4 align-items-center">
+        <div class="col-md-4">
+            <div class="dropdown">
+                <button class="btn btn-white shadow-sm dropdown-toggle w-100 text-start d-flex justify-content-between align-items-center bg-white py-2 px-3 border-0" 
+                        type="button" id="classDropdown" data-bs-toggle="dropdown" aria-expanded="false" style="border-radius: 10px;">
+                    <span><i class="fas fa-graduation-cap me-2 text-primary"></i> 
+                        {{ current_selected_class.name if current_selected_class else 'Select Class' }}
+                    </span>
+                </button>
+                <ul class="dropdown-menu shadow border-0 w-100 rounded-3" aria-labelledby="classDropdown">
+                    <li class="dropdown-header text-uppercase small pb-1">Exam History</li>
+                    {% for cls in history_classes %}
+                    <li>
+                        <a class="dropdown-item {% if cls.id == selected_class_id %}active{% endif %} py-2" 
+                           href="{{ url_for('main.student_cumulative_view', class_id=cls.id) }}">
+                            Class {{ cls.name }}
+                        </a>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+        <div class="col-md-8 text-md-end mt-3 mt-md-0">
+            <button onclick="window.print()" class="btn btn-primary rounded-pill px-4 shadow-sm">
+                <i class="fas fa-print me-2"></i>Print Result
+            </button>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-md-3 col-6">
+            <div class="stat-card p-3 shadow-sm border-0 rounded-4 bg-white h-100 border-start border-primary border-4">
+                <small class="text-muted d-block mb-1">Total Marks</small>
+                <h4 class="fw-bold text-dark mb-0">{{ "%.2f"|format(grand_total) }}</h4>
+                <small class="text-primary small" style="font-size: 11px;">Out of {{ "%.0f"|format(grand_max) }}</small>
+            </div>
+        </div>
+        <div class="col-md-3 col-6">
+            <div class="stat-card p-3 bg-white shadow-sm rounded-4 h-100 border-start border-4" style="border-color: {{ '#1cc88a' if status == 'Pass' else '#e74a3b' }} !important;">
+                <small class="text-muted d-block">Percent Gained</small>
+                <h4 class="fw-bold text-{{ status_color }} mb-0">{{ "%.2f"|format(average) }}%</h4>
+                <small class="fw-bold text-{{ status_color }}">Grade: {{ grade }}</small>
+            </div>
+        </div>
+        <div class="col-md-3 col-6">
+            <div class="stat-card p-3 shadow-sm border-0 rounded-4 bg-white h-100 border-start border-warning border-4">
+                <small class="text-muted d-block mb-1">Class Position</small>
+                <h4 class="fw-bold text-warning mb-0">#{{ class_pos }}</h4>
+                <small class="text-muted small" style="font-size: 11px;">of {{ total_class_students }} students</small>
+            </div>
+        </div>
+        <div class="col-md-3 col-6">
+            <div class="stat-card p-3 shadow-sm border-0 rounded-4 bg-white h-100 border-start border-info border-4">
+                <small class="text-muted d-block mb-1">School Position</small>
+                <h4 class="fw-bold text-info mb-0">#{{ school_pos }}</h4>
+                <small class="text-muted small" style="font-size: 11px;">of {{ total_school_students }} results</small>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        {% for s_name, data in subjects.items() %}
+        <div class="col-lg-6 mb-4">
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden h-100">
+                <div class="card-header bg-white py-3 border-bottom-0">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div class="d-flex align-items-center">
+                            <div class="subject-icon me-3 bg-soft-primary text-primary rounded-3">
+                                <i class="fas fa-book-open"></i>
+                            </div>
+                            <h5 class="mb-0 fw-bold">{{ s_name }}</h5>
+                        </div>
+                        <span class="badge {% if data.row_total < 50 %}bg-soft-danger text-danger border-danger{% else %}bg-light text-dark border{% endif %}">
+                            {{ "%.1f"|format(data.row_total) }} / 100
+                        </span>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                       <table class="table table-hover align-middle mb-0">
+    <thead class="bg-light text-muted small text-uppercase">
+        <tr>
+            <th class="ps-4">Exam Type</th>
+            <th class="text-center">Score</th>
+            <th class="text-end pe-4">Progress</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for ex_name, details in data.scores.items() %}
+            {# details hadda waa dictionary leh 'score' iyo 'max_score' #}
+            {% set score = details.score %}
+            {% set max_s = details.max_score %}
+            {% set perc = (score / max_s * 100) if max_s > 0 else 0 %}
+        <tr>
+            <td class="ps-4 fw-medium text-capitalize text-muted">{{ ex_name }}</td>
+            <td class="text-center">
+                <span class="fw-bold text-dark">{{ "%.1f"|format(score) }}</span>
+                <small class="text-muted" style="font-size: 11px;"> / {{ "%.0f"|format(max_s) }}</small>
+            </td>
+            <td class="text-end pe-4">
+                <div class="progress rounded-pill" style="height: 8px; width: 100px; display: inline-flex;">
+                    <div class="progress-bar {% if perc < 40 %}bg-danger{% elif perc < 60 %}bg-warning{% else %}bg-success{% endif %}" 
+                         role="progressbar" style="width: {{ perc }}%"></div>
+                </div>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+</div>
+<style>
+    .avatar-circle { width: 80px; height: 80px; background: rgba(255,255,255,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 3px solid rgba(255,255,255,0.3); }
+    .bg-soft-primary { background-color: rgba(78, 115, 223, 0.1); }
+    .bg-soft-success { background-color: rgba(28, 200, 138, 0.1); }
+    .bg-soft-danger { background-color: rgba(231, 74, 59, 0.1); }
+    .subject-icon { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; font-size: 16px; }
+    .stat-card { transition: all 0.3s ease; }
+    .stat-card:hover { transform: translateY(-3px); }
+    .progress { background-color: #eaecf4; }
+    
+    @media print {
+        .btn, .dropdown, .sidebar, .navbar, .page-header { display: none !important; }
+        .card { border: 1px solid #ddd !important; shadow: none !important; }
+        body { background: white !important; }
+        .main-content { padding: 0 !important; margin: 0 !important; }
+    }
+</style>
+{% endblock %}

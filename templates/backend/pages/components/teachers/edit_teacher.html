@@ -1,0 +1,156 @@
+{% extends 'backend/home/base.html' %}
+
+{% block title %}Edit {{ teacher.full_name }} | School Management System{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-left d-flex align-items-center">
+        <div class="page-header-title"><h5>Teachers</h5></div>
+        <ul class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Home</a></li>
+            <li class="breadcrumb-item">Edit Teacher</li>
+        </ul>
+    </div>
+    <div class="page-header-right ms-auto">
+        <a href="{{ url_for('main.all_teachers') }}" class="btn btn-primary">
+            <i class="feather-list me-1"></i> All Teachers
+        </a>
+    </div>
+</div>
+
+<div class="container mt-4">
+    <div class="card shadow-sm">
+        <div class="card-header">
+            <h5 class="mb-0">Edit Teacher: {{ teacher.full_name }}</h5>
+        </div>
+
+        <form method="POST" enctype="multipart/form-data">
+            {{ form.hidden_tag() }}
+
+            <div class="card-body">
+                <div class="row">
+
+                    <!-- Full Name -->
+                    <div class="col-md-6 mb-3">
+                        <label>Full Name</label>
+                        {{ form.full_name(class="form-control") }}
+                    </div>
+
+                    <!-- Specialization -->
+                    <div class="col-md-6 mb-3">
+                        <label>Specialization</label>
+                        {{ form.specialization(class="form-control") }}
+                    </div>
+
+                    <!-- Email -->
+                    <div class="col-md-6 mb-3">
+                        <label>Email</label>
+                        {{ form.email(class="form-control") }}
+                    </div>
+
+                    <!-- Phone -->
+                    <div class="col-md-6 mb-3">
+                        <label>Phone</label>
+                        {{ form.phone(class="form-control") }}
+                    </div>
+
+                    <!-- Emergency -->
+                    <div class="col-md-6 mb-3">
+                        <label>Emergency Contact</label>
+                        {{ form.emergency(class="form-control") }}
+                    </div>
+
+                    <!-- Gender -->
+                    <div class="col-md-6 mb-3">
+                        <label>Gender</label>
+                        {{ form.gender(class="form-select") }}
+                    </div>
+
+                    <!-- Date of Birth -->
+                    <div class="col-md-6 mb-3">
+                        <label>Date of Birth</label>
+                        {{ form.date_of_birth(class="form-control") }}
+                    </div>
+
+                    <!-- Address -->
+                    <div class="col-md-6 mb-3">
+                        <label>Address</label>
+                        {{ form.address(class="form-control") }}
+                    </div>
+
+                    <!-- Profile Photo -->
+                  <div class="col-md-6 mb-3">
+    <label>Profile Photo</label>
+    <input type="file" name="photo" class="form-control">
+
+    {% if teacher.photo %}
+        <div class="mt-2">
+            <small class="text-muted">Current Photo:</small>
+            <br>
+            <img id="photoPreview" src="{{ url_for('static', filename=teacher.photo) }}" 
+                 alt="Teacher Photo" 
+                 class="img-thumbnail" 
+                 style="max-width: 150px; max-height: 150px;">
+
+            <!-- Remove checkbox -->
+            <div class="form-check mt-1">
+                <input class="form-check-input" type="checkbox" value="remove" id="removePhoto" name="remove_photo">
+                <label class="form-check-label" for="removePhoto">
+                    Remove current photo
+                </label>
+            </div>
+        </div>
+    {% else %}
+        <img id="photoPreview" class="img-thumbnail" style="display:none; max-width:150px; max-height:150px;">
+    {% endif %}
+</div>
+
+<!-- Live preview for new uploads -->
+<script>
+    const photoInput = document.querySelector('input[name="photo"]');
+    const photoPreview = document.getElementById('photoPreview');
+
+    photoInput.addEventListener('change', function() {
+        const file = this.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                photoPreview.src = e.target.result;
+                photoPreview.style.display = 'block';
+            }
+            reader.readAsDataURL(file);
+        }
+    });
+</script>
+
+
+
+                    <!-- Roll No -->
+                    <div class="col-md-6 mb-3">
+                        <label>Roll No</label>
+                        {{ form.roll_no(class="form-control", readonly=True) }}
+                    </div>
+
+                    <!-- Password -->
+                    <div class="col-md-6 mb-3">
+                        <label>Password (Leave blank to keep current)</label>
+                        {{ form.password(class="form-control") }}
+                    </div>
+
+                    <!-- Status -->
+                    <div class="col-md-6 mb-3">
+                        <label>Status</label>
+                        {{ form.status(class="form-select") }}
+                    </div>
+
+                </div>
+            </div>
+
+            <div class="card-footer text-end">
+                <button type="submit" class="btn btn-primary">Update Teacher</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% endblock %}

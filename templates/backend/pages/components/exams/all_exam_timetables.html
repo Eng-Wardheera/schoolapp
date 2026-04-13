@@ -1,0 +1,209 @@
+{% extends 'backend/home/base.html' %}
+
+{% block title %}All Exam Timetables | School Management{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+    <div class="page-header-left d-flex align-items-center">
+        <div class="page-header-title">
+            <h5>Exam Timetables</h5>
+        </div>
+        <ul class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Home</a></li>
+            <li class="breadcrumb-item">All Exam Timetables</li>
+        </ul>
+    </div>
+    <div class="ms-auto">
+        <a href="{{ url_for('main.add_exam_timetable') }}" class="btn btn-primary">
+            <i class="feather-plus me-1"></i> Add Timetable
+        </a>
+    </div>
+</div>
+
+<div class="main-content">
+    <div class="row">
+        <div class="col-lg-12">
+
+            <div class="card">
+                <div class="card-header">
+                    <h5>All Exam Timetables</h5>
+                </div>
+
+                <div class="card-body table-responsive" >
+
+                    <!-- FILTER + ACTIONS -->
+
+                       
+                        <!-- PRINT -->
+                      <!-- PRINT -->
+
+<!-- PDF -->
+<div class="d-flex gap-2 mb-3">
+    <select id="level_filter" class="form-select" style="max-width:200px;">
+        <option value="">-- Select Level --</option>
+        {% for level in levels %}
+            <option value="{{ level.id }}">{{ level.name }}</option>
+        {% endfor %}
+    </select>
+
+    <button onclick="goToPrint()" class="btn btn-success">
+        <i class="feather-printer"></i> Print
+    </button>
+
+    <button onclick="downloadWord()" class="btn btn-primary">
+        <i class="fas fa-file-word"></i> Download Word
+    </button>
+
+    <button onclick="downloadPDF()" class="btn btn-danger">
+        <i class="feather-download"></i> PDF
+    </button>
+     
+    <button onclick="downloadPng()" class="btn btn-primary">
+        <i class="fas fa-file-image"></i> Download PNG
+    </button>
+
+     
+
+
+                    </div>
+
+                    <hr>
+
+                    <!-- TABLE WRAPPER -->
+                    <div id="print_area">
+
+                        {% if timetables %}
+                        <table class="table table-striped table-hover" id="timetable_table">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Exam</th>
+                                    <th>Level</th>
+                                    <th>Subject</th>
+                                    <th>Date</th>
+                                    <th>Start</th>
+                                    <th>End</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+
+                            <tbody>
+                                {% for tt in timetables %}
+                                <tr data-level="{{ tt.level_id }}">
+                                    <td>{{ loop.index }}</td>
+                                    <td>{{ tt.exam.exam_name }}</td>
+                                    <td>{{ tt.level.name }}</td>
+                                    <td>{{ tt.subject.name }}</td>
+                                    <td>{{ tt.date.strftime('%Y-%m-%d') }}</td>
+                                    <td>{{ tt.start_time.strftime('%H:%M') }}</td>
+                                    <td>{{ tt.end_time.strftime('%H:%M') }}</td>
+                                    <td>
+                                        <a href="{{ url_for('main.edit_exam_timetable', id=tt.id) }}" class="btn btn-sm btn-warning">
+                                            Edit
+                                        </a>
+                                        <a href="{{ url_for('main.delete_exam_timetable', id=tt.id) }}"
+                                           class="btn btn-sm btn-danger"
+                                           onclick="return confirm('Delete?');">
+                                            Delete
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+
+                        </table>
+                        {% else %}
+                            <p class="text-center text-muted">No exam timetables found.</p>
+                        {% endif %}
+
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- ================= JS ================= -->
+
+<!-- FILTER BY LEVEL -->
+<script>
+
+    function downloadWord() {
+    const levelId = document.getElementById("level_filter").value;
+
+    if (!levelId) {
+        alert("Fadlan marka hore dooro heerka (Select Level)");
+        return;
+    }
+
+    // Waxay u diraysaa URL-ka saxda ah ee route-ka Python
+    window.location.href = `/download-exam-timetable-word/${levelId}`;
+}
+
+    function downloadPng() {
+    const levelId = document.getElementById("level_filter").value;
+
+    if (!levelId) {
+        alert("Fadlan marka hore dooro heerka (Select Level)");
+        return;
+    }
+
+    // Waxay u diraysaa URL-ka saxda ah ee route-ka Python
+    window.location.href = `/download-exam-timetable-png/${levelId}`;
+}
+
+
+document.addEventListener('DOMContentLoaded', function() {
+    $('#timetable_table').DataTable({
+        responsive: true,
+        pageLength: 10,
+        lengthChange: true,
+        searching: true,
+        ordering: true,
+        order: [[0, 'asc']],
+        language: {
+            search: "_INPUT_",
+            searchPlaceholder: "Search class levels..."
+        },
+        dom: 'Bfrtip',
+        buttons: [
+            'copy', 'csv', 'excel', 'pdf', 'print'
+        ]
+    });
+});
+</script>
+
+<script>
+function goToPrint() {
+    const levelId = document.getElementById("level_filter").value;
+
+    if (!levelId) {
+        alert("Please select level first");
+        return;
+    }
+
+    window.open(`/exam-timetable/print?level_id=${levelId}`, "_blank");
+}
+</script>
+
+
+<!-- PDF DOWNLOAD -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+<script>
+function downloadPDF() {
+    const element = document.getElementById("print_area");
+
+    html2pdf().from(element).set({
+        margin: 10,
+        filename: 'exam_timetable.pdf',
+        html2canvas: { scale: 2 },
+        jsPDF: { orientation: 'portrait' }
+    }).save();
+}
+</script>
+
+{% endblock %}

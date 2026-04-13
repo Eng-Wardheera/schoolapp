@@ -1,0 +1,85 @@
+{% extends 'backend/home/base.html' %}
+
+{% block title %}Edit Exam Hall | School Management{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+    <div class="page-header-left d-flex align-items-center">
+        <div class="page-header-title">
+            <h5>Exam Halls</h5>
+        </div>
+        <ul class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="{{ url_for('main.dashboard') }}">Home</a>
+            </li>
+            <li class="breadcrumb-item">
+                <a href="{{ url_for('main.all_exam_halls') }}">Exam Halls</a>
+            </li>
+            <li class="breadcrumb-item">Edit Exam Hall</li>
+        </ul>
+    </div>
+</div>
+
+<div class="main-content">
+    <div class="row">
+        <div class="col-lg-8">
+
+            <form method="POST">
+                {{ form.hidden_tag() }}
+
+                <div class="card">
+
+                    <div class="card-header">
+                        <h5>Edit Exam Hall</h5>
+                    </div>
+
+                    <div class="card-body">
+
+                        <!-- HALL NAME -->
+                        <div class="mb-4">
+                            {{ form.name.label(class="fw-semibold") }}
+                            {{ form.name(class="form-control", placeholder="Enter Hall Name") }}
+                            {% for error in form.name.errors %}
+                                <div class="text-danger small">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <!-- CAPACITY -->
+                        <div class="mb-4">
+                            {{ form.capacity.label(class="fw-semibold") }}
+                            {{ form.capacity(class="form-control", placeholder="Enter Capacity", type="number", min="1") }}
+                            {% for error in form.capacity.errors %}
+                                <div class="text-danger small">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <!-- SCHOOL (Hidden) -->
+                        {{ form.school_id(class="d-none") }}
+
+                        <!-- BRANCH (Hidden) -->
+                        {{ form.branch_id(class="d-none") }}
+
+                    </div>
+
+                    <div class="card-footer d-flex justify-content-between">
+
+                        <!-- Back Button -->
+                        <a href="{{ url_for('main.all_exam_halls') }}" class="btn btn-secondary">
+                            Back
+                        </a>
+
+                        <!-- Submit -->
+                        {{ form.submit(class="btn btn-primary") }}
+
+                    </div>
+
+                </div>
+
+            </form>
+
+        </div>
+    </div>
+</div>
+
+{% endblock %}

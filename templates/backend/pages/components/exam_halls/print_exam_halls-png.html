@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="so">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        * { box-sizing: border-box; } /* Hubinta in cabbirku uusan dhumun */
+        body { font-family: 'Segoe UI', Arial, sans-serif; margin: 0; padding: 15px; background: #fff; width: 1250px; }
+        
+        .outer-border { border: 6px solid #2c3e50 !important; padding: 4px; margin-bottom: 30px; }
+        .middle-border { border: 6px solid #2ecc71 !important; padding: 4px; }
+        .inner-border { border: 2px solid #34495e !important; padding: 15px; position: relative; }
+        
+        /* Header Fix */
+        .header { text-align: center; border-bottom: 4px solid #2ecc71 !important; padding-bottom: 10px; margin-bottom: 10px; }
+        
+        .main-logo {
+            width: 100%;
+            height: 140px;
+            margin-bottom: 5px;
+            overflow: hidden;
+        }
+
+        .main-logo img {
+            width: 100%;
+            height: 100%;
+            object-fit: fill;
+            display: block;
+        }
+
+        .school-title h2 { margin: 0; color: #27ae60 !important; font-size: 32px; text-transform: uppercase; }
+        .school-title p { margin: 5px 0; font-weight: bold; font-size: 18px; text-transform: uppercase; color: #333; }
+
+        .exam-date { position: absolute; right: 20px; top: 150px; font-size: 16px; font-weight: bold; }
+
+        .banner-blue { 
+            background-color: #0000ff !important; color: #ffffff !important; 
+            text-align: center; padding: 12px; font-size: 22px; font-weight: bold; 
+            margin: 20px 0; border: 2px solid #000; text-transform: uppercase;
+        }
+
+        /* 🔥 QAYBTA SAXISTA: PRINTED BY IYO HALL NAME (GEES IYO GEES) */
+ 
+        .hall-info-box{
+    margin-top: 10px;
+    display: flex;
+    align-items: center;
+    font-size: 14px;
+    font-weight: bold;
+    padding-bottom: 8px;
+    border-bottom: 3px solid #2ecc71 !important; /* 🔥 border hoos */
+}
+
+/* LEFT (full width) */
+.hall-name {
+    flex: 1;              /* 🔥 buuxi space-ka */
+    text-align: left;
+     text-transform: uppercase;
+}
+
+/* RIGHT (fixed) */
+.printend-info {
+    text-align: right;
+    white-space: nowrap;  /* 🔥 Tel hal line ha ahaado */
+}
+
+        table { width: 100%; border-collapse: collapse; border: 2px solid #000 !important; }
+        th, td { border: 1px solid #000 !important; padding: 8px; text-align: center; font-size: 12px; }
+        .th-main { background-color: #5dade2 !important; color: #000 !important; font-weight: bold; }
+        .subject-title { background-color: #d5f5e3 !important; font-size: 11px; height: 45px; font-weight: bold; }
+
+        /* 🔥 QAYBTA SAXISTA: FOOTER-KA (GEES IYO GEES) */
+       .footer {
+    margin-top: 10px;
+    display: flex;
+    align-items: center;
+    font-size: 14px;
+    font-weight: bold;
+    padding-bottom: 8px;
+    border-bottom: 3px solid #2ecc71; /* 🔥 border hoos */
+}
+
+/* LEFT (full width) */
+.footer-name {
+    flex: 1;              /* 🔥 buuxi space-ka */
+    text-align: left;
+     text-transform: uppercase;
+}
+
+/* RIGHT (fixed) */
+.tell {
+    text-align: right;
+    white-space: nowrap;  /* 🔥 Tel hal line ha ahaado */
+}
+    </style>
+</head>
+<body>
+
+{% for hall in halls %}
+<div class="outer-border">
+    <div class="middle-border">
+        <div class="inner-border">
+            
+            <div class="header">
+                <div class="main-logo">
+                    {% set logo_path = "" %}
+                    {% if branch and branch.logo %}
+                        {% set logo_path = url_for('static', filename=branch.logo) %}
+                    {% elif school and school.logo %}
+                        {% set logo_path = url_for('static', filename=school.logo) %}
+                    {% elif g.site_logo and g.site_logo.main_logo %}
+                        {% set logo_path = url_for('static', filename=g.site_logo.main_logo) %}
+                    {% else %}
+                        {% set logo_path = url_for('static', filename='backend/uploads/images/no_image.jpg') %}
+                    {% endif %}
+                    <img src="{{ request.url_root.rstrip('/') }}{{ logo_path }}" alt="Logo">
+                </div>
+
+                <div class="exam-date">DATE: {{ now_eat().strftime('%d/%m/%Y') }}</div>
+
+                <div class="school-title">
+                    <h2>{{ branch.name | upper if branch else school.name | upper }}</h2>
+                    <p>{{ branch.title | upper if branch and branch.title else school.title | upper if school and school.title else '' }}</p>
+                </div>
+            </div>
+
+            <div class="banner-blue">
+                {% if branch and school %}
+                XAADIRINTA IMTIXAANKA (EXAM ATTENDANCE SHEET)
+                For {{ branch.name.split(' ')[0] | upper }} {% if shift %}- {{ shift|capitalize }} Shift{% endif %}
+                {% elif school %}
+                XAADIRINTA IMTIXAANKA (EXAM ATTENDANCE SHEET)
+                For {{ school.name.split(' ')[0] | upper }} {% if shift %}- {{ shift|capitalize }} Shift{% endif %}
+                {% elif branch %}
+                XAADIRINTA IMTIXAANKA (EXAM ATTENDANCE SHEET)
+                For {{ branch.name.split(' ')[0] | upper }} {% if shift %}- {{ shift|capitalize }} Shift{% endif %}
+                {% else %}
+               XAADIRINTA IMTIXAANKA (EXAM ATTENDANCE SHEET)
+                For {% if shift %}- {{ shift|capitalize }} Shift{% endif %}
+                {% endif %}
+            </div>
+
+            <div class="hall-info-box">
+                <div class="hall-name" style="font-size: 26px; color: #000080 !important; font-weight: bold; text-transform: uppercase;">
+                    {{ hall.name }}
+                </div>
+                <div class="printend-info" style="font-size: 14px; color: #000 !important; font-weight: bold;">
+                    PRINTED BY: {{ current_user.username | upper }}
+                </div>
+            </div>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th rowspan="3" class="th-main" style="width: 4%;">NO</th>
+                        <th rowspan="3" class="th-main" style="width: 22%;">STUDENT NAME</th>
+                        <th rowspan="3" class="th-main" style="width: 8%;">CLASS</th>
+                        {% for d in all_dates %}
+                        <th colspan="2" style="background: #f2f2f2 !important;">{{ d.strftime('%a') }}<br>{{ d.strftime('%d-%b') }}</th>
+                        {% endfor %}
+                    </tr>
+                    <tr>
+                        {% for d in all_dates %}
+                            {% set first_student = hall.hall_assignments[0] if hall.hall_assignments else none %}
+                            {% set header_exams = timetable_map[first_student.class_obj.level_id][d] if first_student else [] %}
+                            <th class="subject-title">{{ header_exams[0] if header_exams|length >= 1 else '-' }}</th>
+                            <th class="subject-title">{{ header_exams[1] if header_exams|length >= 2 else '-' }}</th>
+                        {% endfor %}
+                    </tr>
+                    <tr>
+                        {% for d in all_dates %}
+                        <th style="font-size: 9px; background: #fff !important;">SIGN</th>
+                        <th style="font-size: 9px; background: #fff !important;">SIGN</th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for assign in hall.hall_assignments %}
+                    <tr>
+                        <td>{{ loop.index }}</td>
+                        <td style="text-align: left; font-weight: bold; padding-left: 10px;">{{ assign.student.full_name | title }}</td>
+                        <td>{{ assign.class_obj.name }}</td>
+                        {% for d in all_dates %}
+                            <td style="height: 40px; background: #fff !important;"></td>
+                            <td style="height: 40px; background: #fff !important;"></td>
+                        {% endfor %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+             <div class="footer">
+                <div class="footer-name">
+                    {% if branch %}{{ branch.name }}{% elif school %}{{ school.name }}{% else %}{% endif %}
+                </div>
+
+                <div class="tell">
+                    Tel: 
+                    {% if branch %}{{ branch.phone }}{% elif school %}{{ school.phone }}{% else %}{% endif %}
+                </div>
+            </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endfor %}
+
+</body>
+</html>

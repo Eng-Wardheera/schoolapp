@@ -1,0 +1,297 @@
+{% extends 'backend/home/base.html' %}
+
+{% block title %}Edit {{ student.full_name }} Student | School Management System {% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+    <div class="page-header-left d-flex align-items-center">
+        <div class="page-header-title"><h5>Students</h5></div>
+        <ul class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Home</a></li>
+            <li class="breadcrumb-item">Edit {{ student.full_name }} Students</li>
+        </ul>
+    </div>
+    <div class="page-header-right ms-auto">
+        <a href="{{ url_for('main.all_students') }}" class="btn btn-primary"><i class="fa-earth-americas me-1"></i> All Students</a>
+    </div>
+</div>
+
+<div class="container mt-4">
+    <div class="card shadow-sm">
+        <div class="card-header">
+            <h5 class="mb-0">Edit {{ student.full_name }} Student</h5>
+        </div>
+
+        <form method="POST" enctype="multipart/form-data">
+            {{ form.hidden_tag() }}
+            <div class="card-body">
+                <div class="row">
+
+                    <!-- Full Name -->
+                    <div class="col-md-6 mb-3">
+                        <label>Full Name</label>
+                        {{ form.full_name(class="form-control") }}
+                    </div>
+
+                    <!-- Gender -->
+                    <div class="col-md-6 mb-3">
+                        <label>Gender</label>
+                        {{ form.gender(class="form-select") }}
+                    </div>
+
+                    <!-- Parent -->
+                    <div class="col-md-6 mb-3">
+                        <label>Parent</label>
+                        {{ form.parent_id(class="form-select") }}
+                    </div>
+
+                    <!-- Academic Year -->
+                    <div class="col-md-6 mb-3">
+                        <label>Academic Year</label>
+                        {{ form.academic_year(class="form-control", id="academic_year", value=form.academic_year.data or student.academic_year or get_academic_year()) }}
+                    </div>
+
+                    <!-- Level -->
+                    <div class="col-md-6 mb-3">
+                        <label>Level</label>
+                        {{ form.level_id(class="form-select", id="level_id", **{'data-selected': form.level_id.data or student.level_id}) }}
+                    </div>
+
+                    <!-- Class -->
+                    <div class="col-md-6 mb-3">
+                        <label>Class</label>
+                        {{ form.class_id(class="form-select", id="class_id", **{'data-selected': form.class_id.data or student.class_id}) }}
+                    </div>
+
+                    <!-- Shift -->
+                    <div class="col-md-6 mb-3">
+                        <label>Shift</label>
+                        <select id="shift" name="shift" class="form-select">
+                            {% for val, label in form.shift.choices %}
+                                <option value="{{ val }}" {% if val == (form.shift.data or student.shift) %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- Section -->
+                    <div class="col-md-6 mb-3" id="section-wrapper" style="display:none;">
+                        <label>Section</label>
+                        {{ form.section_id(class="form-select", id="section_id", **{'data-selected': form.section_id.data or student.section_id}) }}
+                    </div>
+
+                    <!-- Student Fee -->
+                    <div class="col-md-6 mb-3">
+                        <label>Current Student Fee</label>
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="number" step="0.01" class="form-control" id="current_price" readonly name="current_price"
+                                   value="{{ form.price.data or student.price or 0 }}">
+                        </div>
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label>Student Fee</label>
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="number" step="0.01" class="form-control" id="price" name="price"
+                                   value="{{ form.price.data or student.price or 0 }}">
+                        </div>
+                    </div>
+
+                    <!-- Registration Fee -->
+                    <div class="col-md-6 mb-3">
+                        <label>Registration Fee</label>
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="number" step="0.01" class="form-control" id="registration_fee" name="registration_fee"
+                                   value="{{ form.registration_fee.data or student.registration_fee or 0 }}">
+                        </div>
+                    </div>
+
+                    <!-- Total -->
+                    <div class="col-md-6 mb-3">
+                        <label>Total</label>
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="text" id="total" class="form-control" readonly value="0.00">
+                        </div>
+                    </div>
+
+                    <!-- Roll No -->
+                    <div class="col-md-6 mb-3">
+                        <label>Roll No</label>
+                        {{ form.roll_no(class="form-control", readonly=True) }}
+                    </div>
+
+                    <!-- Date of Birth -->
+                    <div class="col-md-6 mb-3">
+                        <label>Date of Birth</label>
+                        {{ form.date_of_birth(class="form-control") }}
+                    </div>
+
+                    <!-- Place of Birth -->
+                    <div class="col-md-6 mb-3">
+                        <label>Place of Birth</label>
+                        {{ form.place_of_birth(class="form-control") }}
+                    </div>
+
+                    <!-- Password -->
+                    <div class="col-md-6 mb-3">
+                        <label>Password</label>
+                        {{ form.password(class="form-control") }}
+                    </div>
+
+                    <!-- Status -->
+                    <div class="col-md-6 mb-3">
+                        <label>Status</label>
+                        {{ form.status(class="form-select") }}
+                    </div>
+
+                </div>
+            </div>
+
+            <div class="card-footer text-end">
+                <button type="submit" class="btn btn-primary">Update Student</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const levelSelect = document.getElementById('level_id');
+    const classSelect = document.getElementById('class_id');
+    const sectionSelect = document.getElementById('section_id');
+    const sectionWrapper = document.getElementById('section-wrapper');
+    const priceInput = document.getElementById('price');
+    const regFeeInput = document.getElementById('registration_fee');
+    const totalInput = document.getElementById('total');
+    const academicYearInput = document.getElementById('academic_year');
+    const shiftSelect = document.getElementById("shift");
+
+    // Flag loogu talagalay in lagu garto load-ka u horreeya
+    let isInitialLoad = true;
+
+    // ---------------- Total calculation ----------------
+    function calculateTotal() {
+        const price = parseFloat(priceInput.value) || 0;
+        const regFee = parseFloat(regFeeInput.value) || 0;
+        totalInput.value = (price + regFee).toFixed(2);
+    }
+
+    // ---------------- Load Levels ----------------
+    fetch('/get-levels')
+        .then(res => res.json())
+        .then(levels => {
+            levelSelect.innerHTML = '<option value="">--- Select Level ---</option>';
+            levels.forEach(l => {
+                const opt = document.createElement('option');
+                opt.value = l.id;
+                opt.textContent = l.name;
+                levelSelect.appendChild(opt);
+            });
+            
+            if (levelSelect.dataset.selected) {
+                levelSelect.value = levelSelect.dataset.selected;
+                levelSelect.dispatchEvent(new Event('change'));
+            }
+        });
+
+    // ---------------- Level change ----------------
+    levelSelect.addEventListener('change', () => {
+        const levelId = levelSelect.value;
+        classSelect.innerHTML = '<option value="">--- No Class ---</option>';
+        sectionSelect.innerHTML = '<option value="">--- No Section ---</option>';
+        sectionWrapper.style.display = 'none';
+
+        if (!levelId) return;
+
+        fetch('/get-level/' + levelId)
+            .then(res => res.json())
+            .then(data => {
+                if (!priceInput.dataset.userChanged && !isInitialLoad) {
+                    priceInput.value = parseFloat(data.price || 0).toFixed(2);
+                }
+                calculateTotal();
+            });
+
+        fetch('/get-classes/' + levelId)
+            .then(res => res.json())
+            .then(classes => {
+                if (!classes.length) return;
+                classSelect.innerHTML = '<option value="">--- Select Class ---</option>';
+                classes.forEach(c => {
+                    const opt = document.createElement('option');
+                    opt.value = c.id;
+                    opt.textContent = c.name;
+                    opt.dataset.shift = c.shift; 
+                    classSelect.appendChild(opt);
+                });
+
+                if (classSelect.dataset.selected) {
+                    classSelect.value = classSelect.dataset.selected;
+                    classSelect.dispatchEvent(new Event('change'));
+                }
+            });
+    });
+
+    // ---------------- Class change ----------------
+    classSelect.addEventListener('change', () => {
+        const classId = classSelect.value;
+        sectionSelect.innerHTML = '<option value="">--- No Section ---</option>';
+        sectionWrapper.style.display = 'none';
+
+        if (!classId) return;
+
+        // --- SHIFT LOGIC (Kaliya bedel hadii uusan ahayn load-ka u horeeya) ---
+        if (!isInitialLoad) {
+            const selectedOption = classSelect.options[classSelect.selectedIndex];
+            const classShift = selectedOption.getAttribute('data-shift');
+            
+            if (classShift && classShift !== "None" && classShift !== "") {
+                shiftSelect.value = classShift;
+            }
+        }
+
+        fetch('/get-sections/' + classId)
+            .then(res => res.json())
+            .then(sections => {
+                if (sections.length > 0) {
+                    sectionWrapper.style.display = 'block';
+                    sectionSelect.innerHTML = '<option value="">--- Select Section ---</option>';
+                    sections.forEach(s => {
+                        const opt = document.createElement('option');
+                        opt.value = s.id;
+                        opt.textContent = s.name;
+                        sectionSelect.appendChild(opt);
+                    });
+                    if (sectionSelect.dataset.selected) {
+                        sectionSelect.value = sectionSelect.dataset.selected;
+                    }
+                }
+                
+                // Markii wax kasta oo la xiriira edit mode (Initial load) ay dhameystirmaan, dami flag-ga
+                isInitialLoad = false;
+            });
+
+        fetch('/get-academic-year/' + classId)
+            .then(res => res.json())
+            .then(data => {
+                if (!academicYearInput.value || !isInitialLoad) {
+                    academicYearInput.value = data.academic_year || "";
+                }
+            });
+    });
+
+    priceInput.addEventListener('input', () => {
+        priceInput.dataset.userChanged = "true";
+        calculateTotal();
+    });
+
+    regFeeInput.addEventListener('input', calculateTotal);
+    calculateTotal();
+});
+</script>
+
+{% endblock %}

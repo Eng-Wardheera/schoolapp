@@ -1,0 +1,828 @@
+{% extends 'backend/home/base.html' %}
+
+{% block title %}Profile Update | Logistics System{% endblock %}
+
+{% block content %}
+
+<!-- [ page-header ] start -->
+<div class="page-header">
+    <div class="page-header-left d-flex align-items-center">
+        <div class="page-header-title">
+            <h5 class="m-b-10">Users</h5>
+        </div>
+        <ul class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Home</a></li>
+            <li class="breadcrumb-item">Create</li>
+        </ul>
+    </div>
+</div>
+<!-- [ page-header ] end -->
+
+<div class="main-content">
+    <div class="row">
+
+        <!-- Profile Card -->
+        <div class="col-md-4">
+            <div class="card shadow-sm rounded-3 text-center p-3">
+               <!-- Profile Photo with Hover Actions -->
+    <div class="position-relative mb-3" id="photoWrapper" style="cursor:pointer;">
+      <img id="profile-photo" src="{{ url_for('static', filename=current_user.photo or 'backend/uploads/images/no_image.jpg') }}"
+           class="rounded-circle mx-auto d-block" height="120" width="120" style="object-fit: cover;" alt="Profile Photo">
+
+      {% if current_user.photo %}
+      <div id="photoActions" class="position-absolute top-50 start-50 translate-middle d-none">
+        <button id="viewPhotoBtn" class="btn btn-light p-2 rounded-circle me-2" title="View">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="black" viewBox="0 0 24 24">
+            <path d="M12 5c-7.633 0-11 7-11 7s3.367 7 11 7 11-7 11-7-3.367-7-11-7zm0 12c-2.761 0-5-2.239-5-5s2.239-5 
+                     5-5 5 2.239 5 5-2.239 5-5 5zm0-8c-1.657 0-3 1.343-3 3s1.343 3 
+                     3 3 3-1.343 3-3-1.343-3-3-3z"/>
+          </svg>
+        </button>
+        <form id="removePhotoForm" action="{{ url_for('main.remove_photo') }}" method="POST" class="d-inline">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn btn-danger p-2 rounded-circle" title="Remove">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="white" viewBox="0 0 24 24">
+              <path d="M3 6h18v2H3V6zm2 3h14l-1.5 12.5a1 1 0 01-1 1H8.5a1 1 0 01-1-1L6 9zm5-5h2v2h-2V4z"/>
+            </svg>
+          </button>
+        </form>
+      </div>
+      {% endif %}
+    </div>
+    
+           <h5 class="fw-bold mb-0">{{ current_user.fullname }}</h5>
+                <small class="text-muted">Role: {{ current_user.role.name.replace("_", " ").title() }}</small>
+
+                <table class="table table-borderless mt-3 mb-0">
+                    <tbody>
+                        <tr><td class="text-start">Username</td><td class="text-end">{{ current_user.username }}</td></tr>
+                        <tr><td class="text-start">Phone</td><td class="text-end">{{ current_user.phone }}</td></tr>
+                        <tr><td class="text-start">Country</td><td class="text-end">{{ current_user.country }}</td></tr>
+                    </tbody>
+                </table>
+
+
+                
+                <h5 class="mt-4">Active Sessions</h5>
+                <ul class="list-group" style="padding-left:0; list-style:none;">
+                {% for s in user_sessions %}
+                {% set is_current = s.id == session.get('session_id') %}
+                <li style="border:1px solid #ddd; border-radius:6px; padding:12px 15px; margin-bottom:10px;">
+                    
+                    <!-- Device info -->
+                    <div style="padding-left:5px; text-align:left;">
+                        <i class="feather-monitor" style="margin-right:6px;"></i>
+                        {{ s.device or 'Unknown Device' }} -
+                        {{ s.platform or 'Unknown Platform' }} -
+                        <strong>{{ s.browser or 'Unknown Browser' }}</strong><br>
+                        <small style="color:#888; display:block;">
+                            {{ s.ip_address or 'Unknown IP' }},
+                            {% if is_current %}
+                                    <span style="color:#28a745; font-weight:500; font-weight: bolder;">This device</span>
+                                {% else %}
+                                    Last active: 
+                                    <strong class="last-active"
+                                            data-timestamp="{{ s.last_activity.timestamp() }}"
+                                            style="display:inline-block; text-align:left;">
+                                        Loading...
+                                    </strong>
+                                {% endif %}
+                            </small>
+                        
+                    </div>
+
+                    <!-- Status badge -->
+                <!-- Status badge centered -->
+                <div style="margin-top:8px; text-align:center;">
+                    {% set last_ts = s.last_activity.timestamp() if s.last_activity else None %}
+
+                    {% if is_current or s.is_online %}
+                        <span class="badge bg-success text-white session-status"
+                            data-session-id="{{ s.id }}">
+                            Online
+                            {% if last_ts %}
+                                <br><small style="font-weight:normal;">
+                                    {{ s.last_activity.strftime('%d %b %Y, %I:%M %p') }}
+                                </small>
+                            {% endif %}
+                        </span>
+
+                    {% elif last_ts %}
+                        <span class="badge bg-secondary text-white session-status"
+                            data-session-id="{{ s.id }}">
+                            Last Visited:
+                            <br><small style="font-weight:normal;">
+                                {{ s.last_activity.strftime('%d %b %Y, %I:%M %p') }}
+                            </small>
+                        </span>
+
+                    {% else %}
+                        <span class="badge bg-secondary text-white session-status"
+                            data-session-id="{{ s.id }}">
+                            Never
+                        </span>
+                    {% endif %}
+                </div>
+
+                    <!-- Logout -->
+                    {% if not is_current %}
+                    <div style="margin-top:10px;">
+                        <button class="logout-session-btn"
+                                data-session-id="{{ s.id }}"
+                                style="background:#dc3545; color:white; border:none; padding:6px 12px; border-radius:4px; cursor:pointer;">
+                            Log Out
+                        </button>
+                    </div>
+                    {% endif %}
+                </li>
+                {% endfor %}
+                </ul>
+
+                <meta name="csrf-token" content="{{ csrf_token() }}">
+
+
+                <script>
+                (function() {
+                    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+                    // Humanize time difference
+                function humanizeTimeDiff(timestamp) {
+                    const now = new Date();
+                    const diff = now - new Date(timestamp * 1000); // timestamp in seconds
+                    const seconds = Math.floor(diff / 1000);
+
+                    if (seconds < 60) return seconds + (seconds === 1 ? " second ago" : " seconds ago");
+
+                    const minutes = Math.floor(seconds / 60);
+                    if (minutes < 60) return minutes + (minutes === 1 ? " minute ago" : " minutes ago");
+
+                    const hours = Math.floor(minutes / 60);
+                    if (hours < 24) return hours + (hours === 1 ? " hour ago" : " hours ago");
+
+                    const days = Math.floor(hours / 24);
+                    if (days < 7) return days + (days === 1 ? " day ago" : " days ago");
+
+                    const weeks = Math.floor(days / 7);
+                    if (weeks < 4) return weeks + (weeks === 1 ? " week ago" : " weeks ago");
+
+                    const months = Math.floor(days / 30);
+                    if (months < 12) return months + (months === 1 ? " month ago" : " months ago");
+
+                    const years = Math.floor(days / 365);
+                    return years + (years === 1 ? " year ago" : " years ago");
+                }
+
+
+                    // Send heartbeat
+                    async function sendHeartbeat() {
+                        try {
+                            const response = await fetch("/api/heartbeat", {
+                                method: "POST",
+                                headers: {
+                                    "Content-Type": "application/json",
+                                    "X-CSRFToken": csrfToken
+                                },
+                                body: JSON.stringify({})
+                            });
+                            const data = await response.json();
+                            if (data && data.last_active) {
+                                // Save last active to localStorage
+                                localStorage.setItem('last_active', data.last_active);
+                            }
+                            return data;
+                        } catch (e) {
+                            console.error("Heartbeat failed", e);
+                            return null;
+                        }
+                    }
+
+                    // Update all session statuses
+                    function updateSessionStatuses() {
+                        document.querySelectorAll('.last-active').forEach(el => {
+                            const ts = parseFloat(el.dataset.timestamp);
+                            el.textContent = humanizeTimeDiff(ts);
+                        });
+
+                        // Update current device badge
+                        const currentEl = document.querySelector('.current-device');
+                        if (currentEl) {
+                            currentEl.textContent = "Online";
+                            currentEl.classList.add('bg-success', 'text-white');
+                        }
+                    }
+
+                    // Main loop
+                    async function heartbeatLoop() {
+                        await sendHeartbeat();
+                        updateSessionStatuses();
+                    }
+
+                    // Run immediately if last_active exists in localStorage
+                    if (localStorage.getItem('last_active')) {
+                        updateSessionStatuses();
+                        const currentEl = document.querySelector('.current-device');
+                        if (currentEl) currentEl.textContent = "Online";
+                    }
+
+                    // Start heartbeat loop every 5 seconds
+                    heartbeatLoop();
+                    setInterval(heartbeatLoop, 5000);
+
+                    // Handle tab visibility change (pause heartbeat when tab hidden)
+                    document.addEventListener('visibilitychange', function() {
+                        if (!document.hidden) {
+                            heartbeatLoop(); // run immediately when tab returns
+                        }
+                    });
+
+                })();
+                </script>
+
+
+
+
+
+                <!-- Custom modal -->
+                <div id="logoutSessionModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; 
+                        background:rgba(0,0,0,0.6); z-index:1000; justify-content:center; align-items:center;">
+                    <div style="background:white; border-radius:8px; width:350px; max-width:90%; padding:20px; position:relative;">
+                        <h5 style="margin-top:0; margin-bottom:15px;">Confirm Logout</h5>
+                        <p>Please enter your password to log out this session.</p>
+                        <input type="password" id="confirmPassword" placeholder="Password" required 
+                            style="width:100%; padding:8px; margin-bottom:10px; border:1px solid #ccc; border-radius:4px;">
+                        <input type="hidden" id="sessionIdToLogout">
+                        <div style="text-align:right;">
+                            <button id="cancelModal" style="background:#6c757d; color:white; border:none; padding:5px 12px; border-radius:4px; cursor:pointer; margin-right:5px;">Cancel</button>
+                            <button id="confirmLogout" style="background:#dc3545; color:white; border:none; padding:5px 12px; border-radius:4px; cursor:pointer;">Log Out</button>
+                        </div>
+                    </div>
+                </div>
+
+                <script>
+                // ===== Ping server to keep session active =====
+
+                // ===== Logout modal =====
+                document.querySelectorAll('.logout-session-btn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        document.getElementById('sessionIdToLogout').value = btn.dataset.sessionId;
+                        document.getElementById('logoutSessionModal').style.display = 'flex';
+                    });
+                });
+                document.getElementById('cancelModal').addEventListener('click', () => {
+                    document.getElementById('logoutSessionModal').style.display = 'none';
+                });
+                document.getElementById('confirmLogout').addEventListener('click', async () => {
+                    const sessionId = document.getElementById('sessionIdToLogout').value;
+                    const password = document.getElementById('confirmPassword').value;
+
+                    const response = await fetch('{{ url_for("main.logout_other_session") }}', {
+                        method:'POST',
+                        headers:{ 'Content-Type':'application/json', 'X-CSRFToken':'{{ csrf_token() }}' },
+                        body: JSON.stringify({ session_id: sessionId, password: password })
+                    });
+                    const result = await response.json();
+                    if(result.success){
+                        document.getElementById('logoutSessionModal').style.display = 'none';
+                        const btn = document.querySelector(`.logout-session-btn[data-session-id='${sessionId}']`);
+                        if(btn) btn.closest('li').remove();
+                        alert('Session logged out successfully.');
+                    } else {
+                        alert(result.message || 'Password incorrect or error.');
+                    }
+                });
+                </script>
+
+
+                <!-- <form id="deleteAccountForm" action="{{ url_for('main.delete_my_account') }}" method="POST">
+                    {{ form.hidden_tag() }}
+                    <div class="mt-3">
+                        <button type="submit" class="btn btn-danger w-100">Delete My Account</button>
+                    </div>
+                </form> -->
+            </div>
+        </div>
+
+        <!-- Update Profile Form -->
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header"><h4>Update Profile</h4></div>
+                <div class="card-body">
+                    <form method="POST" enctype="multipart/form-data">
+                        {{ form.hidden_tag() }}
+
+                        <!-- Tabs -->
+                        <ul class="nav nav-tabs" id="profileTab" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active" id="personal-info-tab" data-bs-toggle="tab" data-bs-target="#personal-info" type="button" role="tab" aria-controls="personal-info" aria-selected="true">Personal Info</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="additional-info-tab" data-bs-toggle="tab" data-bs-target="#additional-info" type="button" role="tab" aria-controls="additional-info" aria-selected="false">Additional Info</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="social-links-tab" data-bs-toggle="tab" data-bs-target="#social-links" type="button" role="tab" aria-controls="social-links" aria-selected="false">Social Links</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="location-info-tab" data-bs-toggle="tab" data-bs-target="#location-info" type="button" role="tab" aria-controls="location-info" aria-selected="false">Location Info</button>
+                            </li>
+                        </ul>
+
+                        <!-- Tabs Content -->
+                        <div class="tab-content mt-3">
+                            <!-- Personal Info -->
+                            <div class="tab-pane fade show active" id="personal-info" role="tabpanel" aria-labelledby="personal-info-tab">
+                                <div class="row">
+                                    <div class="col-md-6 mt-3">
+                                        <label>Full Name</label>
+                                        <input type="text" name="fullname" id="fullname" class="form-control" value="{{ current_user.fullname }}" pattern="^[A-Za-z\s.'-]+$" required>
+                                    </div>
+                                    <div class="col-md-6 mt-3">
+                                        <label>Username</label>
+                                        <input type="text" name="username" class="form-control" value="{{ current_user.username }}" required>
+                                    </div>
+                                    <div class="col-md-6 mt-3">
+                                        <label>Email</label>
+                                        <input type="email" name="email" class="form-control" value="{{ current_user.email }}" required>
+                                    </div>
+                                    <div class="col-md-6 mt-3">
+                                        <label for="photo_visibility">Profile Photo Visibility</label>
+                                        <select name="photo_visibility" id="photo_visibility" class="form-control">
+                                            <option value="everyone" {% if current_user.photo_visibility == 'everyone' %}selected{% endif %}>Visible to Everyone</option>
+                                            <option value="only_me" {% if current_user.photo_visibility == 'only_me' %}selected{% endif %}>Visible Only to Me</option>
+                                        </select>
+
+                                    </div>
+                                    <div class="col-md-12 mt-3">
+                                        <label>Bio</label>
+                                        <textarea name="bio" rows="4" class="form-control" required>{{ current_user.bio }}</textarea>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Additional Info -->
+                            <div class="tab-pane fade" id="additional-info" role="tabpanel" aria-labelledby="additional-info-tab">
+                                <div class="row">
+                                    <div class="col-md-12 mt-3">
+                                        <label>Gender</label>
+                                        <select name="gender" class="form-control">
+                                            <option value="">Select Gender</option>
+                                            <option value="Male" {% if current_user.gender == 'Male' %}selected{% endif %}>Male</option>
+                                            <option value="Female" {% if current_user.gender == 'Female' %}selected{% endif %}>Female</option>
+                                            <option value="Other" {% if current_user.gender == 'Other' %}selected{% endif %}>Other</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6 mt-3">
+                                        <label>Profile Photo</label>
+                                        <input type="file" name="profile_photo" id="photo" class="form-control" accept=".png,.jpg,.jpeg">
+                                        <img id="main-image-preview" class="mt-2 rounded" width="100" src="{{ url_for('static', filename=current_user.photo or 'backend/uploads/images/no_image.jpg') }}" alt="Preview">
+                                    </div>
+                                    <div class="col-md-6 mt-3">
+                                        <label>Address</label>
+                                        <input type="text" name="address" class="form-control" value="{{ current_user.address }}">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Social Links -->
+                            <div class="tab-pane fade" id="social-links" role="tabpanel" aria-labelledby="social-links-tab">
+                                <div class="row">
+                                    <div class="col-md-6 mt-3"><label>Facebook</label><input type="text" name="facebook" class="form-control" value="{{ current_user.facebook }}"></div>
+                                    <div class="col-md-6 mt-3"><label>Twitter</label><input type="text" name="twitter" class="form-control" value="{{ current_user.twitter }}"></div>
+                                    <div class="col-md-6 mt-3"><label>Whatsapp</label><input type="text" name="whatsapp" class="form-control" value="{{ current_user.whatsapp }}"></div>
+                                    <div class="col-md-6 mt-3"><label>Instagram</label><input type="text" name="instagram" class="form-control" value="{{ current_user.instagram }}"></div>
+                                    <div class="col-md-6 mt-3"><label>Google</label><input type="text" name="google" class="form-control" value="{{ current_user.google }}"></div>
+                                    <div class="col-md-6 mt-3"><label>GitHub</label><input type="text" name="github" class="form-control" value="{{ current_user.github or '' }}"></div>
+                                </div>
+                            </div>
+
+                            <!-- Location Info -->
+                            <div class="tab-pane fade" id="location-info" role="tabpanel" aria-labelledby="location-info-tab">
+                                <div class="row">
+                                    <div class="col-md-6 mt-3">
+                                        <label for="country">Country</label>
+                                        <select id="country" name="country" class="form-control" required>
+                                            <option value="" disabled>Select Country</option>
+                                            {% for country in all_countries %}
+                                            <option value="{{ country.name }}" data-phone-code="{{ country.code }}" data-min-length="{{ country.min_length }}" data-max-length="{{ country.max_length }}" {% if current_user.country == country.name %}selected{% endif %}>
+                                                {{ country.name }}
+                                            </option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6 mt-3">
+                                        <label for="state-dropdown">Region/State</label>
+                                        <select class="form-control" id="state-dropdown" name="state" style="display: none;">
+                                            {% for region in somalia_regions.keys() %}
+                                                <option value="{{ region }}" {% if current_user.state == region %}selected{% endif %}>{{ region }}</option>
+                                            {% endfor %}
+                                        </select>
+                                        <input type="text" class="form-control mt-2" id="state-text" name="state_text" placeholder="Enter Region/State" value="{% if current_user.country != 'Somalia' %}{{ current_user.state }}{% endif %}">
+                                    </div>
+                                    <div class="col-md-6 mt-3">
+                                        <label for="city-dropdown">City/District</label>
+                                        <select class="form-control" id="city-dropdown" name="city" style="display: none;"></select>
+                                        <input type="text" class="form-control mt-2" id="city-text" name="city_text" placeholder="Enter City" value="{{ current_user.city_text or current_user.city }}">
+                                    </div>
+                                    <div class="col-md-6 mt-3">
+                                        <label>Phone</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text" id="country-code">+{{ user_country_code or 'XXX' }}</span>
+                                            <input type="text" id="phone" name="phone" class="form-control" value="{{ phone_without_code or '' }}" pattern="\d*" placeholder="Enter phone number" required>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-center mt-4 gap-2">
+                            <button type="submit" class="btn btn-success">Update</button>
+                            <a href="{{ url_for('main.dashboard') }}" class="btn btn-danger">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+
+
+
+<!-- photo allowed Validation -->
+<script>
+document.getElementById('photo').addEventListener('change', function () {
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png'];
+    const file = this.files[0];
+
+    if (file && !allowedTypes.includes(file.type)) {
+        this.value = ''; // Clear file input
+        Swal.fire({
+            icon: 'error',
+            title: 'Invalid File Type',
+            text: 'Only PNG, JPG, and JPEG files are allowed.',
+        });
+    }
+});
+</script>
+
+<!-- full name Validation -->
+<script>
+  document.querySelector('form').addEventListener('submit', function (e) {
+    const nameInput = document.querySelector('input[name="fullname"]');
+    const namePattern = /^[A-Za-z\s.'-]+$/;
+
+    if (!namePattern.test(nameInput.value.trim())) {
+      e.preventDefault();
+      Swal.fire({
+        icon: 'error',
+        title: 'Invalid Full Name',
+        text: 'Please enter a valid name using only letters, spaces, dots, apostrophes, and dashes.',
+      });
+      nameInput.focus();
+    }
+  });
+</script>
+
+
+<!-- JavaScript Preview Image for dynamic form behavior -->
+ <!-- and  -->
+<!-- Remove Photo Button -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const photoWrapper = document.getElementById('photoWrapper');
+  const photoActions = document.getElementById('photoActions');
+  const viewPhotoBtn = document.getElementById('viewPhotoBtn');
+  const profilePhoto = document.getElementById('profile-photo');
+  const modal = document.getElementById('photoModal');
+  const modalImage = document.getElementById('modalImage');
+  const closeModalBtn = document.getElementById('closeModalBtn');
+  const downloadBtn = document.getElementById('downloadBtn');
+  const removeForm = document.getElementById('removePhotoForm');
+
+  // Toggle overlay buttons on photo click
+  photoWrapper.addEventListener('click', function(e) {
+    e.stopPropagation();
+    if(photoActions.classList.contains('d-none')) {
+      photoActions.classList.remove('d-none');
+    } else {
+      photoActions.classList.add('d-none');
+    }
+  });
+
+  // Hide overlay buttons if clicked outside
+  document.addEventListener('click', function() {
+    if(!photoActions.classList.contains('d-none')) {
+      photoActions.classList.add('d-none');
+    }
+  });
+
+  // View button click - open modal with profile image
+  viewPhotoBtn.addEventListener('click', function(e) {
+    e.preventDefault();
+    modalImage.src = profilePhoto.src;
+    modal.classList.add('show');
+    modal.setAttribute('aria-hidden', 'false');
+
+    // Update download button href and filename
+    downloadBtn.href = profilePhoto.src;
+    let filename = profilePhoto.src.split('/').pop().split('?')[0] || 'profile_image.jpg';
+    downloadBtn.setAttribute('download', filename);
+
+    photoActions.classList.add('d-none');
+  });
+
+  // Close modal button
+  closeModalBtn.addEventListener('click', function() {
+    modal.classList.remove('show');
+    modalImage.src = '';
+    modal.setAttribute('aria-hidden', 'true');
+    downloadBtn.href = '#';
+  });
+
+  // Close modal on click outside image
+  modal.addEventListener('click', function(e) {
+    if (e.target === modal) {
+      modal.classList.remove('show');
+      modalImage.src = '';
+      modal.setAttribute('aria-hidden', 'true');
+      downloadBtn.href = '#';
+    }
+  });
+
+  // Close modal on Escape key
+  document.addEventListener('keydown', function(e) {
+    if (e.key === "Escape" && modal.classList.contains('show')) {
+      modal.classList.remove('show');
+      modalImage.src = '';
+      modal.setAttribute('aria-hidden', 'true');
+      downloadBtn.href = '#';
+    }
+  });
+
+  // SweetAlert confirmation before removing photo
+  if(removeForm){
+    removeForm.addEventListener('submit', function(event){
+      event.preventDefault();
+      Swal.fire({
+        title: 'Are you sure?',
+        text: "This will permanently remove your profile photo.",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Yes, remove it!',
+        cancelButtonText: 'Cancel'
+      }).then((result) => {
+        if (result.isConfirmed) {
+          event.target.submit();
+        }
+      });
+    });
+  }
+});
+</script>
+
+
+<!-- photo Validation -->
+<script>
+    
+    document.getElementById('photo').addEventListener('change', function (event) {
+        const file = event.target.files[0];
+        const preview = document.getElementById('main-image-preview');
+
+        if (file) {
+            preview.src = URL.createObjectURL(file);
+            preview.style.display = 'block';
+            preview.style.maxWidth = '200px';
+            preview.style.maxHeight = '150px';
+            preview.style.borderRadius = '8px';
+            preview.style.objectFit = 'cover';
+        } else {
+            preview.style.display = 'none';
+        }
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const countrySelect = document.getElementById('country');
+        const stateDropdown = document.getElementById('state-dropdown');
+        const stateText = document.getElementById('state-text');
+        const cityDropdown = document.getElementById('city-dropdown');
+        const cityText = document.getElementById('city-text');
+        const somaliaRegions = {{ somalia_regions | tojson }};  // Pass Somalia regions from the backend template
+        const selectedCity = "{{ current_user.city }}";  // Current user city from the backend
+
+        function toggleLocationInputs() {
+            const country = countrySelect.value.toLowerCase();
+
+            if (country === 'somalia') {
+                stateDropdown.style.display = 'block';
+                stateDropdown.name = 'state';
+
+                stateText.style.display = 'none';
+                stateText.name = '';
+
+                cityDropdown.style.display = 'block';
+                cityDropdown.name = 'city';
+
+                // Trigger the state change to populate cities
+                if (selectedCity === 'Other') {
+                    cityText.style.display = 'block';
+                    cityText.name = 'city_text';
+                } else {
+                    cityText.style.display = 'none';
+                    cityText.name = '';
+                    cityText.value = '';  // Reset city text input
+                }
+            } else {
+                stateDropdown.style.display = 'none';
+                stateDropdown.name = '';
+
+                cityDropdown.style.display = 'none';
+                cityDropdown.name = '';
+
+                stateText.style.display = 'block';
+                stateText.name = 'state_text';
+
+                cityText.style.display = 'block';
+                cityText.name = 'city_text';
+            }
+        }
+
+     stateDropdown.addEventListener('change', () => {
+            const selectedRegion = stateDropdown.value;
+            cityDropdown.innerHTML = '<option value="" disabled selected>Select City</option>';
+
+            if (somaliaRegions[selectedRegion]) {
+                let foundInDropdown = false;
+                somaliaRegions[selectedRegion].forEach(city => {
+                    const option = document.createElement('option');
+                    option.value = city;
+                    option.textContent = city;
+                    if (city === selectedCity) {
+                        option.selected = true;
+                        foundInDropdown = true;
+                    }
+                    cityDropdown.appendChild(option);
+                });
+
+                const otherOption = document.createElement('option');
+                otherOption.value = 'Other';
+                otherOption.textContent = 'Other';
+                cityDropdown.appendChild(otherOption);
+
+                cityDropdown.disabled = false;
+
+                if (foundInDropdown) {
+                    cityText.style.display = 'none';
+                    cityText.name = '';
+                    cityText.required = false;
+                    cityText.value = '';
+                } else {
+                    // Haddii city-ga DB ka aanu ku jirin dropdown-ka (sida “Other”)
+                    cityDropdown.value = 'Other';
+                    cityText.style.display = 'block';
+                    cityText.name = 'city_text';
+                    cityText.required = true;
+                    cityText.value = selectedCity;  // Halkan qiimaha city_text ka la dhigaa city-ga DB
+                }
+            } else {
+                cityDropdown.disabled = true;
+                cityText.style.display = 'block';
+                cityText.name = 'city_text';
+                cityText.required = true;
+                cityText.value = selectedCity;
+            }
+        });
+
+        cityDropdown.addEventListener('change', () => {
+            if (cityDropdown.value === 'Other') {
+                cityText.style.display = 'block';
+                cityText.name = 'city_text';
+                cityText.required = true;
+            } else {
+                cityText.style.display = 'none';
+                cityText.name = '';
+                cityText.required = false;
+                cityText.value = '';
+            }
+        });
+
+        cityDropdown.addEventListener('change', () => {
+            if (cityDropdown.value === 'Other') {
+                cityText.style.display = 'block';  // Show the city text input when "Other" is selected
+                cityText.name = 'city_text';
+            } else {
+                cityText.style.display = 'none';  // Hide the city text input otherwise
+                cityText.name = '';
+                cityText.value = '';  // Reset the value
+            }
+        });
+
+        countrySelect.addEventListener('change', toggleLocationInputs);
+        toggleLocationInputs();  // Call once on page load
+
+        // Trigger state change to populate cities if Somalia is selected
+        if (countrySelect.value.toLowerCase() === 'somalia' && stateDropdown.value) {
+            stateDropdown.dispatchEvent(new Event('change'));
+        }
+    });
+</script>
+
+
+<!-- phone Validation -->
+<script>
+const countrySelect = document.getElementById("country");
+const phoneInput = document.getElementById("phone");
+const countryCodeSpan = document.getElementById("country-code");
+
+phoneInput.addEventListener("input", function () {
+// Tirooyin keliya ayaa la oggol yahay
+this.value = this.value.replace(/\D/g, "");
+});
+
+let previousCountryCode = null;
+let initialLoad = true;
+
+function updatePhoneInputAttributes() {
+  const selectedOption = countrySelect.options[countrySelect.selectedIndex];
+  const phoneCode = selectedOption.getAttribute("data-phone-code");
+  const minLength = parseInt(selectedOption.getAttribute("data-min-length"));
+  const maxLength = parseInt(selectedOption.getAttribute("data-max-length"));
+
+  if (!initialLoad && phoneCode !== previousCountryCode) {
+    phoneInput.value = "";
+  }
+  previousCountryCode = phoneCode;
+
+  countryCodeSpan.textContent = phoneCode ? `+${phoneCode}` : "+XXX";
+
+  if (!isNaN(minLength) && !isNaN(maxLength)) {
+    phoneInput.disabled = false;
+    phoneInput.setAttribute("minlength", minLength);
+    phoneInput.setAttribute("maxlength", maxLength);
+    phoneInput.setAttribute("pattern", `\\d{${minLength},${maxLength}}`);
+    phoneInput.setAttribute("placeholder", `Enter ${minLength}-${maxLength} digits`);
+  } else {
+    phoneInput.disabled = false;
+    phoneInput.removeAttribute("minlength");
+    phoneInput.removeAttribute("maxlength");
+    phoneInput.removeAttribute("pattern");
+    phoneInput.setAttribute("placeholder", "Enter phone number");
+  }
+
+  initialLoad = false;
+}
+
+phoneInput.addEventListener("input", (e) => {
+  const maxLength = parseInt(phoneInput.getAttribute("maxlength"));
+  if (!maxLength) return;
+
+  let digitsOnly = e.target.value.replace(/\D/g, "");
+  if (digitsOnly.length > maxLength) {
+    digitsOnly = digitsOnly.slice(0, maxLength);
+  }
+  e.target.value = digitsOnly;
+});
+
+phoneInput.addEventListener("paste", (e) => {
+  e.preventDefault();
+  const maxLength = parseInt(phoneInput.getAttribute("maxlength")) || 1000;
+  const pastedData = (e.clipboardData || window.clipboardData).getData("text");
+  let digitsOnly = pastedData.replace(/\D/g, "").slice(0, maxLength);
+  document.execCommand("insertText", false, digitsOnly);
+});
+
+countrySelect.addEventListener("change", updatePhoneInputAttributes);
+if (!countrySelect.value) {
+  phoneInput.disabled = true;
+} else {
+  updatePhoneInputAttributes();
+}
+</script>
+
+
+<!-- Delete Account SweetAlert2 Script for Confirmation -->
+<script>
+    document.getElementById('deleteAccountForm').addEventListener('submit', function (event) {
+        event.preventDefault(); // Prevent the form from being submitted immediately
+
+        Swal.fire({
+            title: 'Are you sure?',
+            text: "Your account user will be permanently deleted!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, delete it!',
+            cancelButtonText: 'Cancel',
+            reverseButtons: true
+        }).then((result) => {
+            if (result.isConfirmed) {
+                // If confirmed, submit the form
+                this.submit();
+            }
+        });
+    });
+</script>
+
+
+
+{% endblock %}

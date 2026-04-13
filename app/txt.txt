@@ -1,0 +1,119 @@
+INSERT INTO airports (code, airport_name, city, country) VALUES
+('MGQ', 'Mogadishu Airport', 'Mogadishu', 'Somalia'),
+('HGA', 'Hargeisa Airport', 'Hargeisa', 'Somalia'),
+('BSA', 'Bosaso Airport', 'Bosaso', 'Somalia'),
+('GGR', 'Garowe Airport', 'Garowe', 'Somalia'),
+('KMU', 'Kismayo Airport', 'Kismayo', 'Somalia'),
+('NBO', 'Jomo Kenyatta Intl', 'Nairobi', 'Kenya'),
+('ADD', 'Addis Ababa Bole', 'Addis Ababa', 'Ethiopia'),
+('JIB', 'Djibouti–Ambouli Intl', 'Djibouti', 'Djibouti'),
+('EBB', 'Entebbe Intl', 'Entebbe', 'Uganda'),
+
+('ALU', 'Alula Airport', 'Alula', 'Somalia'),         -- ALU :contentReference[oaicite:0]{index=0}
+('BIB', 'Baidoa Airport', 'Baidoa', 'Somalia'),       -- BIB :contentReference[oaicite:1]{index=1}
+('BBO', 'Berbera Airport', 'Berbera', 'Somalia'),     -- BBO :contentReference[oaicite:2]{index=2}
+('BXX', 'Borama Airport', 'Borama', 'Somalia'),       -- BXX :contentReference[oaicite:3]{index=3}
+('BUO', 'Burao Airport', 'Burao', 'Somalia'),         -- BUO :contentReference[oaicite:4]{index=4}
+('CXN', 'Qandala Airport', 'Qandala', 'Somalia'),     -- CXN :contentReference[oaicite:5]{index=5}
+('ERA', 'Erigavo Airport', 'Erigavo', 'Somalia'),     -- ERA :contentReference[oaicite:6]{index=6}
+('GSR', 'Qardo Airport', 'Qardo', 'Somalia'),         -- GSR :contentReference[oaicite:7]{index=7}
+('CMO', 'Obbia (Hobyo) Airport', 'Obbia', 'Somalia'), -- CMO :contentReference[oaicite:8]{index=8}
+('CMS', 'Scusciuban Airport', 'Scusciuban', 'Somalia'), -- CMS :contentReference[oaicite:9]{index=9}
+
+
+
+('MBA', 'Moi International Airport', 'Mombasa', 'Kenya'),              -- Kenya’s second international airport :contentReference[oaicite:0]{index=0}
+('KIS', 'Kisumu International Airport', 'Kisumu', 'Kenya'),            -- Major airport in western Kenya :contentReference[oaicite:1]{index=1}
+('EDL', 'Eldoret International Airport', 'Eldoret', 'Kenya'),         -- Key airport in western Kenya :contentReference[oaicite:2]{index=2}
+('WIL', 'Wilson Airport', 'Nairobi', 'Kenya'),                         -- Domestic/charter airport in Nairobi :contentReference[oaicite:3]{index=3}
+('WJR', 'Wajir Airport', 'Wajir', 'Kenya'),                             -- Regional airport :contentReference[oaicite:4]{index=4}
+('LAU', 'Lamu Airport', 'Lamu', 'Kenya'),                               -- Regional airport in coastal archipelago :contentReference[oaicite:5]{index=5}
+
+('DIR', 'Dire Dawa International Airport', 'Dire Dawa', 'Ethiopia'),    -- Regional international airport :contentReference[oaicite:6]{index=6}
+('BJR', 'Bahir Dar Airport', 'Bahir Dar', 'Ethiopia'),                  -- Serves the Lake Tana region :contentReference[oaicite:7]{index=7}
+('GDQ', 'Gondar Airport', 'Gondar', 'Ethiopia'),                        -- Airport near Simien Mountains :contentReference[oaicite:8]{index=8}
+('LLI', 'Lalibela Airport', 'Lalibela', 'Ethiopia'),                    -- Gateway to UNESCO site :contentReference[oaicite:9]{index=9}
+('MQX', 'Mekelle Airport', 'Mekelle', 'Ethiopia'),                      -- Northern Ethiopia airport :contentReference[oaicite:10]{index=10}
+('AMH', 'Arba Minch Airport', 'Arba Minch', 'Ethiopia'),                -- Southern Ethiopia airport :contentReference[oaicite:11]{index=11}
+('ASO', 'Asosa Airport', 'Asosa', 'Ethiopia'),                          -- Western Ethiopia regional airport :contentReference[oaicite:12]{index=12}
+('AXU', 'Axum Airport', 'Axum', 'Ethiopia'),                            -- Airport serving historic Axum town :contentReference[oaicite:13]{index=13}
+('GMB', 'Gambela Airport', 'Gambela', 'Ethiopia'),                       -- Local regional airport :contentReference[oaicite:14]{index=14}
+('GDE', 'Gode Airport', 'Gode', 'Ethiopia'),                             -- Eastern Ethiopia airport :contentReference[oaicite:15]{index=15}
+
+('JRO', 'Kilimanjaro International Airport', 'Kilimanjaro', 'Tanzania'), -- Major international airport near safari areas :contentReference[oaicite:16]{index=16}
+('ZNZ', 'Abeid Amani Karume International Airport', 'Zanzibar', 'Tanzania'), -- Zanzibar’s main airport :contentReference[oaicite:17]{index=17}
+('ARU', 'Arusha Airport', 'Arusha', 'Tanzania'),                         -- Regional airport in northern Tanzania :contentReference[oaicite:18]{index=18}
+('BKZ', 'Bukoba Airport', 'Bukoba', 'Tanzania'),                         -- Western lake region airport :contentReference[oaicite:19]{index=19}
+('TKQ', 'Kigoma Airport', 'Kigoma', 'Tanzania'),                         -- Western Tanzania airport :contentReference[oaicite:20]{index=20}
+('MWZ', 'Mwanza Airport', 'Mwanza', 'Tanzania'),                          -- Near Lake Victoria :contentReference[oaicite:21]{index=21}
+('DOD', 'Dodoma Airport', 'Dodoma', 'Tanzania'),                          -- Serves capital region :contentReference[oaicite:22]{index=22}
+('MFA', 'Mafia Airport', 'Mafia', 'Tanzania'),                            -- Small airport on Mafia Island :contentReference[oaicite:23]{index=23}
+
+
+('RUA', 'Arua Airport', 'Arua', 'Uganda'),                                 -- Regional airport in northwest :contentReference[oaicite:24]{index=24}
+('ULU', 'Gulu Airport', 'Gulu', 'Uganda'),                                 -- Northern Uganda :contentReference[oaicite:25]{index=25}
+('JIN', 'Jinja Airport', 'Jinja', 'Uganda'),                               -- Eastern Uganda :contentReference[oaicite:26]{index=26}
+('KBG', 'Kabalega Falls Airport', 'Kabalega Falls', 'Uganda'),             -- Western region :contentReference[oaicite:27]{index=27}
+('KSE', 'Kasese Airport', 'Kasese', 'Uganda'),                             -- Western Uganda :contentReference[oaicite:28]{index=28}
+('KCU', 'Masindi Airport', 'Masindi', 'Uganda'),                           -- Central‑north region :contentReference[oaicite:29]{index=29}
+('MBQ', 'Mbarara Airport', 'Mbarara', 'Uganda'),                           -- Southwestern Uganda :contentReference[oaicite:30]{index=30}
+('OYG', 'Moyo Airport', 'Moyo', 'Uganda'),                                 -- Northern Uganda :contentReference[oaicite:31]{index=31}
+('PAF', 'Pakuba Airport', 'Pakuba', 'Uganda'),                             -- Northern Uganda :contentReference[oaicite:32]{index=32}
+('SRT', 'Soroti Airport', 'Soroti', 'Uganda'),                             -- Eastern Uganda :contentReference[oaicite:33]{index=33}
+
+('DAR', 'Julius Nyerere Intl', 'Dar es Salaam', 'Tanzania');
+
+
+INSERT INTO schedules 
+(flight_number, departure_airport_code, arrival_airport_code, departure_time, arrival_time, status, created_at, updated_at)
+VALUES
+('XY101','MGQ','NBO','2026-03-12 08:00:00','2026-03-12 10:30:00','scheduled',NOW(),NOW()),
+('XY102','MGQ','ADD','2026-03-12 09:00:00','2026-03-12 11:00:00','scheduled',NOW(),NOW()),
+('XY103','MGQ','JIB','2026-03-13 07:30:00','2026-03-13 09:00:00','scheduled',NOW(),NOW()),
+('XY104','MGQ','EBB','2026-03-13 12:00:00','2026-03-13 15:00:00','scheduled',NOW(),NOW()),
+('XY105','MGQ','DAR','2026-03-14 06:00:00','2026-03-14 10:00:00','scheduled',NOW(),NOW()),
+('XY106','HGA','ADD','2026-03-14 08:30:00','2026-03-14 10:00:00','scheduled',NOW(),NOW()),
+('XY107','HGA','JIB','2026-03-15 09:15:00','2026-03-15 10:30:00','scheduled',NOW(),NOW()),
+('XY108','HGA','NBO','2026-03-15 11:00:00','2026-03-15 13:30:00','scheduled',NOW(),NOW()),
+('XY109','HGA','EBB','2026-03-16 10:00:00','2026-03-16 13:30:00','scheduled',NOW(),NOW()),
+('XY110','HGA','DAR','2026-03-16 06:00:00','2026-03-16 10:30:00','scheduled',NOW(),NOW()),
+('XY111','BSA','ADD','2026-03-17 07:00:00','2026-03-17 09:30:00','scheduled',NOW(),NOW()),
+('XY112','BSA','JIB','2026-03-17 10:00:00','2026-03-17 11:30:00','scheduled',NOW(),NOW()),
+('XY113','BSA','NBO','2026-03-18 08:30:00','2026-03-18 11:30:00','scheduled',NOW(),NOW()),
+('XY114','BSA','EBB','2026-03-18 09:30:00','2026-03-18 13:30:00','scheduled',NOW(),NOW()),
+('XY115','BSA','DAR','2026-03-19 06:30:00','2026-03-19 11:00:00','scheduled',NOW(),NOW()),
+('XY116','GGR','NBO','2026-03-19 08:45:00','2026-03-19 11:15:00','scheduled',NOW(),NOW()),
+('XY117','GGR','ADD','2026-03-20 06:30:00','2026-03-20 09:00:00','scheduled',NOW(),NOW()),
+('XY118','GGR','JIB','2026-03-20 07:30:00','2026-03-20 09:30:00','scheduled',NOW(),NOW()),
+('XY119','GGR','EBB','2026-03-21 11:00:00','2026-03-21 14:00:00','scheduled',NOW(),NOW()),
+('XY120','GGR','DAR','2026-03-21 06:00:00','2026-03-21 10:00:00','scheduled',NOW(),NOW()),
+('XY121','KMU','NBO','2026-03-22 09:30:00','2026-03-22 11:30:00','scheduled',NOW(),NOW()),
+('XY122','KMU','DAR','2026-03-22 12:30:00','2026-03-22 15:30:00','scheduled',NOW(),NOW()),
+('XY123','KMU','ADD','2026-03-23 08:30:00','2026-03-23 11:00:00','scheduled',NOW(),NOW()),
+('XY124','KMU','JIB','2026-03-23 07:30:00','2026-03-23 09:30:00','scheduled',NOW(),NOW()),
+('XY125','KMU','EBB','2026-03-24 10:00:00','2026-03-24 13:30:00','scheduled',NOW(),NOW()),
+('XY126','MGQ','NBO','2026-04-02 08:00:00','2026-04-02 10:30:00','scheduled',NOW(),NOW()),
+('XY127','MGQ','ADD','2026-04-05 09:00:00','2026-04-05 11:00:00','scheduled',NOW(),NOW()),
+('XY128','MGQ','JIB','2026-04-07 07:30:00','2026-04-07 09:00:00','scheduled',NOW(),NOW()),
+('XY129','MGQ','EBB','2026-04-09 12:00:00','2026-04-09 15:00:00','scheduled',NOW(),NOW()),
+('XY130','MGQ','DAR','2026-04-10 06:00:00','2026-04-10 10:00:00','scheduled',NOW(),NOW()),
+('XY131','HGA','ADD','2026-04-12 08:30:00','2026-04-12 10:00:00','scheduled',NOW(),NOW()),
+('XY132','HGA','JIB','2026-04-14 09:15:00','2026-04-14 10:30:00','scheduled',NOW(),NOW()),
+('XY133','HGA','NBO','2026-04-16 11:00:00','2026-04-16 13:30:00','scheduled',NOW(),NOW()),
+('XY134','BSA','ADD','2026-04-18 07:00:00','2026-04-18 09:30:00','scheduled',NOW(),NOW()),
+('XY135','BSA','JIB','2026-04-20 10:00:00','2026-04-20 11:30:00','scheduled',NOW(),NOW()),
+('XY136','GGR','NBO','2026-04-22 08:45:00','2026-04-22 11:15:00','scheduled',NOW(),NOW()),
+('XY137','GGR','ADD','2026-04-24 06:30:00','2026-04-24 09:00:00','scheduled',NOW(),NOW()),
+('XY138','KMU','NBO','2026-04-26 09:30:00','2026-04-26 11:30:00','scheduled',NOW(),NOW()),
+('XY139','KMU','DAR','2026-04-28 12:30:00','2026-04-28 15:30:00','scheduled',NOW(),NOW()),
+('XY140','KMU','ADD','2026-04-30 08:30:00','2026-04-30 11:00:00','scheduled',NOW(),NOW()),
+('XY141','MGQ','NBO','2026-05-02 08:00:00','2026-05-02 10:30:00','scheduled',NOW(),NOW()),
+('XY142','MGQ','ADD','2026-05-05 09:00:00','2026-05-05 11:00:00','scheduled',NOW(),NOW()),
+('XY143','MGQ','JIB','2026-05-08 07:30:00','2026-05-08 09:00:00','scheduled',NOW(),NOW()),
+('XY144','MGQ','EBB','2026-05-10 12:00:00','2026-05-10 15:00:00','scheduled',NOW(),NOW()),
+('XY145','MGQ','DAR','2026-05-12 06:00:00','2026-05-12 10:00:00','scheduled',NOW(),NOW()),
+('XY146','HGA','ADD','2026-05-15 08:30:00','2026-05-15 10:00:00','scheduled',NOW(),NOW()),
+('XY147','HGA','NBO','2026-05-18 11:00:00','2026-05-18 13:30:00','scheduled',NOW(),NOW()),
+('XY148','BSA','ADD','2026-05-20 07:00:00','2026-05-20 09:30:00','scheduled',NOW(),NOW()),
+('XY149','GGR','NBO','2026-05-22 08:45:00','2026-05-22 11:15:00','scheduled',NOW(),NOW()),
+('XY150','KMU','DAR','2026-05-25 12:30:00','2026-05-25 15:30:00','scheduled',NOW(),NOW());
