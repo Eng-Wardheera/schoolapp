@@ -12,7 +12,8 @@ from flask_login import LoginManager, current_user
 from authlib.integrations.flask_client import OAuth
 from flask_wtf import CSRFProtect
 import pytz
-from flask.cli import load_dotenv
+from dotenv import load_dotenv
+
 
 
 
@@ -57,6 +58,7 @@ def now_eat():
 # Load environment variables from .env file
 load_dotenv()
 
+
 #-------------------------------------------------------------
 # Function: 29 create_app()
 # Ujeeddo: Diyaarinta Flask App iyadoo la isku xiro configs, extensions, 
@@ -75,7 +77,11 @@ def create_app():
     csrf.init_app(app)  # ✅ INIT
 
     # Configuration
-    app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv("DATABASE_URI")
+    db_uri = os.getenv("DATABASE_URI")
+    if not db_uri:
+        db_uri = "mysql+mysqlconnector://root:password@localhost:3306/myschool"
+    app.config['SQLALCHEMY_DATABASE_URI'] = db_uri
+    
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
     # create_app() dhexdiisa
