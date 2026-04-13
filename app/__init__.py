@@ -77,10 +77,7 @@ def create_app():
     csrf.init_app(app)  # ✅ INIT
 
     # Configuration
-    db_uri = os.getenv("DATABASE_URI")
-    if not db_uri:
-        db_uri = "mysql+mysqlconnector://root:@localhost/myschool"
-    app.config['SQLALCHEMY_DATABASE_URI'] = db_uri
+    app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv("DATABASE_URI")
     
     app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
     # create_app() dhexdiisa
