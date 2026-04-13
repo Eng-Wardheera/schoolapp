@@ -82,7 +82,6 @@ def create_app():
         db_uri = "mysql+mysqlconnector://root:password@localhost:3306/myschool"
     app.config['SQLALCHEMY_DATABASE_URI'] = db_uri
     
-    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
     # create_app() dhexdiisa
     app.config['DEBUG'] = False
