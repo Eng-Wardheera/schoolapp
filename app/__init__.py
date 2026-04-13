@@ -4,7 +4,6 @@ import os
 import textwrap
 import traceback
 from flask import Flask, flash, jsonify, redirect, render_template, url_for
-from flask.cli import load_dotenv
 from flask_cors import CORS
 from flask_mail import Mail
 from flask_migrate import Migrate
@@ -13,6 +12,7 @@ from flask_login import LoginManager, current_user
 from authlib.integrations.flask_client import OAuth
 from flask_wtf import CSRFProtect
 import pytz
+from flask.cli import load_dotenv
 
 
 
