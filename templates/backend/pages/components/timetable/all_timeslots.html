@@ -1,0 +1,142 @@
+{% extends 'backend/home/base.html' %}
+
+{% block title %}All Time Slots | School Management{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+    <div class="page-header-left d-flex align-items-center">
+        <div class="page-header-title">
+            <h5 class="m-b-10">Time Slots Management</h5>
+        </div>
+        <ul class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Home</a></li>
+            <li class="breadcrumb-item">All Time Slots</li>
+        </ul>
+    </div>
+    <div class="page-header-right ms-auto">
+        <a href="{{ url_for('main.add_timeslot') }}" class="btn btn-primary">
+            <i class="feather-plus me-2"></i> Add New Time Slot
+        </a>
+    </div>
+</div>
+
+<div class="main-content">
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="card stretch stretch-full">
+                <div class="card-body p-3">
+
+                    <div class="d-flex gap-2 justify-content-between align-items-center mb-3">
+                        <h6 class="mb-0 fw-bold text-muted text-uppercase small">Liiska Saacadaha Jadwalka</h6>
+                        <div class="d-flex gap-2">
+                             <span class="badge bg-soft-primary text-primary border border-primary">Period</span>
+                             <span class="badge bg-soft-warning text-warning border border-warning">Break</span>
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle" id="timeSlotList">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Label</th>
+                                    <th>Shift</th>
+                                    <th>Start Time</th>
+                                    <th>End Time</th>
+                                    <th>Duration</th>
+                                    <th>Type</th>
+                                    {% if user.role.value == 'school_admin' %}
+                                        <th>Branch</th>
+                                    {% endif %}
+                                    <th class="text-end">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for slot in timeslots %}
+                                <tr>
+                                    <td>{{ loop.index }}</td>
+                                    <td>
+                                        <span class="fw-bold text-dark">{{ slot.label }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-soft-info text-info text-uppercase">
+                                            {{ slot.shift }}
+                                        </span>
+                                    </td>
+                                    <td><i class="feather-clock me-1 text-muted small"></i> {{ slot.start_time.strftime('%I:%M %p') }}</td>
+                                    <td><i class="feather-clock me-1 text-muted small"></i> {{ slot.end_time.strftime('%I:%M %p') }}</td>
+                                    <td>
+                                        {# Xisaabinta inta daqiiqo u dhaxaysa #}
+                                        {% set start_min = slot.start_time.hour * 60 + slot.start_time.minute %}
+                                        {% set end_min = slot.end_time.hour * 60 + slot.end_time.minute %}
+                                        <span class="text-muted">{{ end_min - start_min }} min</span>
+                                    </td>
+                                    <td>
+                                        {% if slot.is_break %}
+                                            <span class="badge bg-warning">Break</span>
+                                        {% else %}
+                                            <span class="badge bg-primary">Period</span>
+                                        {% endif %}
+                                    </td>
+                                    {% if user.role.value == 'school_admin' %}
+                                        <td>
+                                            <span class="text-muted">{{ slot.branch.name if slot.branch_id else 'Main School' }}</span>
+                                        </td>
+                                    {% endif %}
+
+                                    <td>
+                                        <div class="hstack gap-2 justify-content-end">
+                                            <a href="{{ url_for('main.edit_timeslot', id=slot.id) }}" class="btn btn-sm btn-info">
+                                                <i class="feather-edit-3"></i>
+                                            </a>
+
+                                            <form action="{{ url_for('main.delete_timeslot', id=slot.id) }}" method="POST" style="display:inline;">
+                                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                <button type="submit" class="btn btn-sm btn-danger"
+                                                    onclick="return confirm('Ma hubtaa inaad tirtirto waqtigan?');">
+                                                    <i class="feather-trash-2"></i>
+                                                </a>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+
+                        {% if not timeslots %}
+                        <div class="p-5 text-center text-muted">
+                            <i class="feather-calendar mb-2 d-block" style="font-size: 2.5rem;"></i>
+                            No time slots defined. <a href="{{ url_for('main.add_timeslot') }}">Create first slot</a>.
+                        </div>
+                        {% endif %}
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        $('#timeSlotList').DataTable({
+            responsive: true,
+            pageLength: 10,
+            searching: true,
+            ordering: true,
+            order: [[2, 'asc'], [3, 'asc']], // Order by Shift then Start Time
+            language: {
+                search: "_INPUT_",
+                searchPlaceholder: "Search time slots..."
+            }
+        });
+    });
+</script>
+{% endblock %}
+
+{% endblock %}

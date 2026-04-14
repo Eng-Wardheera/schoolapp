@@ -7,14 +7,16 @@
     <img 
         src="{{ url_for('static', filename=g.site_logo.main_logo) if g.site_logo and g.site_logo.main_logo else url_for('static', filename='backend/uploads/images/no_image.jpg') }}" 
         class="logo logo-lg"
-        width="200" height="75"
+        width="280" height="75"
+        style="margin-left: -30px !important;"
     />
 
     <!-- SUB LOGO -->
     <img 
         src="{{ url_for('static', filename=g.site_logo.sub_logo) if g.site_logo and g.site_logo.sub_logo else url_for('static', filename='backend/uploads/images/no_image.jpg') }}" 
         class="logo logo-sm"
-        width="200" height="75"
+        width="250" height="65"
+        
     />
 </a>
 
@@ -199,6 +201,16 @@
                         </ul>
                     </li>
 
+                      <li class="nxl-item nxl-hasmenu">
+                        <a href="javascript:void(0);" class="nxl-link">
+                            <span class="nxl-micon"><i class="feather-layout"></i></span>
+                            <span class="nxl-mtext">Class Schedules</span><span class="nxl-arrow"><i class="feather-chevron-right"></i></span>
+                        </a>
+                        <ul class="nxl-submenu">
+                            <li class="nxl-item"><a class="nxl-link" href="{{url_for('main.all_timeslots')}}">All Timeslots</a></li>
+                            <li class="nxl-item"><a class="nxl-link" href="{{url_for('main.all_timetables')}}">All Timetables</a></li>
+                        </ul>
+                    </li>
                     <li class="nxl-item nxl-hasmenu">
                         <a href="javascript:void(0);" class="nxl-link">
                             <span class="nxl-micon"><i class="feather-user-check"></i></span>
@@ -353,6 +365,16 @@
                             <li class="nxl-item"><a class="nxl-link" href="{{ url_for('main.add_teacher') }}">Add Teacher</a></li>
                             <li class="nxl-item"><a class="nxl-link" href="{{ url_for('main.all_teacher_assignments') }}">All Teachers Aassignments</a></li>
                             <li class="nxl-item"><a class="nxl-link" href="{{ url_for('main.add_teacher_assignment') }}">Add Teacher Aassignment</a></li>
+                        </ul>
+                    </li>
+                    <li class="nxl-item nxl-hasmenu">
+                        <a href="javascript:void(0);" class="nxl-link">
+                            <span class="nxl-micon"><i class="feather-layout"></i></span>
+                            <span class="nxl-mtext">Class Schedules</span><span class="nxl-arrow"><i class="feather-chevron-right"></i></span>
+                        </a>
+                        <ul class="nxl-submenu">
+                            <li class="nxl-item"><a class="nxl-link" href="{{url_for('main.all_timeslots')}}">All Timeslots</a></li>
+                            <li class="nxl-item"><a class="nxl-link" href="{{url_for('main.all_timetables')}}">All Timetables</a></li>
                         </ul>
                     </li>
 

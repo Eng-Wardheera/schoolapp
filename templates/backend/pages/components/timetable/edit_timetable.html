@@ -1,0 +1,234 @@
+{% extends 'backend/home/base.html' %}
+
+{% block title %}Edit Timetable Entry | School Management{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-left d-flex align-items-center">
+        <div class="page-header-title">
+            <h5>Timetable</h5>
+        </div>
+        <ul class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Home</a></li>
+            <li class="breadcrumb-item"><a href="{{ url_for('main.all_timetables') }}">All Timetables</a></li>
+            <li class="breadcrumb-item active">Edit Entry</li>
+        </ul>
+    </div>
+</div>
+
+<div class="main-content">
+    <div class="row">
+        <div class="col-lg-8">
+            <form method="POST" id="timetableForm">
+                {{ form.hidden_tag() }}
+
+                <div class="card shadow-sm border-0">
+                    <div class="card-header bg-white py-3">
+                        <h6 class="mb-0 fw-bold text-primary"><i class="feather-edit me-2"></i> Wax ka bedel Xiisadda</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                {{ form.day_of_week.label(class="fw-bold form-label") }}
+                                {{ form.day_of_week(class="form-select form-select-lg border-primary-subtle") }}
+                                {% for error in form.day_of_week.errors %}
+                                    <div class="text-danger small">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                            <div class="col-md-6">
+                                {{ form.time_slot_id.label(class="fw-bold form-label") }}
+                                {{ form.time_slot_id(class="form-select form-select-lg border-primary-subtle", id="time_slot_select") }}
+                                {% for error in form.time_slot_id.errors %}
+                                    <div class="text-danger small">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <hr class="opacity-50 mb-4">
+
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                {{ form.class_id.label(class="fw-bold form-label") }}
+                                {{ form.class_id(class="form-select", id="class_select") }}
+                                {% for error in form.class_id.errors %}
+                                    <div class="text-danger small">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                            <div class="col-md-6">
+                                {{ form.section_id.label(class="fw-bold form-label") }}
+                                {{ form.section_id(class="form-select", id="section_select") }}
+                                <small class="text-muted">Haddii fasalku uusan qaybo lahayn, dooro "-- No Section --"</small>
+                            </div>
+                        </div>
+
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                {{ form.subject_id.label(class="fw-bold form-label") }}
+                                {{ form.subject_id(class="form-select", id="subject_select") }}
+                                <div id="subject_loader" class="small text-primary d-none mt-1">
+                                    <span class="spinner-border spinner-border-sm"></span> Loading subjects...
+                                </div>
+                                {% for error in form.subject_id.errors %}
+                                    <div class="text-danger small">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                            <div class="col-md-6">
+                                {{ form.teacher_id.label(class="fw-bold form-label") }}
+                                {{ form.teacher_id(class="form-select", id="teacher_select") }}
+                                <div id="teacher_loader" class="small text-info d-none mt-1">
+                                    <span class="spinner-border spinner-border-sm"></span> Loading teachers...
+                                </div>
+                                {% for error in form.teacher_id.errors %}
+                                    <div class="text-danger small">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        {{ form.school_id() }}
+                        {{ form.branch_id() }}
+
+                    </div>
+
+                    <div class="card-footer d-flex justify-content-end gap-2 bg-white py-3">
+                        <a href="{{ url_for('main.all_timetables') }}" class="btn btn-secondary px-4">
+                            <i class="feather-x me-1"></i> Cancel
+                        </a>
+                        <button type="submit" class="btn btn-success px-4">
+                            <i class="feather-check-circle me-1"></i> Update Timetable
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body bg-soft-info rounded">
+                    <h6 class="text-info fw-bold mb-3"><i class="feather-info me-2"></i> Wax ka bedelista</h6>
+                    <p class="small mb-0">Waxaad hadda wax ka bedelaysaa xiisad horey u jirtay. Nidaamku wali wuxuu hubinayaa inaysan dhicin wax isku-dhac ah.</p>
+                </div>
+            </div>
+
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <h6 class="fw-bold mb-3">Timetable Details</h6>
+                    <div class="p-3 bg-light rounded border border-dashed">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-muted small">ID:</span>
+                            <span class="small fw-bold text-dark">#{{ entry.id }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-muted small">Waqtiga:</span>
+                            <span id="summary-time" class="small fw-bold text-dark">-</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-muted small">Fasalka:</span>
+                            <span id="summary-class" class="small fw-bold text-dark">-</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-muted small">Maaddada:</span>
+                            <span id="summary-subject" class="small fw-bold text-primary">-</span>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <span class="text-muted small">Macallinka:</span>
+                            <span id="summary-teacher" class="small fw-bold text-dark">-</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const classSelect = document.querySelector('#class_select');
+    const subjectSelect = document.querySelector('#subject_select');
+    const teacherSelect = document.querySelector('#teacher_select');
+    const timeSelect = document.querySelector('#time_slot_select');
+    const subjectLoader = document.getElementById('subject_loader');
+    const teacherLoader = document.getElementById('teacher_loader');
+
+    const BP_PREFIX = window.location.pathname.startsWith('/main') ? '/main' : ''; 
+
+    // Kaydi IDs-ka hadda jira si loogu doorto si otomaatig ah (Edit Mode)
+    const currentSubjectId = "{{ entry.subject_id }}";
+    const currentTeacherId = "{{ entry.teacher_id }}";
+
+    function updateSummary() {
+        const getSelectedText = (el) => el?.options[el.selectedIndex]?.text || '-';
+        if (document.getElementById('summary-time')) document.getElementById('summary-time').innerText = getSelectedText(timeSelect);
+        if (document.getElementById('summary-class')) document.getElementById('summary-class').innerText = getSelectedText(classSelect);
+        if (document.getElementById('summary-subject')) document.getElementById('summary-subject').innerText = getSelectedText(subjectSelect);
+        if (document.getElementById('summary-teacher')) document.getElementById('summary-teacher').innerText = getSelectedText(teacherSelect);
+    }
+
+    // 1. Load Subjects
+    function loadSubjects(classId, selectedId = null) {
+        if (!classId) return;
+        subjectSelect.innerHTML = '<option value="">-- Loading --</option>';
+        if (subjectLoader) subjectLoader.classList.remove('d-none');
+
+        fetch(`${BP_PREFIX}/get-subjects/${classId}`)
+            .then(res => res.json())
+            .then(data => {
+                subjectSelect.innerHTML = '<option value="">-- Dooro Maaddada --</option>';
+                data.forEach(sub => {
+                    const option = new Option(sub.name, sub.id);
+                    if (selectedId && sub.id == selectedId) option.selected = true;
+                    subjectSelect.add(option);
+                });
+                if (subjectLoader) subjectLoader.classList.add('d-none');
+                updateSummary();
+                // Haddii uu jiro subject hadda la doortay, load gareey macallimiinta
+                if (subjectSelect.value) loadTeachers(subjectSelect.value, currentTeacherId);
+            });
+    }
+
+    // 2. Load Teachers
+    function loadTeachers(subjectId, selectedId = null) {
+        if (!subjectId) return;
+        teacherSelect.innerHTML = '<option value="">-- Loading --</option>';
+        if (teacherLoader) teacherLoader.classList.remove('d-none');
+
+        fetch(`${BP_PREFIX}/get-teachers-by-subject/${subjectId}`)
+            .then(res => res.json())
+            .then(data => {
+                teacherSelect.innerHTML = '<option value="">-- Dooro Macallinka --</option>';
+                data.forEach(t => {
+                    const option = new Option(t.name, t.id);
+                    if (selectedId && t.id == selectedId) option.selected = true;
+                    teacherSelect.add(option);
+                });
+                if (teacherLoader) teacherLoader.classList.add('d-none');
+                updateSummary();
+            });
+    }
+
+    // Events
+    classSelect.addEventListener('change', function() {
+        loadSubjects(this.value);
+        teacherSelect.innerHTML = '<option value="">-- Dooro Maaddo marka hore --</option>';
+    });
+
+    subjectSelect.addEventListener('change', function() {
+        loadTeachers(this.value);
+    });
+
+    // EDIT MODE: Marka ugu horreyso ee bogga la furo
+    if (classSelect.value) {
+        loadSubjects(classSelect.value, currentSubjectId);
+    }
+
+    [timeSelect, classSelect, subjectSelect, teacherSelect].forEach(el => {
+        if (el) el.addEventListener('change', updateSummary);
+    });
+});
+</script>
+
+<style>
+    .bg-soft-info { background-color: #e3f2fd; }
+    .border-dashed { border-style: dashed !important; }
+    .bg-light { background-color: #f8f9fa !important; }
+</style>
+{% endblock %}

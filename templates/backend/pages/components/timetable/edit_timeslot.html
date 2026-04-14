@@ -1,0 +1,171 @@
+{% extends 'backend/home/base.html' %}
+
+{% block title %}{{ 'Edit' if slot else 'Add' }} Time Slot | School Management{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+    <div class="page-header-left d-flex align-items-center">
+        <div class="page-header-title">
+            <h5>Time Slots</h5>
+        </div>
+        <ul class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Home</a></li>
+            <li class="breadcrumb-item"><a href="{{ url_for('main.all_timeslots') }}">All Time Slots</a></li>
+            <li class="breadcrumb-item text-primary">{{ 'Edit' if slot else 'Add' }} Time Slot</li>
+        </ul>
+    </div>
+</div>
+
+<div class="main-content">
+    <div class="row">
+        <div class="col-lg-8">
+            <form method="POST">
+                {{ form.hidden_tag() }}
+
+                <div class="card shadow-sm border-{{ 'info' if slot else 'primary' }}">
+                    <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0 text-{{ 'info' if slot else 'primary' }}">
+                            <i class="feather-{{ 'edit-3' if slot else 'plus-circle' }} me-2"></i>
+                            {{ 'Update Existing' if slot else 'Create New' }} Time Slot
+                        </h5>
+                        {% if slot %}
+                            <span class="badge bg-soft-info text-info">ID: #{{ slot.id }}</span>
+                        {% endif %}
+                    </div>
+                    <div class="card-body">
+                        
+                        <div class="mb-4">
+                            {{ form.label.label(class="fw-bold form-label") }}
+                            {{ form.label(class="form-control form-control-lg", placeholder="Tusaale: Xiisadda 1aad ama Nasashada") }}
+                            {% for error in form.label.errors %}
+                                <div class="text-danger small">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-4">
+                                {{ form.start_time.label(class="fw-bold form-label") }}
+                                {{ form.start_time(class="form-control", id="start_time") }}
+                                {% for error in form.start_time.errors %}
+                                    <div class="text-danger small">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+
+                            <div class="col-md-4">
+                                <label class="fw-bold form-label text-primary">Duration (Minutes)</label>
+                                <input type="number" id="duration" class="form-control border-primary" value="45" min="5" step="5">
+                                <small class="text-muted">Immisa daqiiqo ayay soconaysaa?</small>
+                            </div>
+
+                            <div class="col-md-4">
+                                {{ form.end_time.label(class="fw-bold form-label") }}
+                                {{ form.end_time(class="form-control bg-light", id="end_time") }}
+                                {% for error in form.end_time.errors %}
+                                    <div class="text-danger small">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                {{ form.shift.label(class="fw-bold form-label") }}
+                                {{ form.shift(class="form-select") }}
+                                {% for error in form.shift.errors %}
+                                    <div class="text-danger small">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+
+                            <div class="col-md-6 d-flex align-items-center mt-4">
+                                <div class="form-check form-switch card p-2 w-100 shadow-none border">
+                                    <div class="ms-4">
+                                        {{ form.is_break(class="form-check-input", role="switch", id="isBreakCheck") }}
+                                        <label class="form-check-label fw-bold" for="isBreakCheck">
+                                            Is this a Break/Recess? (Nasasho)
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {# Hidden fields for IDs #}
+                        {{ form.school_id() }}
+                        {{ form.branch_id() }}
+
+                    </div>
+
+                    <div class="card-footer d-flex justify-content-end gap-2 bg-transparent">
+                        <a href="{{ url_for('main.all_timeslots') }}" class="btn btn-light border px-4">
+                            <i class="feather-x me-1"></i> Cancel
+                        </a>
+                        <button type="submit" class="btn btn-{{ 'info' if slot else 'primary' }} px-4">
+                            <i class="feather-{{ 'refresh-cw' if slot else 'save' }} me-1"></i> 
+                            {{ 'Update Changes' if slot else 'Save Time Slot' }}
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card border-start border-{{ 'info' if slot else 'primary' }} border-4 shadow-sm">
+                <div class="card-body">
+                    <h6 class="text-{{ 'info' if slot else 'primary' }}"><i class="feather-info me-2"></i> Hagid Kooban</h6>
+                    <hr>
+                    <ul class="small text-muted ps-3">
+                        <li class="mb-2"><strong>Mode:</strong> Waxaad hadda ku jirtaa qaabka <strong>{{ 'Wax ka bedelka (Edit)' if slot else 'Abuurista (Create)' }}</strong>.</li>
+                        <li class="mb-2"><strong>Label:</strong> Hubi in magacu u gaar yahay xiisadda.</li>
+                        <li class="mb-2"><strong>End Time:</strong> Iskiis ayaa loo xisaabinayaa marka aad bedesho Duration-ka.</li>
+                        <li class="mb-2"><strong>Auto-Sync:</strong> Markaad Edit-ka fureyso, Duration-ka waxaa laga soo xisaabinayaa waqtiga kaydsan.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const startTimeInput = document.getElementById('start_time');
+    const durationInput = document.getElementById('duration');
+    const endTimeInput = document.getElementById('end_time');
+
+    // 1. Function xisaabiya End Time (Start + Duration)
+    function calculateEndTime() {
+        if (!startTimeInput.value) return;
+        let [hours, minutes] = startTimeInput.value.split(':').map(Number);
+        let duration = parseInt(durationInput.value) || 0;
+        let date = new Date();
+        date.setHours(hours);
+        date.setMinutes(minutes + duration);
+        endTimeInput.value = `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+    }
+
+    // 2. Function xisaabiya Duration (End - Start) - Waxaa la isticmaalayaa marka Edit la furo
+    function calculateDurationOnLoad() {
+        if (!startTimeInput.value || !endTimeInput.value) return;
+        
+        let [sH, sM] = startTimeInput.value.split(':').map(Number);
+        let [eH, eM] = endTimeInput.value.split(':').map(Number);
+        
+        let startTotal = sH * 60 + sM;
+        let endTotal = eH * 60 + eM;
+        
+        // Handling roll-over (haddii ay habeen dambe gudubto)
+        if (endTotal < startTotal) endTotal += 1440; 
+        
+        durationInput.value = endTotal - startTotal;
+    }
+
+    // Event Listeners
+    startTimeInput.addEventListener('change', calculateEndTime);
+    durationInput.addEventListener('input', calculateEndTime);
+    
+    // Initial Run for Edit Mode
+    if(startTimeInput.value && endTimeInput.value) {
+        calculateDurationOnLoad();
+    }
+});
+</script>
+
+{% endblock %}

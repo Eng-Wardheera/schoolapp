@@ -1,0 +1,154 @@
+{% extends 'backend/home/base.html' %}
+
+{% block title %}Add Time Slot | School Management{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+    <div class="page-header-left d-flex align-items-center">
+        <div class="page-header-title">
+            <h5>Time Slots</h5>
+        </div>
+        <ul class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Home</a></li>
+            <li class="breadcrumb-item">Add Time Slot</li>
+        </ul>
+    </div>
+</div>
+
+<div class="main-content">
+    <div class="row">
+        <div class="col-lg-8">
+            <form method="POST">
+                {{ form.hidden_tag() }}
+
+                <div class="card shadow-sm">
+                    <div class="card-header">
+                        <h5>Create New Time Slot</h5>
+                    </div>
+                    <div class="card-body">
+                        
+                        <div class="mb-4">
+                            {{ form.label.label(class="fw-bold form-label") }}
+                            {{ form.label(class="form-control form-control-lg", placeholder="Tusaale: Xiisadda 1aad ama Nasashada") }}
+                            {% for error in form.label.errors %}
+                                <div class="text-danger small">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-4">
+                                {{ form.start_time.label(class="fw-bold form-label") }}
+                                {{ form.start_time(class="form-control", id="start_time") }}
+                                {% for error in form.start_time.errors %}
+                                    <div class="text-danger small">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+
+                            <div class="col-md-4">
+                                <label class="fw-bold form-label text-primary">Duration (Minutes)</label>
+                                <input type="number" id="duration" class="form-control border-primary" value="45" min="5" step="5">
+                                <small class="text-muted">Immisa daqiiqo ayay soconaysaa?</small>
+                            </div>
+
+                            <div class="col-md-4">
+                                {{ form.end_time.label(class="fw-bold form-label") }}
+                                {{ form.end_time(class="form-control bg-light", id="end_time") }}
+                                {% for error in form.end_time.errors %}
+                                    <div class="text-danger small">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                {{ form.shift.label(class="fw-bold form-label") }}
+                                {{ form.shift(class="form-select") }}
+                                {% for error in form.shift.errors %}
+                                    <div class="text-danger small">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+
+                            <div class="col-md-6 d-flex align-items-center mt-4">
+                                <div class="form-check form-switch card p-2 w-100 shadow-none border">
+                                    <div class="ms-4">
+                                        {{ form.is_break(class="form-check-input", role="switch", id="isBreakCheck") }}
+                                        <label class="form-check-label fw-bold" for="isBreakCheck">
+                                            Is this a Break/Recess? (Nasasho)
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {{ form.school_id() }}
+                        {{ form.branch_id() }}
+
+                    </div>
+
+                    <div class="card-footer d-flex justify-content-end gap-2">
+                        <a href="{{ url_for('main.all_timeslots') }}" class="btn btn-secondary px-4">
+                            <i class="feather-x me-1"></i> Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary px-4">
+                            <i class="feather-save me-1"></i> Save Time Slot
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card border-start border-primary border-4 shadow-sm">
+                <div class="card-body">
+                    <h6 class="text-primary"><i class="feather-info me-2"></i> Hagid Kooban</h6>
+                    <hr>
+                    <ul class="small text-muted ps-3">
+                        <li class="mb-2"><strong>Label:</strong> Sii magac garasho leh sida "Xiisadda 1aad".</li>
+                        <li class="mb-2"><strong>Start Time:</strong> Dooro xilliga ay xiisaddu bilaabanayso.</li>
+                        <li class="mb-2"><strong>Duration:</strong> Ku qor daqiiqadaha, markaas ayaa si toos ah loo xisaabinayaa <strong>End Time</strong>-ka.</li>
+                        <li class="mb-2"><strong>Shift:</strong> Hubi inaad u kala saarto subax iyo galab.</li>
+                        <li class="mb-2"><strong>Is Break:</strong> Haddii ay nasasho tahay, calaamadi Switch-ka si looga dhaafo jadwalka maaddooyinka.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const startTimeInput = document.getElementById('start_time');
+    const durationInput = document.getElementById('duration');
+    const endTimeInput = document.getElementById('end_time');
+
+    function calculateEndTime() {
+        if (!startTimeInput.value) return;
+
+        // 1. Kala saar saacadda iyo daqiiqadda (HH:MM)
+        let [hours, minutes] = startTimeInput.value.split(':').map(Number);
+        let duration = parseInt(durationInput.value) || 0;
+
+        // 2. Abuur Date object si xisaabtu u noqoto mid sax ah (handling roll-over hours)
+        let date = new Date();
+        date.setHours(hours);
+        date.setMinutes(minutes + duration);
+
+        // 3. Format-ka ka dhig HH:MM (oo leh 0 haddii ay ka yar tahay 10)
+        let endHours = date.getHours().toString().padStart(2, '0');
+        let endMinutes = date.getMinutes().toString().padStart(2, '0');
+
+        // 4. Ku shub End Time input-ka
+        endTimeInput.value = `${endHours}:${endMinutes}`;
+    }
+
+    // Markay wax iska bedelaan start_time ama duration, orod xisaabinta
+    startTimeInput.addEventListener('change', calculateEndTime);
+    durationInput.addEventListener('input', calculateEndTime);
+    
+    // Initial run haddii xog hore u jirtay (sida Edit)
+    if(startTimeInput.value) calculateEndTime();
+});
+</script>
+
+{% endblock %}
