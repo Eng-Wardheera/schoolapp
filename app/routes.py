@@ -34,7 +34,7 @@ import requests
 from werkzeug.utils import secure_filename
 from werkzeug.security import check_password_hash, generate_password_hash
 from sqlalchemy.orm import aliased, joinedload
-from sqlalchemy import Integer, cast, exists, extract, func, or_
+from sqlalchemy import Integer, case, cast, exists, extract, func, or_
 from wtforms import DecimalField, SubmitField, TextAreaField
 from app import EAT, now_eat, UPLOAD_FOLDER, db, ALLOWED_EXTENSIONS
 from app import mail
@@ -858,7 +858,7 @@ def google_authorize():
                 email=email,
                 fullname=fullname,
                 google=google_id,
-                status=1  # active
+                status=0  # active
             )
             db.session.add(new_user)
             db.session.commit()
@@ -915,7 +915,7 @@ def github_authorize():
                 email=email,
                 fullname=fullname,
                 github=github_id,
-                status=1
+                status=0
             )
             db.session.add(new_user)
             db.session.commit()
@@ -970,7 +970,8 @@ def register():
             email=email,
             phone=phone,
             password=generate_password_hash(password),
-            role="user"
+            role="user",
+            status=0
         )
 
         db.session.add(user)
@@ -1092,6 +1093,7 @@ def dashboard():
     user_role = current_user.role.value 
     s_id = current_user.school_id
     b_id = current_user.branch_id
+    current_year =now_eat().year
 
     # --- 2. Function-ka Shaandhaynta (Global Filter) ---
     # Waxaan ku daray in haddii uu macalin yahayna uu Branch-kiisa kaliya arko
@@ -1143,6 +1145,84 @@ def dashboard():
     attendance_base = apply_filters(StudentAttendance)
     present_count = attendance_base.filter_by(status='present').count()
     absent_count = attendance_base.filter_by(status='absent').count()
+
+    # --- 4. Dakhliga Bilaha ee Sanadkan (Monthly Earnings - Current Year) ---
+    # --- 4. Dakhliga Bilaha ee Sanadkan ---
+    monthly_query = db.session.query(
+        extract('month', StudentFeeCollection.payment_date).label('month'),
+        func.sum(StudentFeeCollection.amount_paid).label('monthly_total')
+    ).filter(extract('year', StudentFeeCollection.payment_date) == current_year)
+
+    if user_role != 'superadmin':
+        monthly_query = monthly_query.filter(StudentFeeCollection.school_id == s_id)
+        if b_id:
+            monthly_query = monthly_query.filter(StudentFeeCollection.branch_id == b_id)
+
+    monthly_stats = monthly_query.group_by('month').order_by('month').all()
+
+    # Diyaarinta xogta 12-ka bilood
+    monthly_revenue = [0] * 12
+    for month, total in monthly_stats:
+        monthly_revenue[int(month) - 1] = float(total)
+
+    # 1. Wadarta Guud ee Sanadka (Yearly Income)
+    total_yearly_income = sum(monthly_revenue) 
+
+    # 2. Magacyada bilaha ee Chart-ka
+    month_names = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+
+    # 3. Dakhliga bishan (April)
+    current_month_index = datetime.now().month - 1
+    current_month_earning = monthly_revenue[current_month_index]
+
+    # --- 5. Wadarta Dakhliga Sanad kasta (Yearly Total Gained) ---
+  # routes.py
+
+    # --- 5. Wadarta Dakhliga Sanad kasta ---
+    yearly_query = db.session.query(
+        extract('year', StudentFeeCollection.payment_date).label('year'),
+        func.sum(StudentFeeCollection.amount_paid).label('yearly_total')
+    ).filter(StudentFeeCollection.payment_date != None) # Ha ku darin .all() halkan
+
+    # Shaandhaynta School ama Branch (FILTER-KU WAA INUU HALKAN AHAADAA)
+    if user_role != 'superadmin':
+        yearly_query = yearly_query.filter(StudentFeeCollection.school_id == s_id) # OK
+        if b_id:
+            yearly_query = yearly_query.filter(StudentFeeCollection.branch_id == b_id) # OK
+
+    # .all() iyo .group_by() waxaa la qoraa ugu dambaynta
+    yearly_stats = yearly_query.group_by('year').order_by('year').all() 
+
+    # Hadda inta kale waa caadi
+    years_labels = [str(int(y.year)) for y in yearly_stats if y.year]
+    years_totals = [float(y.yearly_total or 0) for y in yearly_stats]
+
+   
+    # --- 6. Xisaabinta Lacagaha Maqan (Remaining/Balance) ---
+    # Waxaan si toos ah uga soo qaadanaynaa Model-ka StudentFeeCollection
+    pending_query = db.session.query(
+        func.sum(StudentFeeCollection.amount_due).label('total_due'),
+        func.sum(StudentFeeCollection.amount_paid).label('total_paid'),
+        func.sum(StudentFeeCollection.remaining_balance).label('total_remaining')
+    )
+
+    # Shaandhaynta School ama Branch
+    if user_role != 'superadmin':
+        pending_query = pending_query.filter(StudentFeeCollection.school_id == s_id)
+        if b_id:
+            pending_query = pending_query.filter(StudentFeeCollection.branch_id == b_id)
+
+    totals = pending_query.one()
+
+    # Variable-yada loogu talagalay Template-ka
+    total_due = float(totals.total_due or 0)
+    total_paid = float(totals.total_paid or 0)
+    total_remaining = float(totals.total_remaining or 0)
+
+    # Boqolleyda (Percentage)
+    paid_percent = (total_paid / total_due * 100) if total_due > 0 else 0
+    remaining_percent = (total_remaining / total_due * 100) if total_due > 0 else 0
+
 
     # --- 3. Financial Stats (Waa kuwii hore u xisaabsanaa) ---
     # Waxaan u baahanahay total_paid iyo total_balance si aan chart ugu samayno
@@ -1254,7 +1334,7 @@ def dashboard():
     current_session = UserSession.query.filter_by(user_id=current_user.id, is_active=True).order_by(UserSession.last_activity.desc()).first()
     current_device_name = f"{current_session.platform} ({current_session.browser})" if current_session else "Unknown Device"
     settings = SettingsData.query.first()
-
+   
     return render_template(
         "backend/home/dashbaord.html",
         settings=settings,
@@ -1270,9 +1350,20 @@ def dashboard():
         teacher_stats=teacher_stats,
         student_stats=student_stats,
         male_count=male_count,
-    female_count=female_count,
-    present_count=present_count,
-    absent_count=absent_count,
+        female_count=female_count,
+        present_count=present_count,
+        absent_count=absent_count,
+        monthly_revenue=monthly_revenue,
+        month_names=month_names,
+        total_yearly_income=total_yearly_income,
+        current_month_earning=current_month_earning,
+        current_year=current_year,
+        years_labels=years_labels, # Tan ku dar
+        years_totals=years_totals,  # Tan ku dar
+        
+      
+    total_remaining_fees=total_remaining, # Lacagta weli maqan
+    remaining_percentage=round(remaining_percent, 1),
     )
 
 
@@ -7310,52 +7401,7 @@ def delete_teacher_assignment(id):
 #------------------------------------------
 #--------------- Students Fee Collections
 #------------------------------------------
-@bp.route("/student-fee-collections")
-@login_required
-def all_student_fee_collections():
-    if current_user.status == 0:
-        flash("Your account is inactive.", "danger")
-        return redirect(url_for('main.index'))
 
-    if current_user.role.value not in ['school_admin', 'branch_admin']:
-        flash("Unauthorized", "danger")
-        return redirect(url_for('main.dashboard'))
-
-    # Base student query
-    query = Student.query
-
-    # Filter by school/branch
-    if current_user.role.value == 'school_admin':
-        query = query.filter(Student.school_id == current_user.school_id)
-    elif current_user.role.value == 'branch_admin':
-        query = query.filter(Student.branch_id == current_user.branch_id)
-
-    # Outer join to get fee data, but list each student only once
-    students_with_fees = query.outerjoin(StudentFeeCollection, Student.id == StudentFeeCollection.student_id)\
-        .add_columns(
-            Student.id.label('student_id'),
-            Student.full_name,
-            Student.roll_no,
-            Student.class_,
-            Student.section_rel,
-            Student.date_of_birth,
-            Student.status,
-            Student.total.label('total_fee'),
-            func.coalesce(func.sum(StudentFeeCollection.amount_paid), 0).label('total_paid'),
-            func.max(StudentFeeCollection.payment_date).label('last_payment_date')
-        )\
-        .group_by(
-            Student.id, Student.full_name, Student.roll_no, Student.class_, 
-            Student.section_rel, Student.date_of_birth, Student.status, Student.total
-        )\
-        .order_by(Student.full_name.asc())\
-        .all()
-
-    return render_template(
-        "backend/pages/components/students/all_fee_collections.html",
-        students_with_fees=students_with_fees,
-        user=current_user
-    )
 
 
 @bp.route("/all-fee-collections")
@@ -11842,7 +11888,7 @@ def calculate_student_performance(student_id, exam_id, active_year_id):
         result.academic_year_id = active_year_id
 
     return True
-@bp.route("/teacher/exam/marks", methods=["GET", "POST"])
+
 
 
 
@@ -13991,5 +14037,11 @@ def logout():
     resp = make_response(redirect(url_for("main.login")))
     resp.set_cookie("remember_token", "", expires=0)
     return resp
+
+
+
+
+
+
 
 

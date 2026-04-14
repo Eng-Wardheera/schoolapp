@@ -5,3 +5,9 @@ __pycache__/
 instance/
 .vercel
 .env*.local
+
+app/modal.py
+app/__init__.py
+static/
+
+
