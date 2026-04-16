@@ -18,6 +18,8 @@ qrcode
 apscheduler
 
 googletrans
+python-dotenv
+psycopg2-binary
 
 mysql-connector-python
 flask

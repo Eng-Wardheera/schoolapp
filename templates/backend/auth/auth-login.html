@@ -1,361 +1,236 @@
 <!DOCTYPE html>
-<html lang="zxx">
+<html lang="en">
 
 <head>
     <meta charset="utf-8">
     <meta http-equiv="x-ua-compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="">
-    <meta name="keyword" content="">
-    <meta name="author" content="theme_ocean">
-    <!--! The above 6 meta tags *must* come first in the head; any other head content must come *after* these tags !-->
-    <!--! BEGIN: Apps Title-->
-    <title>{% block title %}Login{% endblock %} | Logistics</title>
-    <!--! END: Apps Title-->
+    <title>{% block title %}Login{% endblock %} | School Management</title>
 
-    <!--! BEGIN: Favicon-->
-    <!-- Favicons -->
-    <link rel="shortcut icon" type="image/x-icon"
-            href="{{ url_for('static', filename='frontend/images/logo-upper.png') }}" />
-
-    <!--! END: Favicon-->
-
-    <!--! BEGIN: Bootstrap CSS-->
-    <link rel="stylesheet" type="text/css"
-        href="{{ url_for('static', filename='backend/assets/css/bootstrap.min.css') }}">
-    <!--! END: Bootstrap CSS-->
-
-    <!--! BEGIN: Vendors CSS-->
-    <link rel="stylesheet" type="text/css"
-        href="{{ url_for('static', filename='backend/assets/vendors/css/vendors.min.css') }}">
-    <!--! END: Vendors CSS-->
-
-    <!--! BEGIN: Custom CSS-->
-    <link rel="stylesheet" type="text/css"
-        href="{{ url_for('static', filename='backend/assets/css/theme.min.css') }}">
-    <!--! END: Custom CSS-->
+    
+  <link rel="shortcut icon" type="image/x-icon"
+    href="{{ url_for('static', filename=g.site_logo.sub_logo if g.site_logo and g.site_logo.sub_logo else 'frontend/images/logo-upper.png') }}" />
 
 
+
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='backend/assets/css/bootstrap.min.css') }}">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='backend/assets/vendors/css/vendors.min.css') }}">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='backend/assets/css/theme.min.css') }}">
+
+    <style>
+        :root {
+            --mongo-green: #00684a;
+            --mongo-dark: #001e2b;
+            --mongo-light-green: #e3fcf1;
+            --border-gray: #d1d5db;
+            --github-dark: #24292e;
+        }
+
+        body { 
+            background-color: #ffffff; 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            margin: 0; padding: 0; overflow-x: hidden;
+        }
+
+        .auth-wrapper { display: flex; min-height: 100vh; }
+
+        .auth-left { 
+            width: 40%; padding: 40px 60px; display: flex; flex-direction: column; background: #fff;
+        }
+
+        .logo-container { margin-bottom: 30px; }
+        .logo-img { width: 210px; }
+
+        .login-header h1 { font-size: 28px; font-weight: 500; color: var(--mongo-dark); margin-bottom: 8px; }
+        .signup-link { font-size: 15px; margin-bottom: 25px; color: #333; }
+        .signup-link a { color: #006ce6; font-weight: 600; text-decoration: none; }
+
+        .social-btn {
+            border: 1px solid var(--border-gray); border-radius: 4px; padding: 10px;
+            display: flex; align-items: center; justify-content: center; gap: 12px;
+            text-decoration: none; color: var(--mongo-dark); font-weight: 500;
+            margin-bottom: 12px; width: 100%; background: white; transition: all 0.2s;
+        }
+        .social-btn:hover { background-color: #f7f9fa; border-color: #889196; }
+        .social-btn img { width: 20px; }
+        .btn-github { background: var(--github-dark); color: white; border: none; }
+        .btn-github:hover { background: #1b1f23; color: white; }
+
+        .divider {
+            display: flex; align-items: center; text-align: center; margin: 25px 0; color: #5d6c74; font-size: 12px;
+        }
+        .divider::before, .divider::after { content: ''; flex: 1; border-bottom: 1px solid var(--border-gray); }
+        .divider span { padding: 0 10px; text-transform: lowercase; }
+
+        .form-label { font-weight: 700; color: var(--mongo-dark); font-size: 13px; margin-bottom: 8px; display: block; }
+        
+        /* Input group for password eye icon */
+        .password-field-wrapper { position: relative; }
+        .toggle-password {
+            position: absolute; right: 12px; top: 10px; cursor: pointer; color: #5d6c74; z-index: 10;
+        }
+
+        .form-control-custom { 
+            width: 100%; border: 1px solid #889196; border-radius: 4px; padding: 10px 12px;
+            font-size: 15px; color: var(--mongo-dark);
+        }
+        .form-control-custom:focus { border-color: var(--mongo-green); outline: none; box-shadow: 0 0 0 1px var(--mongo-green); }
+
+        .btn-mongo {
+            background-color: var(--mongo-green); color: white; font-weight: 700; border: none;
+            padding: 12px; border-radius: 4px; width: 100%; margin-top: 20px; cursor: pointer; font-size: 15px;
+        }
+
+        .auth-right { 
+            width: 60%; background-color: var(--mongo-dark); 
+            background-image: linear-gradient(rgba(0, 30, 43, 0.85), rgba(0, 30, 43, 0.85)), url('https://webassets.mongodb.com/static/images/atlas/login_background.png'); 
+            background-size: cover; background-position: center; display: flex; align-items: center; justify-content: center; padding: 60px; color: white;
+        }
+
+        .promo-content { max-width: 600px; z-index: 2; }
+        .promo-content h2 { font-size: 38px; font-weight: 700; margin-bottom: 20px; color: #00ed64; }
+        .promo-content p { font-size: 18px; line-height: 1.6; opacity: 0.9; margin-bottom: 35px; }
+
+        .feature-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px; }
+        .feature-item {
+            display: flex; align-items: center; gap: 15px; background: rgba(255, 255, 255, 0.08);
+            padding: 15px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.1); backdrop-filter: blur(4px);
+        }
+        .feature-item i { font-size: 24px; color: #00ed64; }
+        .feature-item span { font-size: 16px; font-weight: 500; }
+
+        .learn-more { 
+            color: #00ed64; font-weight: 600; text-decoration: none; font-size: 17px;
+            border: 2px solid #00ed64; padding: 10px 25px; border-radius: 4px; transition: 0.3s;
+        }
+        .learn-more:hover { background: #00ed64; color: var(--mongo-dark); }
+
+        @media (max-width: 1024px) {
+            .auth-right { display: none; }
+            .auth-left { width: 100%; padding: 30px 20px; }
+        }
+    </style>
 </head>
 
 <body>
-    <!--! ================================================================ !-->
-    <!--! [Start] Main Content !-->
-    <!--! ================================================================ !-->
-
-    
-    <main class="auth-creative-wrapper">
-        <div class="auth-creative-inner">
-            <div class="creative-card-wrapper">
-                <div class="card my-1 overflow-hidden" style="z-index: 1">
-                    <div class="row flex-1 g-0">
-                        <div class="col-lg-6 h-100 my-auto order-1 order-lg-0">
-                            <div class="wd-50 bg-white p-2 rounded-circle shadow-lg position-absolute translate-middle top-50 start-50 d-none d-lg-block">
-                            <img src="{{ url_for('static', filename=settings.logo2) if settings and settings.logo2 else  url_for('static', filename='frontend/images/logo-frontend.png') }}"
-                                alt="Logo"
-                                class="img-fluid">
-                            </div>
-                            <div class="creative-card-body card-body p-sm-5">
-                                <h2 class="fs-20 fw-bolder mb-4">Login</h2>
-                                <!-- <h4 class="fs-13 fw-bold mb-2">Login to your account</h4> -->
-                                <!-- <p class="fs-12 fw-medium text-muted">Thank you for get back <strong>Nelel</strong> web applications, let's access our the best recommendation for you.</p> -->
-                            <form method="POST" class="w-100 mt-4 pt-2">
-    <!-- CSRF token iyo hidden fields -->
-    {{ form.hidden_tag() }}
-
-    <!-- Login ID -->
-    <div class="mb-4">
-        {{ form.login_id(class_="form-control", placeholder="Email, Username, or Phone") }}
-        {% if form.login_id.errors %}
-            <div class="text-danger fs-12">
-                {{ form.login_id.errors[0] }}
+    <div class="auth-wrapper">
+        <div class="auth-left">
+            <div class="logo-container">
+             <img src="{{ url_for('static', filename=g.site_logo.main_logo if g.site_logo and g.site_logo.main_logo else 'frontend/images/logo-frontend.png') }}" 
+     alt="Logo" 
+     class="logo-img">
             </div>
-        {% endif %}
-    </div>
 
-    <!-- Password -->
-    <div class="mb-3">
-        {{ form.password(class_="form-control", placeholder="Password") }}
-        {% if form.password.errors %}
-            <div class="text-danger fs-12">
-                {{ form.password.errors[0] }}
+            <div class="login-header">
+                <h1>Log in to your account</h1>
+                <p class="signup-link">Don't have an account? <a href="{{ url_for('main.register') }}">Sign Up</a></p>
             </div>
-        {% endif %}
-    </div>
 
-    <!-- Remember Me checkbox and forgot password -->
-    <div class="d-flex align-items-center justify-content-between mb-3">
-        <div class="form-check">
-            {{ form.remember(class_="form-check-input", id="rememberMe") }}
-            <label class="form-check-label" for="rememberMe">Remember Me</label>
-        </div>
-        <a href="{{ url_for('main.forgot_password') }}" class="fs-11 text-primary">Forget password?</a>
-    </div>
-
-    <!-- Submit button -->
-    <div class="mt-2">
-        {{ form.submit(class_="btn btn-lg btn-primary w-100") }}
-    </div>
-</form>
-
-                                    <div class="w-100 mt-5 text-center mx-auto">
-                                    <div class="mb-4 border-bottom position-relative">
-                                        <span class="small py-1 px-3 text-uppercase text-muted bg-white position-absolute translate-middle">or</span>
-                                    </div>
-                                    <div class="d-flex align-items-center justify-content-center gap-2">
-                                        <!-- Google button -->
-                                        <a href="{{ url_for('main.google_login') }}" class="btn btn-light-brand flex-fill" data-bs-toggle="tooltip" data-bs-trigger="hover" title="Login with Google">
-                                            <i class="feather-mail"></i> <!-- Ama icon Google kale haddii aad haysato -->
-                                        </a>
-                                        <a href="{{ url_for('main.github_login') }}" class="btn btn-light-brand flex-fill" data-bs-toggle="tooltip" data-bs-trigger="hover" title="Login with Github">
-                                            <i class="feather-github text"></i>
-                                        </a>
-                                    </div>
-                                </div>
-
-
-
-
-                               
-                              
-                                <div class="mt-5 text-muted">
-                                    <span> Don't have an account?</span>
-                                    <a href="{{ url_for('main.register') }}" class="fw-bold">Create an Account</a>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-lg-6 bg-primary order-0 order-lg-1">
-                            <div class="h-100 d-flex align-items-center justify-content-center">
-                                <img src="{{ url_for('static', filename=settings.image_success) if settings and settings.image_success else  url_for('static', filename='frontend/images/logo-frontend.png') }}" alt="" class="img-fluid">
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </main>
-    <!--! ================================================================ !-->
-    <!--! [End] Main Content !-->
-    <!--! ================================================================ !-->
-   
-    <!--! ================================================================ !-->
-    <!--! BEGIN: Theme Customizer !-->
-    <!--! ================================================================ !-->
-    <div class="theme-customizer">
-        <div class="customizer-handle">
-            <a href="javascript:void(0);" class="cutomizer-open-trigger bg-primary">
-                <i class="feather-settings"></i>
-            </a>
-        </div>
-        <div class="customizer-sidebar-wrapper">
-            <div class="customizer-sidebar-header px-4 ht-80 border-bottom d-flex align-items-center justify-content-between">
-                <h5 class="mb-0">Theme Settings</h5>
-                <a href="javascript:void(0);" class="cutomizer-close-trigger d-flex">
-                    <i class="feather-x"></i>
+            <div class="social-actions">
+                <a href="{{ url_for('main.google_login') }}" class="social-btn">
+                    <img src="https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png" alt="Google">
+                    Continue with Google
+                </a>
+                <a href="{{ url_for('main.github_login') }}" class="social-btn btn-github">
+                    <i class="feather-github" style="font-size: 20px;"></i>
+                    Continue with GitHub
                 </a>
             </div>
-            <div class="customizer-sidebar-body position-relative p-4" data-scrollbar-target="#psScrollbarInit">
-                <!--! BEGIN: [Skins] !-->
-                <div class="position-relative px-3 pb-3 pt-4 mt-3 mb-5 border border-gray-2 theme-options-set">
-                    <label class="py-1 px-2 fs-8 fw-bold text-uppercase text-muted text-spacing-2 bg-white border border-gray-2 position-absolute rounded-2 options-label" style="top: -12px">Skins</label>
-                    <div class="row g-2 theme-options-items app-skin" id="appSkinList">
-                        <div class="col-6 text-center position-relative single-option light-button active">
-                            <input type="radio" class="btn-check" id="app-skin-light" name="app-skin" value="1" data-app-skin="app-skin-light">
-                            <label class="py-2 fs-9 fw-bold text-dark text-uppercase text-spacing-1 border border-gray-2 w-100 h-100 c-pointer position-relative options-label" for="app-skin-light">Light</label>
+
+            <div class="divider"><span>or use email</span></div>
+
+            <form method="POST" id="mongoLoginForm">
+                {{ form.hidden_tag() }}
+                
+                <div id="step-email">
+                    <div class="mb-3">
+                        <label class="form-label">Email Address</label>
+                        {{ form.login_id(class_="form-control-custom", id="email_input", placeholder="name@company.com") }}
+                    </div>
+                    <button type="button" id="next-btn" class="btn-mongo">Next</button>
+                </div>
+
+                <div id="step-password" style="display: none;">
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between">
+                            <label class="form-label">Password</label>
+                            <a href="#" id="back-to-email" style="font-size: 12px; color: var(--mongo-green); text-decoration: none; font-weight: 600;">Change</a>
                         </div>
-                        <div class="col-6 text-center position-relative single-option dark-button">
-                            <input type="radio" class="btn-check" id="app-skin-dark" name="app-skin" value="2" data-app-skin="app-skin-dark">
-                            <label class="py-2 fs-9 fw-bold text-dark text-uppercase text-spacing-1 border border-gray-2 w-100 h-100 c-pointer position-relative options-label" for="app-skin-dark">Dark</label>
+                        <div class="password-field-wrapper">
+                            {{ form.password(class_="form-control-custom", id="pass_input", placeholder="Enter your password") }}
+                            <i class="feather-eye toggle-password" id="eyeIcon"></i>
                         </div>
                     </div>
-                </div>
-                <!--! END: [Skins] !-->
-                <!--! BEGIN: [Typography] !-->
-                <div class="position-relative px-3 pb-3 pt-4 mt-3 mb-0 border border-gray-2 theme-options-set">
-                    <label class="py-1 px-2 fs-8 fw-bold text-uppercase text-muted text-spacing-2 bg-white border border-gray-2 position-absolute rounded-2 options-label" style="top: -12px">Typography</label>
-                    <div class="row g-2 theme-options-items font-family" id="fontFamilyList">
-                        <div class="col-6 text-center single-option">
-                            <input type="radio" class="btn-check" id="app-font-family-lato" name="font-family" value="1" data-font-family="app-font-family-lato">
-                            <label class="py-2 fs-9 fw-bold text-dark text-uppercase text-spacing-1 border border-gray-2 w-100 h-100 c-pointer position-relative options-label" for="app-font-family-lato">Lato</label>
+
+                    <div class="d-flex justify-content-between align-items-center mt-3">
+                        <div class="form-check">
+                            {{ form.remember(class_="form-check-input", id="rememberMe") }}
+                            <label class="form-check-label" for="rememberMe" style="font-size: 13px; color: #5d6c74;">Remember Me</label>
                         </div>
-                        <div class="col-6 text-center single-option">
-                            <input type="radio" class="btn-check" id="app-font-family-rubik" name="font-family" value="2" data-font-family="app-font-family-rubik">
-                            <label class="py-2 fs-9 fw-bold text-dark text-uppercase text-spacing-1 border border-gray-2 w-100 h-100 c-pointer position-relative options-label" for="app-font-family-rubik">Rubik</label>
-                        </div>
-                        <div class="col-6 text-center single-option">
-                            <input type="radio" class="btn-check" id="app-font-family-inter" name="font-family" value="3" data-font-family="app-font-family-inter" checked>
-                            <label class="py-2 fs-9 fw-bold text-dark text-uppercase text-spacing-1 border border-gray-2 w-100 h-100 c-pointer position-relative options-label" for="app-font-family-inter">Inter</label>
-                        </div>
-                        <div class="col-6 text-center single-option">
-                            <input type="radio" class="btn-check" id="app-font-family-cinzel" name="font-family" value="4" data-font-family="app-font-family-cinzel">
-                            <label class="py-2 fs-9 fw-bold text-dark text-uppercase text-spacing-1 border border-gray-2 w-100 h-100 c-pointer position-relative options-label" for="app-font-family-cinzel">Cinzel</label>
-                        </div>
-                        <div class="col-6 text-center single-option">
-                            <input type="radio" class="btn-check" id="app-font-family-nunito" name="font-family" value="6" data-font-family="app-font-family-nunito">
-                            <label class="py-2 fs-9 fw-bold text-dark text-uppercase text-spacing-1 border border-gray-2 w-100 h-100 c-pointer position-relative options-label" for="app-font-family-nunito">Nunito</label>
-                        </div>
-                        <div class="col-6 text-center single-option">
-                            <input type="radio" class="btn-check" id="app-font-family-roboto" name="font-family" value="7" data-font-family="app-font-family-roboto">
-                            <label class="py-2 fs-9 fw-bold text-dark text-uppercase text-spacing-1 border border-gray-2 w-100 h-100 c-pointer position-relative options-label" for="app-font-family-roboto">Roboto</label>
-                        </div>
-                        <div class="col-6 text-center single-option">
-                            <input type="radio" class="btn-check" id="app-font-family-ubuntu" name="font-family" value="8" data-font-family="app-font-family-ubuntu">
-                            <label class="py-2 fs-9 fw-bold text-dark text-uppercase text-spacing-1 border border-gray-2 w-100 h-100 c-pointer position-relative options-label" for="app-font-family-ubuntu">Ubuntu</label>
-                        </div>
-                        <div class="col-6 text-center single-option">
-                            <input type="radio" class="btn-check" id="app-font-family-poppins" name="font-family" value="9" data-font-family="app-font-family-poppins">
-                            <label class="py-2 fs-9 fw-bold text-dark text-uppercase text-spacing-1 border border-gray-2 w-100 h-100 c-pointer position-relative options-label" for="app-font-family-poppins">Poppins</label>
-                        </div>
-                        <div class="col-6 text-center single-option">
-                            <input type="radio" class="btn-check" id="app-font-family-raleway" name="font-family" value="10" data-font-family="app-font-family-raleway">
-                            <label class="py-2 fs-9 fw-bold text-dark text-uppercase text-spacing-1 border border-gray-2 w-100 h-100 c-pointer position-relative options-label" for="app-font-family-raleway">Raleway</label>
-                        </div>
-                        <div class="col-6 text-center single-option">
-                            <input type="radio" class="btn-check" id="app-font-family-system-ui" name="font-family" value="11" data-font-family="app-font-family-system-ui">
-                            <label class="py-2 fs-9 fw-bold text-dark text-uppercase text-spacing-1 border border-gray-2 w-100 h-100 c-pointer position-relative options-label" for="app-font-family-system-ui">System UI</label>
-                        </div>
-                        <div class="col-6 text-center single-option">
-                            <input type="radio" class="btn-check" id="app-font-family-noto-sans" name="font-family" value="12" data-font-family="app-font-family-noto-sans">
-                            <label class="py-2 fs-9 fw-bold text-dark text-uppercase text-spacing-1 border border-gray-2 w-100 h-100 c-pointer position-relative options-label" for="app-font-family-noto-sans">Noto Sans</label>
-                        </div>
-                        <div class="col-6 text-center single-option">
-                            <input type="radio" class="btn-check" id="app-font-family-fira-sans" name="font-family" value="13" data-font-family="app-font-family-fira-sans">
-                            <label class="py-2 fs-9 fw-bold text-dark text-uppercase text-spacing-1 border border-gray-2 w-100 h-100 c-pointer position-relative options-label" for="app-font-family-fira-sans">Fira Sans</label>
-                        </div>
-                        <div class="col-6 text-center single-option">
-                            <input type="radio" class="btn-check" id="app-font-family-work-sans" name="font-family" value="14" data-font-family="app-font-family-work-sans">
-                            <label class="py-2 fs-9 fw-bold text-dark text-uppercase text-spacing-1 border border-gray-2 w-100 h-100 c-pointer position-relative options-label" for="app-font-family-work-sans">Work Sans</label>
-                        </div>
-                        <div class="col-6 text-center single-option">
-                            <input type="radio" class="btn-check" id="app-font-family-open-sans" name="font-family" value="15" data-font-family="app-font-family-open-sans">
-                            <label class="py-2 fs-9 fw-bold text-dark text-uppercase text-spacing-1 border border-gray-2 w-100 h-100 c-pointer position-relative options-label" for="app-font-family-open-sans">Open Sans</label>
-                        </div>
-                        <div class="col-6 text-center single-option">
-                            <input type="radio" class="btn-check" id="app-font-family-maven-pro" name="font-family" value="16" data-font-family="app-font-family-maven-pro">
-                            <label class="py-2 fs-9 fw-bold text-dark text-uppercase text-spacing-1 border border-gray-2 w-100 h-100 c-pointer position-relative options-label" for="app-font-family-maven-pro">Maven Pro</label>
-                        </div>
-                        <div class="col-6 text-center single-option">
-                            <input type="radio" class="btn-check" id="app-font-family-quicksand" name="font-family" value="17" data-font-family="app-font-family-quicksand">
-                            <label class="py-2 fs-9 fw-bold text-dark text-uppercase text-spacing-1 border border-gray-2 w-100 h-100 c-pointer position-relative options-label" for="app-font-family-quicksand">Quicksand</label>
-                        </div>
-                        <div class="col-6 text-center single-option">
-                            <input type="radio" class="btn-check" id="app-font-family-montserrat" name="font-family" value="18" data-font-family="app-font-family-montserrat">
-                            <label class="py-2 fs-9 fw-bold text-dark text-uppercase text-spacing-1 border border-gray-2 w-100 h-100 c-pointer position-relative options-label" for="app-font-family-montserrat">Montserrat</label>
-                        </div>
-                        <div class="col-6 text-center single-option">
-                            <input type="radio" class="btn-check" id="app-font-family-josefin-sans" name="font-family" value="19" data-font-family="app-font-family-josefin-sans">
-                            <label class="py-2 fs-9 fw-bold text-dark text-uppercase text-spacing-1 border border-gray-2 w-100 h-100 c-pointer position-relative options-label" for="app-font-family-josefin-sans">Josefin Sans</label>
-                        </div>
-                        <div class="col-6 text-center single-option">
-                            <input type="radio" class="btn-check" id="app-font-family-ibm-plex-sans" name="font-family" value="20" data-font-family="app-font-family-ibm-plex-sans">
-                            <label class="py-2 fs-9 fw-bold text-dark text-uppercase text-spacing-1 border border-gray-2 w-100 h-100 c-pointer position-relative options-label" for="app-font-family-ibm-plex-sans">IBM Plex Sans</label>
-                        </div>
-                        <div class="col-6 text-center single-option">
-                            <input type="radio" class="btn-check" id="app-font-family-source-sans-pro" name="font-family" value="5" data-font-family="app-font-family-source-sans-pro">
-                            <label class="py-2 fs-9 fw-bold text-dark text-uppercase text-spacing-1 border border-gray-2 w-100 h-100 c-pointer position-relative options-label" for="app-font-family-source-sans-pro">Source Sans Pro</label>
-                        </div>
-                        <div class="col-6 text-center single-option">
-                            <input type="radio" class="btn-check" id="app-font-family-montserrat-alt" name="font-family" value="21" data-font-family="app-font-family-montserrat-alt">
-                            <label class="py-2 fs-9 fw-bold text-dark text-uppercase text-spacing-1 border border-gray-2 w-100 h-100 c-pointer position-relative options-label" for="app-font-family-montserrat-alt">Montserrat Alt</label>
-                        </div>
-                        <div class="col-6 text-center single-option">
-                            <input type="radio" class="btn-check" id="app-font-family-roboto-slab" name="font-family" value="22" data-font-family="app-font-family-roboto-slab">
-                            <label class="py-2 fs-9 fw-bold text-dark text-uppercase text-spacing-1 border border-gray-2 w-100 h-100 c-pointer position-relative options-label" for="app-font-family-roboto-slab">Roboto Slab</label>
-                        </div>
+                        <a href="{{ url_for('main.forgot_password') }}" style="font-size: 13px; color: #006ce6; text-decoration: none; font-weight: 600;">Forgot Password?</a>
                     </div>
+
+                    {{ form.submit(class_="btn-mongo", value="Log In") }}
                 </div>
-                <!--! END: [Typography] !-->
-            </div>
-            <div class="customizer-sidebar-footer px-4 ht-60 border-top d-flex align-items-center gap-2">
-                <div class="flex-fill w-50">
-                    <a href="javascript:void(0);" class="btn btn-danger" data-style="reset-all-common-style">Reset</a>
+            </form>
+        </div>
+
+        <div class="auth-right">
+            <div class="promo-content">
+                <h2>School Bridge Management Platform</h2>
+                <p>Nidaam casri ah oo loogu talagalay in lagu maamulo xogta ardayda, natiijooyinka imtixaanka, iyo dakhliga dugsiga si hufan.</p>
+                <div class="feature-grid">
+                    <div class="feature-item"><i class="feather-users"></i><span>Maamulka Ardayda</span></div>
+                    <div class="feature-item"><i class="feather-check-square"></i><span>Attendance-ka</span></div>
+                    <div class="feature-item"><i class="feather-dollar-sign"></i><span>Maareynta Lacagaha</span></div>
+                    <div class="feature-item"><i class="feather-file-text"></i><span>Natiijada Imtixaanka</span></div>
                 </div>
-                <div class="flex-fill w-50">
-                    <a href="https://www.themewagon.com/themes/Duralux-admin" target="_blank" class="btn btn-primary">Download</a>
-                </div>
+                <a href="#" class="learn-more">Explore Features →</a>
             </div>
         </div>
     </div>
- 
-    <!--! BEGIN: Vendors JS !-->
+
     <script src="{{ url_for('static', filename='backend/assets/vendors/js/vendors.min.js') }}"></script>
-    <!-- vendors.min.js {always must need to be top} -->
-    <!--! END: Vendors JS !-->
-
-    <!--! BEGIN: Apps Init !-->
-    <script src="{{ url_for('static', filename='backend/assets/js/common-init.min.js') }}"></script>
-    <!--! END: Apps Init !-->
-
-    <!--! BEGIN: Theme Customizer !-->
-    <script src="{{ url_for('static', filename='backend/assets/js/theme-customizer-init.min.js') }}"></script>
-    <!--! END: Theme Customizer !-->
-
-
     <script>
-document.addEventListener("DOMContentLoaded", function () {
-    // Server-ka wuxuu u diraa session['lock_info'] waqtiga uu lock yahay
-    const lockInfo = {{ session.get('lock_info') | tojson | safe }};
-    if (lockInfo && lockInfo.until) {
-        const loginForm = document.querySelector("form");
-        const loginInputs = loginForm.querySelectorAll("input, button");
+        document.addEventListener("DOMContentLoaded", function () {
+            const stepEmail = document.getElementById('step-email');
+            const stepPass = document.getElementById('step-password');
+            const nextBtn = document.getElementById('next-btn');
+            const backBtn = document.getElementById('back-to-email');
+            const emailInp = document.getElementById('email_input');
+            const passInp = document.getElementById('pass_input');
+            const eyeIcon = document.getElementById('eyeIcon');
 
-        // Disable inputs
-        loginInputs.forEach(el => el.disabled = true);
+            // Flow Control
+            nextBtn.addEventListener('click', function() {
+                if (emailInp.value.trim() !== "") {
+                    stepEmail.style.display = 'none';
+                    stepPass.style.display = 'block';
+                } else {
+                    emailInp.style.borderColor = '#cf1124';
+                }
+            });
 
-        // Countdown
-        const unlockTime = new Date(lockInfo.until);
-        const countdownDiv = document.createElement("div");
-        countdownDiv.style.color = "red";
-        countdownDiv.style.marginBottom = "10px";
-        loginForm.prepend(countdownDiv);
+            backBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                stepPass.style.display = 'none';
+                stepEmail.style.display = 'block';
+            });
 
-        const interval = setInterval(() => {
-            const now = new Date();
-            const diff = unlockTime - now;
-            if (diff <= 0) {
-                clearInterval(interval);
-                loginInputs.forEach(el => el.disabled = false);
-                countdownDiv.textContent = "";
-            } else {
-                const minutes = Math.floor(diff / 60000);
-                const seconds = Math.floor((diff % 60000) / 1000);
-                countdownDiv.textContent = `Too many attempts. Try again in ${minutes}m ${seconds}s`;
-            }
-        }, 1000);
-    }
-});
-</script>
-
-
-<script>
-document.addEventListener("DOMContentLoaded", function () {
-    const loginInput = document.getElementById("login_id");
-    const rememberCheckbox = document.getElementById("rememberMe");
-
-    // Soo celi username/email/phone
-    const savedLogin = localStorage.getItem("rememberedLogin");
-    if (savedLogin) {
-        loginInput.value = savedLogin;
-        rememberCheckbox.checked = true;
-    }
-
-    // Save marka submit la sameeyo
-    document.querySelector("form").addEventListener("submit", function () {
-        if (rememberCheckbox.checked) {
-            localStorage.setItem("rememberedLogin", loginInput.value);
-        } else {
-            localStorage.removeItem("rememberedLogin");
-        }
-    });
-});
-</script>
+            // Password Toggle Logic
+            eyeIcon.addEventListener('click', function() {
+                const type = passInp.getAttribute('type') === 'password' ? 'text' : 'password';
+                passInp.setAttribute('type', type);
+                this.classList.toggle('feather-eye');
+                this.classList.toggle('feather-eye-off');
+            });
+        });
+    </script>
 
 
-
-
-
-    <!-- SweetAlert2 CDN -->
+  <!-- SweetAlert2 CDN -->
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
 
 <!-- Flash message handling with SweetAlert2 -->
 <script>
@@ -388,5 +263,4 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
 </body>
-
 </html>

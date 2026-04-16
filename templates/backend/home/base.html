@@ -15,8 +15,8 @@
     <!--! END:  Apps Title-->
    
     <!--! BEGIN: Favicon-->
-    <link rel="shortcut icon" type="image/x-icon"
-        href="{{ url_for('static', filename='frontend/images/logo-upper.png') }}" />
+   <link rel="shortcut icon" type="image/x-icon"
+    href="{{ url_for('static', filename=g.site_logo.sub_logo if g.site_logo and g.site_logo.sub_logo else 'frontend/images/logo-upper.png') }}" />
     <!--! END: Favicon-->
 
     <!--! BEGIN: Bootstrap CSS-->

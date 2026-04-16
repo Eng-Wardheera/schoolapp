@@ -1,71 +1,59 @@
-<div class="page-header bg-white p-3 shadow-sm d-flex align-items-center justify-content-between border-0 ">
-    
-    <div class="header-left d-flex align-items-center" style="flex: 1;">
-        <div class=" rounded-3 d-flex align-items-center justify-content-center me-3 shadow-sm" style="width: 50px; height: 50px; background: linear-gradient(135deg, #0d6efd, #0043a8) !important;">
-            <i class="fas fa-th-large text-white fs-4"></i>
+<div class="custom-dashboard-header bg-white p-3 shadow-sm border-0 position-relative">
+    <div class="d-flex align-items-center justify-content-between w-100 flex-wrap gap-2">
+        
+        <div class="header-left d-flex align-items-center flex-shrink-0">
+            <div class="rounded-3 d-flex align-items-center justify-content-center me-2 me-md-3 shadow-sm header-icon" style="width: 45px; height: 45px; background: linear-gradient(135deg, #0d6efd, #0043a8) !important; flex-shrink: 0;">
+                <i class="fas fa-th-large text-white fs-5"></i>
+            </div>
+            <div class="profile-info">
+                <h5 class="fw-bold mb-0 text-dark dashboard-title" style="letter-spacing: -0.5px; font-size: 1.1rem;">Dashboard</h5>
+                <div class="text-muted small fw-medium user-welcome" style="font-size: 0.75rem; white-space: nowrap;">
+                    Welcome, {{ current_user.fullname.split(' ')[0:2]|join(' ') }}!
+                </div>
+            </div>
         </div>
-        <div>
-            <h4 class="fw-bold mb-0 text-dark" style="letter-spacing: -0.5px;">Dashboard</h4>
-            <div class="text-muted small fw-medium">Welocme, {{ current_user.fullname.split(' ')[0:2]|join(' ') }}!</div>
+
+        <div class="header-right d-flex justify-content-end flex-shrink-0">
+            <div class="session-badge d-flex align-items-center px-2 px-md-3 py-2 rounded-pill border-0 shadow-sm bg-white">
+                <div class="status-container me-2">
+                    <div class="status-dot {% if active_sessions > 1 %}bg-danger{% else %}bg-success{% endif %}"></div>
+                    <div class="status-pulse {% if active_sessions > 1 %}pulse-red{% else %}pulse-green{% endif %}"></div>
+                </div>
+                
+                <div class="border-end pe-2 me-2 d-flex flex-column border-light-subtle">
+                    <p class="text-uppercase text-muted fw-black mb-0" style="font-size: 0.5rem; letter-spacing: 0.5px;">Traffic</p>
+                    <h6 class="fw-bold mb-0 text-dark lh-1" style="font-size: 0.85rem;">{{ active_sessions }}</h6>
+                </div>
+                
+                <div class="d-flex flex-column justify-content-center text-start">
+                    <div class="text-muted fw-bold text-uppercase lh-1 mb-1" style="font-size: 0.55rem;">Device</div>
+                    <div class="d-flex align-items-center border rounded-pill px-2 py-0 shadow-xs" style="font-size: 0.6rem; background: #fbfbfb;">
+                        <i class="fas fa-desktop text-primary me-1" style="font-size: 0.55rem;"></i>
+                        <span class="text-primary fw-bold" style="white-space: nowrap;">{{ current_device }}</span>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
-    <div class="header-center d-flex flex-column align-items-center" style="flex: 1.2;">
-        <div class="d-flex align-items-center gap-2 mb-0">
-            <div class="badge  text-dark border px-3 py-2 rounded-pill shadow-xs">
+    <div class="header-center d-flex justify-content-center mt-3 mt-lg-0">
+        <div class="d-flex align-items-center gap-2 mb-0 header-date-time">
+            <div class="badge text-dark border-0 px-3 py-2 rounded-pill shadow-sm bg-white">
                 <i class="far fa-calendar-alt text-primary me-1"></i>
-                <span id="dynamic-date" class="fw-bold text-uppercase" style="font-size: 0.75rem;">Loading Date...</span>
+                <span id="dynamic-date" class="fw-bold text-uppercase" style="font-size: 0.7rem; white-space: nowrap;">Loading...</span>
             </div>
-            <div class="fw-bold text-dark px-3 py-1 rounded-pill  border shadow-xs" style="min-width: 150px;">
-                <span class="text-muted small fw-medium">Time:</span> 
-                <span id="live-timer" class="text-primary font-monospace fs-6 ms-1">00:00:00</span>
-            </div>
-        </div>
-    </div>
-
-    <div class="header-right d-flex justify-content-end" style="flex: 1.3;">
-        <div class="session-badge d-flex align-items-center px-3 py-2 rounded-pill border  shadow-sm">
-            <div class="status-container me-3">
-                <div class="status-dot {% if active_sessions > 1 %}bg-danger{% else %}bg-success{% endif %}"></div>
-                <div class="status-pulse {% if active_sessions > 1 %}pulse-red{% else %}pulse-green{% endif %}"></div>
-            </div>
-            
-            <div class="border-end pe-3 me-3 d-flex flex-column" style="border-color: #dee2e6 !important;">
-                <p class="text-uppercase text-muted fw-black mb-0" style="font-size: 0.55rem; letter-spacing: 1px;">Live Traffic</p>
-                <h5 class="fw-bold mb-0 text-dark lh-1">{{ active_sessions }} <small class="fw-normal text-muted" style="font-size: 0.65rem;">Users</small></h5>
-            </div>
-            
-            <div class="d-flex flex-column justify-content-center text-start">
-                <div class="text-muted small fw-bold text-uppercase lh-1 mb-1" style="font-size: 0.6rem;">
-                    Sessions
-                </div>
-                <div class="d-flex align-items-center  border rounded-pill px-2 py-0" style="font-size: 0.65rem;">
-                    <i class="fas fa-desktop text-primary me-1" style="font-size: 0.6rem;"></i>
-                    <span class="text-primary fw-bold">{{ current_device }}</span>
-                </div>
+            <div class="fw-bold text-dark px-3 py-1 rounded-pill border-0 shadow-sm bg-white" style="min-width: 110px;">
+                <span id="live-timer" class="text-primary font-monospace fs-6">00:00:00</span>
             </div>
         </div>
     </div>
 </div>
 
 <style>
-    /* Styling for Right Session Badge */
-    /* .session-badge {
-        background: #f8f9fa;
-        border: 1px solid #ececec !important;
-        transition: all 0.3s ease;
-    }
-    .session-badge:hover {
-        background: #fff;
-        transform: translateY(-2px);
-        box-shadow: 0 5px 15px rgba(0,0,0,0.08) !important;
-    } */
-
     .fw-black { font-weight: 900; }
-    .shadow-xs { box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
-
-    /* Live Status Animation */
-    .status-container { position: relative; width: 10px; height: 10px; }
+    .shadow-xs { box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+    
+    .status-container { position: relative; width: 10px; height: 10px; flex-shrink: 0; }
     .status-dot { width: 10px; height: 10px; border-radius: 50%; position: relative; z-index: 5; }
     .status-pulse { position: absolute; top: 0; left: 0; width: 10px; height: 10px; border-radius: 50%; animation: ripple 2s infinite; }
     
@@ -73,36 +61,50 @@
         0% { transform: scale(1); opacity: 1; }
         100% { transform: scale(3.5); opacity: 0; }
     }
-    .bg-success { background-color: #28a745; }
-    .bg-danger { background-color: #dc3545; }
+
+    .bg-success { background-color: #28a745 !important; }
+    .bg-danger { background-color: #dc3545 !important; }
     .pulse-green { background: rgba(40, 167, 69, 0.4); }
     .pulse-red { background: rgba(220, 53, 69, 0.4); }
 
-    /* Header Hover */
-    .page-header { transition: all 0.3s ease; }
-    .page-header:hover { box-shadow: 0 8px 25px rgba(0,0,0,0.06) !important; }
+    @media (min-width: 992px) {
+        .header-center {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            margin-top: 0 !important;
+        }
+    }
 
-    @media (max-width: 992px) {
-        .page-header { flex-direction: column; gap: 15px; text-align: center; }
-        .header-left, .header-center, .header-right { flex: none !important; width: 100%; justify-content: center !important; }
+    @media (max-width: 991px) {
+        .header-center {
+            width: 100%;
+            border-top: 1px solid #f8f9fa;
+            padding-top: 12px;
+            margin-top: 10px;
+        }
+        .dashboard-title { font-size: 0.95rem !important; }
+        .user-welcome { font-size: 0.7rem !important; }
+        .session-badge { 
+            padding: 5px 10px !important; 
+            border: 1px solid #f1f1f1 !important;
+        }
     }
 </style>
 
 <script>
     function updateClock() {
         const now = new Date();
-        
-        // 1. Time
-        const hours = String(now.getHours()).padStart(2, '0');
-        const minutes = String(now.getMinutes()).padStart(2, '0');
-        const seconds = String(now.getSeconds()).padStart(2, '0');
         const timerEl = document.getElementById('live-timer');
-        if(timerEl) timerEl.textContent = `${hours}:${minutes}:${seconds}`;
+        if(timerEl) timerEl.textContent = now.toLocaleTimeString('en-GB');
 
-        // 2. Date (Format: Sunday, 12 April, 2026)
-        const dateOptions = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
         const dateEl = document.getElementById('dynamic-date');
-        if(dateEl) dateEl.textContent = now.toLocaleDateString('en-GB', dateOptions);
+        if(dateEl) {
+            // Halkan waxaa lagu daray 'weekday' si maalinta u muuqato
+            const options = { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' };
+            dateEl.textContent = now.toLocaleDateString('en-GB', options);
+        }
     }
     setInterval(updateClock, 1000);
     updateClock();
