@@ -14742,7 +14742,6 @@ def print_class_summarise_merit_report():
 #-------------------------------------
 #----------- 
 #-------------------------------------
-
 @bp.route("/student/attendance/view")
 @login_required
 def student_attendance_view():
