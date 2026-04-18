@@ -293,6 +293,37 @@ class UserSession(db.Model):
     def __repr__(self):
         return f"<UserSession {self.id} - User {self.user_id}>"
 
+class SMSLog(db.Model):
+    __tablename__ = 'sms_logs'
+
+    id = db.Column(db.Integer, primary_key=True)
+    school_id = db.Column(db.Integer, db.ForeignKey('schools.id', ondelete='CASCADE'), nullable=False)
+    branch_id = db.Column(db.Integer, db.ForeignKey('branches.id', ondelete='CASCADE'), nullable=True)
+    
+    # Cidda dirtay (User-ka hadda login-ka ah)
+    sender_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'), nullable=True)
+    
+    # Faahfaahinta fariinta
+    recipient_phone = db.Column(db.String(30), nullable=False)
+    message_body = db.Column(db.Text, nullable=False)
+    
+    # Nooca qofka loo diray (Parent, Teacher, Student)
+    recipient_type = db.Column(db.Enum('parent', 'teacher', 'student', 'staff', name='recipient_type_enum'))
+    
+    # Status-ka fariinta
+    status = db.Column(db.Enum('pending', 'sent', 'failed', name='sms_status_enum'), default='pending')
+    response_msg = db.Column(db.String(255), nullable=True) # Response-ka ka yimaada Gateway-ga
+    
+    created_at = db.Column(db.DateTime, default=now_eat)
+    updated_at = db.Column(db.DateTime, default=now_eat, onupdate=now_eat)
+
+    # Relationships
+    school = db.relationship('School', backref=db.backref('sms_logs', lazy=True))
+    branch = db.relationship('Branch', backref=db.backref('sms_logs', lazy=True))
+    sender = db.relationship('User', backref=db.backref('sms_logs', lazy=True))
+
+    def __repr__(self):
+        return f"<SMS to {self.recipient_phone} - {self.status}>"
 
 
 

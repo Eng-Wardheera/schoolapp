@@ -87,6 +87,7 @@
                                         {% endif %}
                                     </td>
                                     <td><small class="text-muted">{{ paper.created_at.strftime('%Y-%m-%d') }}</small></td>
+                                
                                     <td class="text-end">
     <div class="hstack gap-2 justify-content-end">
         
@@ -106,10 +107,15 @@
         {% endif %}
 
         {# 2. Badhanka View - Qof walba waa u furan yahay #}
-        <a href="" 
-           class="btn btn-sm btn-light border" title="View Paper">
-            <i class="feather-eye"></i>
-        </a>
+     
+        {% if current_user.role.value in ['school_admin', 'branch_admin'] 
+      or (current_user.role.value == 'teacher' and paper.teacher_id == current_user.id) %}
+<a href="{{ url_for('main.view_exam_paper', id=paper.id) }}" 
+   class="btn btn-sm btn-light border" title="View Paper">
+    <i class="feather-eye"></i>
+</a>
+{% endif %}
+
 
         {# 3. Maareynta Admin-ka oo keliya (Tirtirista iyo Beddelidda Status-ka) #}
         {% if current_user.role.value in ['superadmin', 'school_admin'] %}

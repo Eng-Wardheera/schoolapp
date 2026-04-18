@@ -91,6 +91,7 @@ def index():
 
 
 
+
 @bp.context_processor
 def inject_settings():
     settings = SettingsData.query.first()
@@ -722,12 +723,13 @@ def forgot_password_verify_otp():
 #-------------------------------------------------------------
 @bp.route('/forgot-change-password', methods=['GET', 'POST'])
 def forgot_password_change_password():
-    # Hel email ka session
+    # 1. Hubi in email-ka uu session-ka ku jiro
     email = session.get('forgot_password_verified_email')
     if not email:
         flash("Session expired. Please restart the password reset process.", "error")
         return redirect(url_for('main.forgot_password'))
 
+    # 2. Hel qofka isticmaalaha ah (User)
     user = User.query.filter_by(email=email).first()
     if not user:
         flash("User not found.", "error")
@@ -735,17 +737,37 @@ def forgot_password_change_password():
 
     form = ForgotPasswordChangeForm()
 
+    # 3. Marka foomka la soo gudbiyo (POST)
     if form.validate_on_submit():
-        # Generate hash and update password
-        user.password = generate_password_hash(form.new_password.data)
-        db.session.commit()
+        new_password = form.new_password.data
+        confirm_password = form.confirm_password.data
 
-        # Clear session
-        session.clear()
+        # 4. Xaqiijinta Shuruudaha Password-ka (Server-side Validation)
+        if not is_valid_password(new_password):
+            flash("Password-ku ma buuxin shuruudaha (8 xaraf, weyn, yar, nambar iyo astaan).", "warning")
+            return redirect(request.url)
 
-        flash("✅ Password changed successfully! You can now log in.", "success")
-        return redirect(url_for('main.login'))
+        # 5. Hubi inay isku mid yihiin
+        if new_password != confirm_password:
+            flash("Password-ada aad qortay isku mid ma ahan!", "danger")
+            return redirect(request.url)
 
+        # 6. Beddel password-ka oo keydi
+        try:
+            user.password = generate_password_hash(new_password)
+            db.session.commit()
+
+            # Clear session si uusan mar kale u isticmaalin link-ga
+            session.pop('forgot_password_verified_email', None)
+
+            flash("✅ Password-ka si guul leh ayaa loo beddelay! Hadda waad geli kartaa.", "success")
+            return redirect(url_for('main.login'))
+            
+        except Exception as e:
+            db.session.rollback()
+            flash("Cilad ayaa dhacday intii password-ka la keydinayay.", "error")
+
+    # 7. Soo bandhig foomka (GET)
     site_data = SettingsData.query.first()
     return render_template(
         'backend/auth/auth-resetting-creative.html',
@@ -753,7 +775,6 @@ def forgot_password_change_password():
         site_data=site_data,
         username=user.username
     )
-
 
 #---------------------------------------------------------------------------------------------
 ##--------------------------------------------------------------------------------------------
@@ -8551,6 +8572,52 @@ def edit_invoice(invoice_id):
     return redirect(url_for("main.edit_fee_collection",fee_invoice=fee_invoice, fee_id=fee_record.id))
 
 
+#---------------------------- Fees Reports
+
+@bp.route("/school-reports_fees")
+@login_required
+def school_reports_fees():
+    # ------------------- PERMISSIONS -------------------
+    if current_user.status == 0:
+        flash("Account inactive", "danger")
+        return redirect(url_for("main.dashboard"))
+
+    if current_user.role.value not in ["school_admin", "branch_admin"]:
+        flash("Unauthorized", "danger")
+        return redirect(url_for("main.dashboard"))
+
+    # ------------------- FETCH FEE COLLECTION -------------------
+ 
+    return render_template(
+        "backend/pages/components/reports/school-reports-sales.html",
+        user=current_user,
+    )
+
+@bp.route("/branches-reports_fees")
+@login_required
+def branches_reports_fees():
+    # ------------------- PERMISSIONS -------------------
+    if current_user.status == 0:
+        flash("Account inactive", "danger")
+        return redirect(url_for("main.dashboard"))
+
+    if current_user.role.value not in ["school_admin", "branch_admin"]:
+        flash("Unauthorized", "danger")
+        return redirect(url_for("main.dashboard"))
+
+    # ------------------- FETCH FEE COLLECTION -------------------
+ 
+    return render_template(
+        "backend/pages/components/reports/branches-reports-sales.html",
+        user=current_user,
+    )
+
+
+
+
+
+
+
 #-----------------------------------------
 #------------ Attendance Students
 #-----------------------------------------
@@ -12069,7 +12136,7 @@ def all_exam_papers():
         flash("Account-kaagu ma shaqeynayo.", "danger")
         return redirect(url_for("main.dashboard"))
 
-    allowed_roles = ["school_admin", "branch_admin"]
+    allowed_roles = ["school_admin",  "teacher", "branch_admin"]
     if current_user.role.value not in allowed_roles:
         flash("Ma haysatid ogolaansho.", "danger")
         return redirect(url_for("main.dashboard"))
@@ -12476,7 +12543,7 @@ def view_exam_paper(id):
         flash("Account-kaagu ma shaqeynayo.", "danger")
         return redirect(url_for("main.dashboard"))
 
-    allowed_roles = ["school_admin", "branch_admin"]
+    allowed_roles = ["school_admin", "teacher", "branch_admin"]
     if current_user.role.value not in allowed_roles:
         flash("Ma haysatid ogolaansho.", "danger")
         return redirect(url_for("main.dashboard"))
@@ -12604,7 +12671,7 @@ def teacher_add_exam_marks():
         flash("Account-kaagu ma shaqeynayo.", "danger")
         return redirect(url_for("main.dashboard"))
 
-    allowed_roles = ["teacher"]
+    allowed_roles = ["school_admin", "teacher", "branch_admin"]
     if current_user.role.value not in allowed_roles:
         flash("Ma haysatid ogolaansho.", "danger")
         return redirect(url_for("main.dashboard"))
@@ -12734,7 +12801,7 @@ def get_teacher_sections(class_id):
         flash("Account-kaagu ma shaqeynayo.", "danger")
         return redirect(url_for("main.dashboard"))
 
-    allowed_roles = ["teacher"]
+    allowed_roles = ["school_admin", "teacher", "branch_admin"]
     if current_user.role.value not in allowed_roles:
         flash("Ma haysatid ogolaansho.", "danger")
         return redirect(url_for("main.dashboard"))
@@ -12771,7 +12838,7 @@ def get_exams_subjects():
         flash("Account-kaagu ma shaqeynayo.", "danger")
         return redirect(url_for("main.dashboard"))
 
-    allowed_roles = ["teacher"]
+    allowed_roles = ["school_admin", "teacher", "branch_admin"]
     if current_user.role.value not in allowed_roles:
         flash("Ma haysatid ogolaansho.", "danger")
         return redirect(url_for("main.dashboard"))
@@ -12825,21 +12892,25 @@ def get_exams_subjects():
 
 
 
+
 @bp.route("/get-assigned-students")
 @login_required
 def get_assigned_students():
+    # 1. Hubinta Status-ka
     if getattr(current_user, 'status', 1) == 0:
         flash("Account-kaagu ma shaqeynayo.", "danger")
         return redirect(url_for("main.dashboard"))
 
-    allowed_roles = ["teacher"]
+    # 2. Hubinta Role-ka
+    allowed_roles = ["school_admin", "teacher", "branch_admin"]
     if current_user.role.value not in allowed_roles:
         flash("Ma haysatid ogolaansho.", "danger")
         return redirect(url_for("main.dashboard"))
 
+    # 3. Qaadashada Parameter-ada
     exam_subject_id = request.args.get('subject_id', type=int)
     class_id = request.args.get('class_id', type=int)
-    section_id = request.args.get('section_id', type=int, default=0) # Default ka dhig 0
+    section_id = request.args.get('section_id', type=int, default=0)
     exam_id = request.args.get('exam_id', type=int)
 
     if not exam_subject_id or not class_id or not exam_id:
@@ -12847,15 +12918,13 @@ def get_assigned_students():
 
     ex_sub = ExamSubject.query.get_or_404(exam_subject_id)
     
-    # Sifee ardayda fasalka
+    # 4. Sifee ardayda fasalka
     s_query = Student.query.filter(
         Student.class_id == class_id,
         Student.school_id == current_user.school_id,
         or_(Student.status == 'active', Student.status.is_(None))
     )
     
-    # MUHIIM: Haddii section_id uu yahay 0 ama None, ha samayn filter-ka section-ka
-    # Tani waxay keenaysaa in dhamaan ardayda fasalka ay soo baxaan
     if section_id and section_id != 0:
         s_query = s_query.filter(Student.section_id == section_id)
     
@@ -12863,11 +12932,19 @@ def get_assigned_students():
     
     results = []
     for s in students:
+        # Hubi haddii ardaygu uu horey u leeyahay marks
         existing = StudentExamMark.query.filter_by(
             exam_id=exam_id,
             exam_subject_id=ex_sub.id, 
             student_id=s.id
         ).first()
+        
+        # --- ISBEDELKA Halkan: ---
+        # Haddii ardaygu uu horey u lahaa marks, markaas 'continue' ayaan dhihi
+        # si looga boodo ardaygan oo aan liiska loogu darin.
+        if existing and existing.marks_obtained is not None:
+            continue
+        # -------------------------
         
         results.append({
             'id': s.id,
@@ -12878,7 +12955,6 @@ def get_assigned_students():
         })
         
     return jsonify(results)
-
 
 
 @bp.route("/exam/results/all")
@@ -14205,10 +14281,9 @@ def student_promotion():
 
 
 
-#-----------------------------------------------
-#---------------- Student UI Print for Admins
-#-----------------------------------------------
-
+#----------------------------------------------------------------
+#---------------- Student UI Print for Admins -------------------
+#----------------------------------------------------------------
 @bp.route('/student/cumulative-report/print/<int:student_id>')
 @login_required
 def print_cumulative_report(student_id):
@@ -14267,7 +14342,7 @@ def print_cumulative_report(student_id):
     grand_total_possible = 0.0
 
     for res in results:
-        exam_names.append(res.exam_rel.exam_name)
+        exam_names.append(res.exam.exam_name)
         marks = StudentExamMark.query.filter_by(student_id=student_id, exam_id=res.exam_id).all()
         
         e_total, e_max = 0.0, 0.0
@@ -14281,7 +14356,7 @@ def print_cumulative_report(student_id):
             if s_name not in subject_matrix:
                 subject_matrix[s_name] = {'marks': {}, 'total': 0, 'max': 0}
             
-            subject_matrix[s_name]['marks'][res.exam_rel.exam_name] = obtained
+            subject_matrix[s_name]['marks'][res.exam.exam_name] = obtained
             subject_matrix[s_name]['total'] += obtained
             subject_matrix[s_name]['max'] += max_m
 
@@ -14300,7 +14375,7 @@ def print_cumulative_report(student_id):
         exam_scores.append(e_avg) # Key for Trend Analytics
 
         exam_reports.append({
-            'exam_name': res.exam_rel.exam_name,
+            'exam_name': res.exam.exam_name,
             'subjects': current_subjects,
             'total': e_total,
             'max': e_max,

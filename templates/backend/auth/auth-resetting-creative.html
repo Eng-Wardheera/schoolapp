@@ -13,64 +13,93 @@
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='backend/assets/css/bootstrap.min.css') }}">
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='backend/assets/vendors/css/vendors.min.css') }}">
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='backend/assets/css/theme.min.css') }}">
+    
+    <script src="https://unpkg.com/feather-icons"></script>
 
     <style>
         :root {
-            --mongo-green: #00684a;
+            --mongo-green: #00ed64;
+            --mongo-dark-green: #00684a;
             --mongo-dark: #001e2b;
-            --border-gray: #d1d5db;
+            --border-gray: #889196;
+            --text-muted: #5d6c74;
+            --success-green: #00684a;
+            --error-red: #d93025;
         }
 
         body { 
             background-color: #ffffff; 
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            font-family: 'Euclid Circular A', -apple-system, sans-serif;
             margin: 0; padding: 0; overflow-x: hidden;
         }
 
         .auth-wrapper { display: flex; min-height: 100vh; }
 
         .auth-left { 
-            width: 40%; padding: 40px 60px; display: flex; flex-direction: column; background: #fff;
+            width: 45%; padding: 60px; display: flex; flex-direction: column; background: #fff;
+            justify-content: center;
         }
 
-        .logo-container { margin-bottom: 25px; }
-        .logo-img { width: 210px; }
+        .logo-img { width: 180px; margin-bottom: 35px; }
 
-        .login-header h1 { font-size: 26px; font-weight: 600; color: var(--mongo-dark); margin-bottom: 8px; }
-        .login-header p { font-size: 14px; color: #5d6c74; margin-bottom: 25px; }
+        .login-header h1 { font-size: 28px; font-weight: 700; color: var(--mongo-dark); margin-bottom: 12px; }
+        .login-header p { font-size: 15px; color: var(--text-muted); margin-bottom: 25px; }
 
-        .form-label { font-weight: 700; color: var(--mongo-dark); font-size: 13px; margin-bottom: 8px; display: block; }
+        .form-label { font-weight: 700; color: var(--mongo-dark); font-size: 14px; margin-bottom: 8px; display: block; }
         
         .password-container { position: relative; }
         
         .form-control-custom { 
-            width: 100%; border: 1px solid #889196; border-radius: 4px; padding: 12px;
-            padding-right: 45px; /* Meel u baneey icon-ka */
-            font-size: 15px; color: var(--mongo-dark);
+            width: 100%; border: 2px solid var(--border-gray); border-radius: 6px; padding: 12px 15px;
+            padding-right: 45px; font-size: 15px; color: var(--mongo-dark);
+            transition: all 0.2s;
         }
-        .form-control-custom:focus { border-color: var(--mongo-green); outline: none; box-shadow: 0 0 0 1px var(--mongo-green); }
+
+        .form-control-custom:focus { 
+            border-color: var(--mongo-dark-green); outline: none; 
+            box-shadow: 0 0 0 3px rgba(0, 104, 74, 0.1); 
+        }
 
         .toggle-password {
             position: absolute; right: 15px; top: 50%; transform: translateY(-50%);
-            cursor: pointer; color: #5d6c74; font-size: 18px;
-            display: flex; align-items: center;
+            cursor: pointer; color: var(--text-muted); display: flex; align-items: center;
         }
 
+        /* Requirements Box */
+        .requirements-box {
+            background: #f0f2f2; padding: 20px; border-radius: 8px; margin-top: 15px; 
+            border-left: 5px solid var(--border-gray); display: none;
+        }
+        
+        .requirement { 
+            font-size: 14px; color: var(--text-muted); margin-bottom: 10px; 
+            display: flex; align-items: center; gap: 12px; transition: 0.3s;
+        }
+        
+        .requirement.valid { color: var(--success-green); font-weight: 600; }
+        .requirement i { width: 16px; height: 16px; }
+
+        /* Strength Meter */
+        #strength-meter {
+            height: 6px; width: 0%; margin-top: 10px; border-radius: 10px;
+            transition: width 0.4s ease, background-color 0.4s;
+            background-color: #eee;
+        }
+        #strength-text { font-size: 12px; font-weight: 800; margin-top: 5px; display: block; text-transform: uppercase; }
+
         .btn-mongo {
-            background-color: var(--mongo-green); color: white; font-weight: 700; border: none;
-            padding: 12px; border-radius: 4px; width: 100%; margin-top: 25px; cursor: pointer; font-size: 15px;
+            background-color: var(--mongo-dark-green); color: white; font-weight: 700; border: none;
+            padding: 14px; border-radius: 6px; width: 100%; margin-top: 20px; cursor: pointer; font-size: 16px;
         }
 
         .auth-right { 
-            width: 60%; background-color: var(--mongo-dark); 
-            background-image: linear-gradient(rgba(0, 30, 43, 0.85), rgba(0, 30, 43, 0.85)), url('https://webassets.mongodb.com/static/images/atlas/login_background.png'); 
+            width: 55%; background-color: var(--mongo-dark); 
+            background-image: linear-gradient(rgba(0, 30, 43, 0.8), rgba(0, 30, 43, 0.9)), url('https://webassets.mongodb.com/static/images/atlas/login_background.png'); 
             background-size: cover; background-position: center; display: flex; align-items: center; justify-content: center; padding: 60px; color: white;
         }
 
-        .promo-content { max-width: 500px; text-align: center; }
-        .promo-content h2 { font-size: 32px; font-weight: 700; margin-bottom: 20px; color: #00ed64; }
-
         @media (max-width: 1024px) {
+            .auth-wrapper { flex-direction: column; }
             .auth-right { display: none; }
             .auth-left { width: 100%; padding: 40px 20px; }
         }
@@ -81,59 +110,60 @@
     <div class="auth-wrapper">
         <div class="auth-left">
             <div class="logo-container">
-                <img src="{{ url_for('static', filename=g.site_logo.main_logo if g.site_logo and g.site_logo.main_logo else 'frontend/images/logo-frontend.png') }}" 
-     alt="Logo" 
-     class="logo-img">
-
+                <img src="{{ url_for('static', filename=g.site_logo.main_logo if g.site_logo and g.site_logo.main_logo else 'frontend/images/logo-frontend.png') }}" alt="Logo" class="logo-img">
             </div>
 
             <div class="login-header">
-                <h1>Create New Password</h1>
-                <p>Fadlan geli erey sir cusub oo adag si aad u sugto amniga akoonkaaga.</p>
+                <h1>Set New Password</h1>
+                <p>Abuur password adag si aad u ilaaliso akoonkaaga.</p>
             </div>
 
-            <form action="{{ url_for('main.forgot_password_change_password') }}" method="POST">
+            <form id="passwordForm" action="{{ url_for('main.forgot_password_change_password') }}" method="POST">
                 {{ form.hidden_tag() }}
 
-                <div class="mb-4">
+                <div class="mb-3">
                     <label class="form-label">New Password</label>
                     <div class="password-container">
-                        {{ form.new_password(class="form-control-custom", placeholder="••••••••", id="passwordInput", type="password") }}
+                        {{ form.new_password(class="form-control-custom", placeholder="••••••••", id="passwordInput", autocomplete="new-password") }}
                         <span class="toggle-password" onclick="togglePass('passwordInput', this)">
-                            <i class="feather-eye"></i>
+                            <i data-feather="eye"></i>
                         </span>
                     </div>
-                    {% for error in form.new_password.errors %}
-                        <small class="text-danger" style="font-size: 12px;">{{ error }}</small>
-                    {% endfor %}
+
+                    <div id="strength-meter"></div>
+                    <small id="strength-text"></small>
+
+                    <!-- <div id="req-box" class="requirements-box">
+                        <div id="req-length" class="requirement"><i data-feather="circle"></i> Ugu yaraan 8 xaraf</div>
+                        <div id="req-upper" class="requirement"><i data-feather="circle"></i> Hal xaraf oo weyn (ABC)</div>
+                        <div id="req-lower" class="requirement"><i data-feather="circle"></i> Hal xaraf oo yar (abc)</div>
+                        <div id="req-number" class="requirement"><i data-feather="circle"></i> Ugu yaraan hal nambar (123)</div>
+                        <div id="req-special" class="requirement"><i data-feather="circle"></i> Hal astaan gaar ah (@#$%^&*)</div>
+                    </div> -->
                 </div>
 
                 <div class="mb-4">
                     <label class="form-label">Confirm New Password</label>
                     <div class="password-container">
-                        {{ form.confirm_password(class="form-control-custom", placeholder="••••••••", id="confirmPasswordInput", type="password") }}
+                        {{ form.confirm_password(class="form-control-custom", placeholder="••••••••", id="confirmPasswordInput") }}
                         <span class="toggle-password" onclick="togglePass('confirmPasswordInput', this)">
-                            <i class="feather-eye"></i>
+                            <i data-feather="eye"></i>
                         </span>
                     </div>
-                    {% for error in form.confirm_password.errors %}
-                        <small class="text-danger" style="font-size: 12px;">{{ error }}</small>
-                    {% endfor %}
+                    <small id="match-text" class="d-none" style="font-size: 12px; font-weight: 600; margin-top: 5px; display: block;"></small>
                 </div>
 
-                {{ form.submit(class="btn-mongo", value="Update Password") }}
+                <button type="submit" id="submitBtn" class="btn-mongo">Update Password</button>
             </form>
-
-            <div class="mt-4 text-center">
-                <a href="{{ url_for('main.login') }}" style="color: #006ce6; font-weight: 600; text-decoration: none; font-size: 14px;">Back to Login</a>
-            </div>
         </div>
 
         <div class="auth-right">
-            <div class="promo-content">
-                <i class="feather-lock" style="font-size: 70px; color: #00ed64; display: block; margin-bottom: 20px;"></i>
-                <h2>Account Recovery</h2>
-                <p>Hubi in password-kaagu ka kooban yahay ugu yaraan 8 xaraf, iskuna dhex dar nambarada iyo xarfaha waaweyn.</p>
+            <div class="promo-content text-center">
+                <div style="background: rgba(0,237,100,0.1); width: 80px; height: 80px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px;">
+                    <i data-feather="lock" style="width: 40px; height: 40px; color: var(--mongo-green);"></i>
+                </div>
+                <h2 style="color: var(--mongo-green);">Very Strong Security</h2>
+                <p>Nidaamka amniga dugsiga wuxuu u baahan yahay password adag si loo ilaaliyo xogtaada.</p>
             </div>
         </div>
     </div>
@@ -142,75 +172,111 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <script>
-        // Shaqada Hide/Show oo wadata Icon bedel
+        feather.replace();
+
+        const pInput = document.getElementById('passwordInput');
+        const cInput = document.getElementById('confirmPasswordInput');
+        const reqBox = document.getElementById('req-box');
+        const strengthMeter = document.getElementById('strength-meter');
+        const strengthText = document.getElementById('strength-text');
+        const matchText = document.getElementById('match-text');
+
+        const reqElements = {
+            length: document.getElementById('req-length'),
+            upper: document.getElementById('req-upper'),
+            lower: document.getElementById('req-lower'),
+            number: document.getElementById('req-number'),
+            special: document.getElementById('req-special')
+        };
+
         function togglePass(id, btn) {
             const input = document.getElementById(id);
-            const icon = btn.querySelector('i');
-            
-            if (input.type === "password") {
-                input.type = "text";
-                icon.classList.remove('feather-eye');
-                icon.classList.add('feather-eye-off');
+            input.type = input.type === "password" ? "text" : "password";
+            btn.innerHTML = `<i data-feather="${input.type === 'password' ? 'eye' : 'eye-off'}"></i>`;
+            feather.replace();
+        }
+
+        pInput.addEventListener('input', () => {
+            const val = pInput.value;
+            reqBox.style.display = val.length > 0 ? 'block' : 'none';
+
+            const checks = {
+                length: val.length >= 8,
+                upper: /[A-Z]/.test(val),
+                lower: /[a-z]/.test(val),
+                number: /[0-9]/.test(val),
+                special: /[!@#$%^&*(),.?":{}|<>]/.test(val)
+            };
+
+            let score = 0;
+            for (const key in checks) {
+                const el = reqElements[key];
+                const icon = el.querySelector('i');
+                if (checks[key]) {
+                    el.classList.add('valid');
+                    icon.setAttribute('data-feather', 'check-circle');
+                    score++;
+                } else {
+                    el.classList.remove('valid');
+                    icon.setAttribute('data-feather', 'circle');
+                }
+            }
+            feather.replace();
+            updateStrengthIndicator(score);
+            checkMatch();
+        });
+
+        function updateStrengthIndicator(score) {
+            const widths = ['0%', '20%', '40%', '60%', '80%', '100%'];
+            const colors = ['#eee', '#ff4b2b', '#ffa500', '#2ecc71', '#009e52', '#00ed64'];
+            const labels = ['', 'Aad u tabar yar', 'Tabar yar', 'Wuu fiican yahay', 'Wuu adag yahay', 'VERY STRONG ✓'];
+
+            strengthMeter.style.width = widths[score];
+            strengthMeter.style.backgroundColor = colors[score];
+            strengthText.textContent = labels[score];
+            strengthText.style.color = (score === 5) ? '#00684a' : colors[score];
+            reqBox.style.borderLeftColor = (score === 5) ? '#00ed64' : '#889196';
+        }
+
+        cInput.addEventListener('input', checkMatch);
+
+        function checkMatch() {
+            if (cInput.value.length === 0) {
+                matchText.classList.add('d-none');
+                return;
+            }
+            matchText.classList.remove('d-none');
+            if (pInput.value === cInput.value) {
+                matchText.textContent = "✓ Password-adu waa isku mid";
+                matchText.style.color = "var(--success-green)";
             } else {
-                input.type = "password";
-                icon.classList.remove('feather-eye-off');
-                icon.classList.add('feather-eye');
+                matchText.textContent = "× Password-adu ma isku mid ahan";
+                matchText.style.color = "var(--error-red)";
             }
         }
 
-        // Hubinta in labada password isku mid yihiin
-        const form = document.querySelector('form');
-        form.addEventListener('submit', (e) => {
-            const password = document.getElementById('passwordInput').value;
-            const confirm = document.getElementById('confirmPasswordInput').value;
-            if(password !== confirm) {
+        document.getElementById('passwordForm').addEventListener('submit', function(e) {
+            const val = pInput.value;
+            const isValid = val.length >= 8 && /[A-Z]/.test(val) && /[a-z]/.test(val) && /[0-9]/.test(val) && /[!@#$%^&*(),.?":{}|<>]/.test(val);
+            
+            if (!isValid) {
                 e.preventDefault();
                 Swal.fire({
                     icon: 'error',
-                    title: 'Cilad baa jirta',
-                    text: 'Labada password isku mid maahan!',
+                    title: 'Password-ku ma xoogana!',
+                    text: 'Fadlan hubi in dhammaan 5-ta shuruudood ay cagaar noqdaan.',
+                    confirmButtonColor: '#00684a'
+                });
+            } else if (pInput.value !== cInput.value) {
+                e.preventDefault();
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Cilad xaqiijin',
+                    text: 'Password-ka cusub iyo kan xaqiijinta waa inay isku mid noqdaan.',
                     confirmButtonColor: '#00684a'
                 });
             }
         });
-
-      
     </script>
-
-
-  <!-- SweetAlert2 CDN -->
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-
-
-<!-- Flash message handling with SweetAlert2 -->
-<script>
-   // Flash message handling with SweetAlert2
-   const flashMessages = {{ get_flashed_messages(with_categories=True) | tojson | safe }};
-   
-   if (flashMessages.length > 0) {
-       const [category, message] = flashMessages[0];
-   
-       const Toast = Swal.mixin({
-           toast: true,
-           position: 'top-end',
-           showConfirmButton: false,
-           timer: 3000,
-           timerProgressBar: true,
-           background: '#fff',
-           color: '#333',
-           didOpen: (toast) => {
-               toast.addEventListener('mouseenter', Swal.stopTimer)
-               toast.addEventListener('mouseleave', Swal.resumeTimer)
-           }
-       });
-   
-       Toast.fire({
-           icon: category === "success" ? "success" : "info",
-           title: message
-       });
-   }
-</script>
-
-
 </body>
 </html>

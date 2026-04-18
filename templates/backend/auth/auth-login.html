@@ -32,7 +32,7 @@
             margin: 0; padding: 0; overflow-x: hidden;
         }
 
-        .auth-wrapper { display: flex; min-height: 100vh; }
+        .auth-wrapper { display: flex; min-height: 100vh; flex-wrap: wrap; }
 
         .auth-left { 
             width: 40%; padding: 40px 60px; display: flex; flex-direction: column; background: #fff;
@@ -64,7 +64,6 @@
 
         .form-label { font-weight: 700; color: var(--mongo-dark); font-size: 13px; margin-bottom: 8px; display: block; }
         
-        /* Input group for password eye icon */
         .password-field-wrapper { position: relative; }
         .toggle-password {
             position: absolute; right: 12px; top: 10px; cursor: pointer; color: #5d6c74; z-index: 10;
@@ -75,6 +74,13 @@
             font-size: 15px; color: var(--mongo-dark);
         }
         .form-control-custom:focus { border-color: var(--mongo-green); outline: none; box-shadow: 0 0 0 1px var(--mongo-green); }
+        
+        /* Marka email-ka la doorto oo uu read-only noqdo */
+        .form-control-custom:read-only {
+            background-color: #f9f9f9;
+            border-color: #d1d5db;
+            cursor: default;
+        }
 
         .btn-mongo {
             background-color: var(--mongo-green); color: white; font-weight: 700; border: none;
@@ -106,8 +112,11 @@
         .learn-more:hover { background: #00ed64; color: var(--mongo-dark); }
 
         @media (max-width: 1024px) {
-            .auth-right { display: none; }
-            .auth-left { width: 100%; padding: 30px 20px; }
+            .auth-left { width: 100%; padding: 30px 20px; order: 2; }
+            .auth-right { width: 100%; padding: 40px 20px; order: 1; display: flex; }
+            .promo-content h2 { font-size: 28px; }
+            .promo-content p { font-size: 16px; }
+            .feature-grid { grid-template-columns: 1fr; }
         }
     </style>
 </head>
@@ -116,9 +125,7 @@
     <div class="auth-wrapper">
         <div class="auth-left">
             <div class="logo-container">
-             <img src="{{ url_for('static', filename=g.site_logo.main_logo if g.site_logo and g.site_logo.main_logo else 'frontend/images/logo-frontend.png') }}" 
-     alt="Logo" 
-     class="logo-img">
+                <img src="{{ url_for('static', filename=g.site_logo.main_logo if g.site_logo and g.site_logo.main_logo else 'frontend/images/logo-frontend.png') }}" alt="Logo" class="logo-img">
             </div>
 
             <div class="login-header">
@@ -137,25 +144,24 @@
                 </a>
             </div>
 
-            <div class="divider"><span>or use email</span></div>
+            <div class="divider"><span>Or Use Username, Phone Email</span></div>
 
             <form method="POST" id="mongoLoginForm">
                 {{ form.hidden_tag() }}
                 
-                <div id="step-email">
-                    <div class="mb-3">
-                        <label class="form-label">Email Address</label>
-                        {{ form.login_id(class_="form-control-custom", id="email_input", placeholder="name@company.com") }}
+                <div class="mb-3" id="email-section">
+                    <div class="d-flex justify-content-between">
+                        <label class="form-label">Username, Phone or Email:</label>
+                        <a href="#" id="back-to-email" style="display: none; font-size: 12px; color: var(--mongo-green); text-decoration: none; font-weight: 600;">Edit Detail</a>
                     </div>
-                    <button type="button" id="next-btn" class="btn-mongo">Next</button>
+                    {{ form.login_id(class_="form-control-custom", id="email_input", placeholder="Username, Phone or Email") }}
                 </div>
 
-                <div id="step-password" style="display: none;">
+                <button type="button" id="next-btn" class="btn-mongo">Next</button>
+
+                <div id="step-password" style="display: none; margin-top: 15px;">
                     <div class="mb-3">
-                        <div class="d-flex justify-content-between">
-                            <label class="form-label">Password</label>
-                            <a href="#" id="back-to-email" style="font-size: 12px; color: var(--mongo-green); text-decoration: none; font-weight: 600;">Change</a>
-                        </div>
+                        <label class="form-label">Password</label>
                         <div class="password-field-wrapper">
                             {{ form.password(class_="form-control-custom", id="pass_input", placeholder="Enter your password") }}
                             <i class="feather-eye toggle-password" id="eyeIcon"></i>
@@ -175,25 +181,57 @@
             </form>
         </div>
 
-        <div class="auth-right">
-            <div class="promo-content">
-                <h2>School Bridge Management Platform</h2>
-                <p>Nidaam casri ah oo loogu talagalay in lagu maamulo xogta ardayda, natiijooyinka imtixaanka, iyo dakhliga dugsiga si hufan.</p>
-                <div class="feature-grid">
-                    <div class="feature-item"><i class="feather-users"></i><span>Maamulka Ardayda</span></div>
-                    <div class="feature-item"><i class="feather-check-square"></i><span>Attendance-ka</span></div>
-                    <div class="feature-item"><i class="feather-dollar-sign"></i><span>Maareynta Lacagaha</span></div>
-                    <div class="feature-item"><i class="feather-file-text"></i><span>Natiijada Imtixaanka</span></div>
-                </div>
-                <a href="#" class="learn-more">Explore Features →</a>
-            </div>
+    <div class="auth-right">
+    <div class="promo-content">
+
+        <div class="logo-title">
+            <img src="{{ url_for('static', filename=g.site_logo.sub_logo if g.site_logo and g.site_logo.sub_logo else 'frontend/images/logo-frontend.png') }}" 
+                 alt="Logo" class="logo-sub-img">
+
+            <h2>School Bridge Management Platform</h2>
         </div>
+
+        <p>A modern system designed to efficiently manage student data, exam results, and school finances.</p>
+
+        <div class="feature-grid">
+            <div class="feature-item"><i class="feather-users"></i><span>Student Management</span></div>
+            <div class="feature-item"><i class="feather-check-square"></i><span>Attendance Tracking</span></div>
+            <div class="feature-item"><i class="feather-dollar-sign"></i><span>Financial Management</span></div>
+            <div class="feature-item"><i class="feather-file-text"></i><span>Exam Results</span></div>
+        </div>
+
+        <a href="#" class="learn-more">Explore Features →</a>
     </div>
+</div>
+
+
+    </div>
+
+    <style>
+.logo-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    justify-content: center; /* center haddii aad rabto */
+    margin-bottom: 15px;
+}
+
+.logo-sub-img {
+    width: 4rem;
+    height: 4rem;
+}
+
+.logo-title h2 {
+    font-size: 20px;
+    margin: 0;
+}
+
+    </style>
+
 
     <script src="{{ url_for('static', filename='backend/assets/vendors/js/vendors.min.js') }}"></script>
     <script>
         document.addEventListener("DOMContentLoaded", function () {
-            const stepEmail = document.getElementById('step-email');
             const stepPass = document.getElementById('step-password');
             const nextBtn = document.getElementById('next-btn');
             const backBtn = document.getElementById('back-to-email');
@@ -201,20 +239,27 @@
             const passInp = document.getElementById('pass_input');
             const eyeIcon = document.getElementById('eyeIcon');
 
-            // Flow Control
+            // Markii la riixo Next
             nextBtn.addEventListener('click', function() {
                 if (emailInp.value.trim() !== "") {
-                    stepEmail.style.display = 'none';
-                    stepPass.style.display = 'block';
+                    // Email-ka ha qarsoomin, kaliya ka dhig read-only
+                    emailInp.setAttribute('readonly', true);
+                    nextBtn.style.display = 'none'; // Next button-ka qari
+                    stepPass.style.display = 'block'; // Password-ka soo saar
+                    backBtn.style.display = 'inline'; // Edit button-ka soo saar
                 } else {
                     emailInp.style.borderColor = '#cf1124';
                 }
             });
 
+            // Markii la rabo in email-ka la saxo (Edit)
             backBtn.addEventListener('click', function(e) {
                 e.preventDefault();
+                emailInp.removeAttribute('readonly');
                 stepPass.style.display = 'none';
-                stepEmail.style.display = 'block';
+                nextBtn.style.display = 'block';
+                backBtn.style.display = 'none';
+                emailInp.focus();
             });
 
             // Password Toggle Logic
@@ -227,40 +272,29 @@
         });
     </script>
 
-
-  <!-- SweetAlert2 CDN -->
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-
-
-<!-- Flash message handling with SweetAlert2 -->
-<script>
-   // Flash message handling with SweetAlert2
-   const flashMessages = {{ get_flashed_messages(with_categories=True) | tojson | safe }};
-   
-   if (flashMessages.length > 0) {
-       const [category, message] = flashMessages[0];
-   
-       const Toast = Swal.mixin({
-           toast: true,
-           position: 'top-end',
-           showConfirmButton: false,
-           timer: 3000,
-           timerProgressBar: true,
-           background: '#fff',
-           color: '#333',
-           didOpen: (toast) => {
-               toast.addEventListener('mouseenter', Swal.stopTimer)
-               toast.addEventListener('mouseleave', Swal.resumeTimer)
-           }
-       });
-   
-       Toast.fire({
-           icon: category === "success" ? "success" : "info",
-           title: message
-       });
-   }
-</script>
-
-
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+       const flashMessages = {{ get_flashed_messages(with_categories=True) | tojson | safe }};
+       if (flashMessages.length > 0) {
+           const [category, message] = flashMessages[0];
+           const Toast = Swal.mixin({
+               toast: true,
+               position: 'top-end',
+               showConfirmButton: false,
+               timer: 3000,
+               timerProgressBar: true,
+               background: '#fff',
+               color: '#333',
+               didOpen: (toast) => {
+                   toast.addEventListener('mouseenter', Swal.stopTimer)
+                   toast.addEventListener('mouseleave', Swal.resumeTimer)
+               }
+           });
+           Toast.fire({
+               icon: category === "success" ? "success" : "info",
+               title: message
+           });
+       }
+    </script>
 </body>
 </html>

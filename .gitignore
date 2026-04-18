@@ -6,5 +6,10 @@ instance/
 .vercel
 .env*.local
 
+app/modal.py
+app/view.py
+app/routes.py
+app/__init__.py
+static/
 
 

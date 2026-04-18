@@ -77,22 +77,8 @@ def create_app():
     csrf.init_app(app)  # ✅ INIT
 
     # Configuration
-    # Ka soo akhri link-ga Neon ee aad Vercel gelisay
-    database_url = os.getenv('DATABASE_URL')
-
-    if database_url:
-        # Tani waxay saxaysaa haddii link-gu ku bilaawdo postgres:// (oo Vercel badanaa keento)
-        if database_url.startswith("postgres://"):
-            database_url = database_url.replace("postgres://", "postgresql://", 1)
-        
-        app.config['SQLALCHEMY_DATABASE_URI'] = database_url
-    else:
-        # Haddii link-ga la waayo, wuxuu isticmaalayaa SQLite local ahaan
-        app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///fallback.db'
-
-    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-
-   
+    app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv("DATABASE_URI")
+    
     app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
     # create_app() dhexdiisa
     app.config['DEBUG'] = False

@@ -372,7 +372,7 @@ class SettingsDataForm(FlaskForm):
 
 #---- class levels
 class ClassLevelForm(FlaskForm):
-    name = StringField('Class Name', validators=[DataRequired()])
+    name = StringField('Level Name', validators=[DataRequired()])
     price = DecimalField('Price', validators=[DataRequired()])
     school_id = SelectField('School', coerce=int, validators=[DataRequired()])
     branch_id = SelectField('Branch', coerce=lambda x: int(x) if x else None, validators=[Optional()])

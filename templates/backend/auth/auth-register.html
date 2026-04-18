@@ -10,91 +10,115 @@
     <link rel="shortcut icon" type="image/x-icon"
     href="{{ url_for('static', filename=g.site_logo.sub_logo if g.site_logo and g.site_logo.sub_logo else 'frontend/images/logo-upper.png') }}" />
 
-
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='backend/assets/css/bootstrap.min.css') }}">
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='backend/assets/vendors/css/vendors.min.css') }}">
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='backend/assets/css/theme.min.css') }}">
 
+    <script src="https://unpkg.com/feather-icons"></script>
+
     <style>
         :root {
-            --mongo-green: #00684a;
+            --mongo-green: #00ed64;
+            --mongo-dark-green: #00684a;
             --mongo-dark: #001e2b;
             --border-gray: #d1d5db;
             --github-dark: #24292e;
+            --text-muted: #5d6c74;
         }
 
         body { 
             background-color: #ffffff; 
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            font-family: 'Euclid Circular A', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             margin: 0; padding: 0; overflow-x: hidden;
         }
 
-        .auth-wrapper { display: flex; min-height: 100vh; }
+        .auth-wrapper { display: flex; min-height: 100vh; flex-wrap: wrap; }
 
+        /* Left Side Styles (Form) */
         .auth-left { 
-            width: 40%; padding: 40px 60px; display: flex; flex-direction: column; background: #fff;
+            width: 45%; padding: 50px 70px; display: flex; flex-direction: column; background: #fff;
+            justify-content: center;
         }
 
-        .logo-container { margin-bottom: 25px; }
-        .logo-img { width: 210px; }
+        .logo-container { margin-bottom: 30px; }
+        .logo-img { width: 180px; height: auto; }
 
-        .login-header h1 { font-size: 26px; font-weight: 600; color: var(--mongo-dark); margin-bottom: 8px; }
-        .signup-link { font-size: 15px; margin-bottom: 20px; color: #333; }
+        .login-header h1 { font-size: 30px; font-weight: 700; color: var(--mongo-dark); margin-bottom: 10px; }
+        .signup-link { font-size: 15px; margin-bottom: 25px; color: var(--text-muted); }
         .signup-link a { color: #006ce6; font-weight: 600; text-decoration: none; }
+        .signup-link a:hover { text-decoration: underline; }
 
+        .social-actions { display: flex; flex-direction: column; gap: 10px; }
         .social-btn {
-            border: 1px solid var(--border-gray); border-radius: 4px; padding: 10px;
+            border: 1px solid var(--border-gray); border-radius: 6px; padding: 11px;
             display: flex; align-items: center; justify-content: center; gap: 12px;
-            text-decoration: none; color: var(--mongo-dark); font-weight: 500;
-            margin-bottom: 12px; width: 100%; background: white; transition: all 0.2s; font-size: 14px;
+            text-decoration: none; color: var(--mongo-dark); font-weight: 600;
+            width: 100%; background: white; transition: all 0.2s; font-size: 14px;
         }
-        .social-btn:hover { background-color: #f7f9fa; border-color: #889196; }
+        .social-btn:hover { background-color: #f7f9fa; border-color: #889196; transform: translateY(-1px); }
         .social-btn img { width: 18px; }
         .btn-github { background: var(--github-dark); color: white; border: none; }
         .btn-github:hover { background: #1b1f23; color: white; }
 
         .divider {
-            display: flex; align-items: center; text-align: center; margin: 20px 0; color: #5d6c74; font-size: 12px;
+            display: flex; align-items: center; text-align: center; margin: 25px 0; color: var(--text-muted); font-size: 12px;
         }
         .divider::before, .divider::after { content: ''; flex: 1; border-bottom: 1px solid var(--border-gray); }
-        .divider span { padding: 0 10px; }
+        .divider span { padding: 0 12px; }
 
-        .form-label { font-weight: 700; color: var(--mongo-dark); font-size: 13px; margin-bottom: 6px; display: block; }
+        .form-label { font-weight: 700; color: var(--mongo-dark); font-size: 13px; margin-bottom: 8px; display: block; }
         
-        /* Password wrapper for eye icon */
         .password-wrapper { position: relative; }
         .toggle-password {
-            position: absolute; right: 12px; top: 12px; cursor: pointer; color: #5d6c74; z-index: 10;
+            position: absolute; right: 15px; top: 50%; transform: translateY(-50%); 
+            cursor: pointer; color: var(--text-muted); z-index: 10; width: 18px;
         }
 
-        .form-control { 
-            width: 100%; border: 1px solid #889196; border-radius: 4px; padding: 10px 12px;
-            font-size: 15px; color: var(--mongo-dark);
+        .form-control-custom { 
+            width: 100%; border: 1px solid #889196; border-radius: 6px; padding: 11px 15px;
+            font-size: 15px; color: var(--mongo-dark); transition: border 0.3s;
         }
-        .form-control:focus { border-color: var(--mongo-green); outline: none; box-shadow: 0 0 0 1px var(--mongo-green); }
+        .form-control-custom:focus { border-color: var(--mongo-dark-green); outline: none; box-shadow: 0 0 0 3px rgba(0, 104, 74, 0.1); }
 
         .btn-mongo {
-            background-color: var(--mongo-green); color: white; font-weight: 700; border: none;
-            padding: 12px; border-radius: 4px; width: 100%; margin-top: 15px; cursor: pointer;
+            background-color: var(--mongo-dark-green); color: white; font-weight: 700; border: none;
+            padding: 13px; border-radius: 6px; width: 100%; margin-top: 20px; cursor: pointer; font-size: 16px;
+            transition: background 0.3s;
         }
+        .btn-mongo:hover { background-color: #00593f; }
+        .btn-back { background-color: #f3f4f6; color: var(--mongo-dark); border: 1px solid var(--border-gray); }
+        .btn-back:hover { background-color: #e5e7eb; }
 
+        /* Right Side Styles (Promo) */
         .auth-right { 
-            width: 60%; background-color: var(--mongo-dark); 
-            background-image: linear-gradient(rgba(0, 30, 43, 0.85), rgba(0, 30, 43, 0.85)), url('https://webassets.mongodb.com/static/images/atlas/login_background.png'); 
-            background-size: cover; display: flex; align-items: center; justify-content: center; padding: 60px; color: white;
+            width: 55%; background-color: var(--mongo-dark); 
+            background-image: linear-gradient(rgba(0, 30, 43, 0.8), rgba(0, 30, 43, 0.9)), url('https://webassets.mongodb.com/static/images/atlas/login_background.png'); 
+            background-size: cover; background-position: center; display: flex; align-items: center; justify-content: center; padding: 60px; color: white;
         }
 
-        .promo-content { max-width: 550px; }
-        .promo-content h2 { font-size: 34px; font-weight: 700; margin-bottom: 15px; color: #00ed64; }
+        .promo-content { max-width: 500px; }
+        .logo-title { display: flex; align-items: center; gap: 15px; margin-bottom: 20px; }
+        .logo-sub-img { width: 55px; height: 55px; }
+        .logo-title h2 { font-size: 32px; font-weight: 700; margin: 0; color: var(--mongo-green); }
         
-        .feature-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin: 25px 0; }
+        .promo-content p { font-size: 18px; line-height: 1.6; color: #adbac7; margin-bottom: 35px; }
+        
+        .feature-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-bottom: 30px; }
         .feature-item { 
-            display: flex; align-items: center; gap: 10px; background: rgba(255, 255, 255, 0.08); 
-            padding: 12px; border-radius: 6px; border: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex; align-items: center; gap: 12px; background: rgba(255, 255, 255, 0.06); 
+            padding: 15px; border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.1);
         }
-        .feature-item i { color: #00ed64; font-size: 20px; }
+        .feature-item i { color: var(--mongo-green); width: 20px; }
+        .feature-item span { font-size: 15px; font-weight: 500; }
 
-        @media (max-width: 1024px) { .auth-right { display: none; } .auth-left { width: 100%; padding: 30px; } }
+        /* Responsive Mobile Settings */
+        @media (max-width: 1024px) {
+            .auth-wrapper { flex-direction: column; }
+            .auth-right { width: 100%; padding: 40px 20px; order: 1; } /* Promo first on mobile */
+            .auth-left { width: 100%; padding: 40px 25px; order: 2; } /* Form second */
+            .logo-title h2 { font-size: 24px; }
+            .feature-grid { grid-template-columns: 1fr; }
+        }
     </style>
 </head>
 
@@ -102,10 +126,7 @@
     <div class="auth-wrapper">
         <div class="auth-left">
             <div class="logo-container">
-                 <img src="{{ url_for('static', filename=g.site_logo.main_logo if g.site_logo and g.site_logo.main_logo else 'frontend/images/logo-frontend.png') }}" 
-     alt="Logo" 
-     class="logo-img">
-
+                <img src="{{ url_for('static', filename=g.site_logo.main_logo if g.site_logo and g.site_logo.main_logo else 'frontend/images/logo-frontend.png') }}" alt="Logo" class="logo-img">
             </div>
 
             <div class="login-header">
@@ -113,64 +134,64 @@
                 <p class="signup-link">Already have an account? <a href="{{ url_for('main.login') }}">Log In</a></p>
             </div>
 
-            <div class="social-actions">
-                <a href="#" class="social-btn">
+           <div class="social-actions">
+                <a href="{{ url_for('main.google_login') }}" class="social-btn">
                     <img src="https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png" alt="Google">
-                    Sign up with Google
+                    Continue with Google
                 </a>
-                <a href="#" class="social-btn btn-github">
-                    <i class="feather-github"></i>
-                    Sign up with GitHub
+                <a href="{{ url_for('main.github_login') }}" class="social-btn btn-github">
+                    <i class="feather-github" style="font-size: 20px;"></i>
+                    Continue with GitHub
                 </a>
             </div>
 
-            <div class="divider"><span>or register with email</span></div>
+            <div class="divider"><span>Or Create New Account Manually</span></div>
 
-            <form method="POST" action="{{ url_for('main.register') }}">
+            <form method="POST" action="{{ url_for('main.register') }}" id="regForm">
                 {{ form.hidden_tag() }}
 
                 <div id="step-1">
                     <div class="mb-3">
                         <label class="form-label">Full Name</label>
-                        {{ form.fullname(class_='form-control', placeholder='E.g. Ahmed Ali') }}
+                        {{ form.fullname(class_='form-control-custom', placeholder='E.g. Ahmed Ali') }}
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Email Address</label>
-                        {{ form.email(class_='form-control', placeholder='name@company.com') }}
+                        {{ form.email(class_='form-control-custom', placeholder='name@company.com') }}
                     </div>
-                    <button type="button" class="btn-mongo" onclick="nextStep()">Next</button>
+                    <button type="button" class="btn-mongo" onclick="nextStep()">Next Step</button>
                 </div>
 
                 <div id="step-2" style="display: none;">
                     <div class="mb-3">
                         <label class="form-label">Username</label>
-                        {{ form.username(class_='form-control') }}
+                        {{ form.username(class_='form-control-custom', placeholder='Choose a username') }}
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Password</label>
                         <div class="password-wrapper">
-                            {{ form.password(class_='form-control password', id='reg_pass') }}
-                            <i class="feather-eye toggle-password" onclick="togglePass('reg_pass', this)"></i>
+                            {{ form.password(class_='form-control-custom', id='reg_pass', placeholder='••••••••') }}
+                            <i data-feather="eye" class="toggle-password" onclick="togglePass('reg_pass', this)"></i>
                         </div>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Confirm Password</label>
                         <div class="password-wrapper">
-                            {{ form.confirm_password(class_='form-control', id='confirm_pass') }}
-                            <i class="feather-eye toggle-password" onclick="togglePass('confirm_pass', this)"></i>
+                            {{ form.confirm_password(class_='form-control-custom', id='confirm_pass', placeholder='••••••••') }}
+                            <i data-feather="eye" class="toggle-password" onclick="togglePass('confirm_pass', this)"></i>
                         </div>
                     </div>
                     
                     <div class="form-check mb-3">
                         {{ form.termsCondition(class_='form-check-input', id='terms') }}
                         <label class="form-check-label text-muted small" for="terms">
-                            I agree to the Terms & Conditions
+                            I agree to the <a href="#" style="color: var(--mongo-dark-green); font-weight: 600;">Terms & Conditions</a>
                         </label>
                     </div>
 
                     <div class="d-flex gap-2">
-                        <button type="button" class="btn btn-light w-50" onclick="prevStep()">Back</button>
-                        {{ form.submit(class_='btn-mongo w-50 mt-0') }}
+                        <button type="button" class="btn-mongo btn-back w-50" onclick="prevStep()">Back</button>
+                        {{ form.submit(class_='btn-mongo w-50 mt-0', value='Create Account') }}
                     </div>
                 </div>
             </form>
@@ -178,14 +199,17 @@
 
         <div class="auth-right">
             <div class="promo-content">
-                <h2>School Bridge Management Platform</h2>
-                <p>Maamul xogta dugsigaaga si casri ah. Ku biir kumanaan macalimiin iyo arday ah oo isticmaala nidaamka Duralux.</p>
+                <div class="logo-title">
+                    <img src="{{ url_for('static', filename=g.site_logo.sub_logo if g.site_logo and g.site_logo.sub_logo else 'frontend/images/logo-frontend.png') }}" alt="Logo" class="logo-sub-img">
+                    <h2>School Bridge</h2>
+                </div>
+                <p>Maamul xogta dugsigaaga si casri ah. Ku biir kumanaan macalimiin iyo arday ah oo isticmaala nidaamka School Bridge.</p>
 
                 <div class="feature-grid">
-                    <div class="feature-item"><i class="feather-shield"></i><span>Security Sare</span></div>
-                    <div class="feature-item"><i class="feather-zap"></i><span>Xawaare Dheereeya</span></div>
-                    <div class="feature-item"><i class="feather-pie-chart"></i><span>Warbixino Sax ah</span></div>
-                    <div class="feature-item"><i class="feather-cloud"></i><span>Cloud Backup</span></div>
+                    <div class="feature-item"><i data-feather="shield"></i><span>Security Sare</span></div>
+                    <div class="feature-item"><i data-feather="zap"></i><span>Xawaare Dheereeya</span></div>
+                    <div class="feature-item"><i data-feather="pie-chart"></i><span>Warbixino Sax ah</span></div>
+                    <div class="feature-item"><i data-feather="cloud"></i><span>Cloud Backup</span></div>
                 </div>
             </div>
         </div>
@@ -195,63 +219,55 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <script>
+        // Initialize Feather Icons
+        feather.replace();
+
         function nextStep() {
-            document.getElementById('step-1').style.display = 'none';
-            document.getElementById('step-2').style.display = 'block';
+            const name = document.querySelector('[name="fullname"]').value;
+            const email = document.querySelector('[name="email"]').value;
+            
+            if(name && email) {
+                document.getElementById('step-1').style.display = 'none';
+                document.getElementById('step-2').style.display = 'block';
+            } else {
+                Swal.fire({ icon: 'error', title: 'Oops...', text: 'Fadlan buuxi magaca iyo email-ka!' });
+            }
         }
+
         function prevStep() {
             document.getElementById('step-2').style.display = 'none';
             document.getElementById('step-1').style.display = 'block';
         }
 
-        // Show/Hide Password Toggle Logic
         function togglePass(inputId, icon) {
             const input = document.getElementById(inputId);
             if (input.type === "password") {
                 input.type = "text";
-                icon.classList.replace('feather-eye', 'feather-eye-off');
+                icon.innerHTML = feather.icons['eye-off'].toSvg();
             } else {
                 input.type = "password";
-                icon.classList.replace('feather-eye-off', 'feather-eye');
+                icon.innerHTML = feather.icons['eye'].toSvg();
             }
+            feather.replace();
         }
-
-      
     </script>
 
-      <!-- SweetAlert2 CDN -->
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-
-
-<!-- Flash message handling with SweetAlert2 -->
-<script>
-   // Flash message handling with SweetAlert2
-   const flashMessages = {{ get_flashed_messages(with_categories=True) | tojson | safe }};
-   
-   if (flashMessages.length > 0) {
-       const [category, message] = flashMessages[0];
-   
-       const Toast = Swal.mixin({
-           toast: true,
-           position: 'top-end',
-           showConfirmButton: false,
-           timer: 3000,
-           timerProgressBar: true,
-           background: '#fff',
-           color: '#333',
-           didOpen: (toast) => {
-               toast.addEventListener('mouseenter', Swal.stopTimer)
-               toast.addEventListener('mouseleave', Swal.resumeTimer)
-           }
-       });
-   
-       Toast.fire({
-           icon: category === "success" ? "success" : "info",
-           title: message
-       });
-   }
-</script>
-
-
+    <script>
+       const flashMessages = {{ get_flashed_messages(with_categories=True) | tojson | safe }};
+       if (flashMessages.length > 0) {
+           const [category, message] = flashMessages[0];
+           const Toast = Swal.mixin({
+               toast: true,
+               position: 'top-end',
+               showConfirmButton: false,
+               timer: 3000,
+               timerProgressBar: true
+           });
+           Toast.fire({
+               icon: category === "success" ? "success" : "info",
+               title: message
+           });
+       }
+    </script>
 </body>
 </html>

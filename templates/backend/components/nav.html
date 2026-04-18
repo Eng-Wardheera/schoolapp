@@ -278,11 +278,57 @@
                                     Manage Exam Card
                                 </a>
                             </li>
+                            
                             <li class="nxl-item"><a class="nxl-link" href="{{ url_for('main.all_exam_results') }}">All Exam Results</a></li>
                             <li class="nxl-item"><a class="nxl-link" href="{{ url_for('main.cumulative_results') }}">Academic Exam Results</a></li>
                             <li class="nxl-item"><a class="nxl-link" href="{{ url_for('main.student_promotion') }}">Student Promotion Classes </a></li>
                             <li class="nxl-item"><a class="nxl-link" href="{{ url_for('main.multi_publish_exam') }}">Multi Publish Exam </a></li>
-                            <li class="nxl-item"><a class="nxl-link" href="invoice-create.html">Invoice Create</a></li>
+                            <!-- <li class="nxl-item"><a class="nxl-link" href="invoice-create.html">Invoice Create</a></li> -->
+                        </ul>
+
+                        
+                    </li>
+             
+                    <li class="nxl-item nxl-hasmenu">
+                        <a href="javascript:void(0);" class="nxl-link">
+                            <span class="nxl-micon"><i class="feather-settings"></i></span>
+                            <span class="nxl-mtext">Reports</span>
+                            <span class="nxl-arrow"><i class="feather-chevron-right"></i></span>
+                        </a>
+
+                        <ul class="nxl-submenu">
+
+                            <!-- Main School Reports -->
+                            {% if current_user.role.value in ['school_admin', 'superadmin'] %}
+                            <li class="nxl-item">
+                                <a class="nxl-link" href="{{ url_for('main.school_reports_fees') }}">
+                                    School Reports
+                                </a>
+                            </li>
+                            {% endif %}
+
+                            <!-- ONLY school_admin AND must have branch_id (NOT None) -->
+                            {% if current_user.role.value == 'school_admin' and current_user.branch_id is not none %}
+                            <li class="nxl-item">
+                                <a class="nxl-link" href="{{ url_for('main.branches_reports_fees') }}">
+                                    Branch Reports
+                                </a>
+                            </li>
+                            {% endif %}
+
+                        </ul>
+                    </li>
+
+
+                    <li class="nxl-item nxl-hasmenu">
+                        <a href="javascript:void(0);" class="nxl-link">
+                            <span class="nxl-micon"><i class="feather-life-buoy"></i></span>
+                            <span class="nxl-mtext">Help Center</span><span class="nxl-arrow"><i class="feather-chevron-right"></i></span>
+                        </a>
+                        <ul class="nxl-submenu">
+                            <li class="nxl-item"><a class="nxl-link" href="#!">Support</a></li>
+                            <!-- <li class="nxl-item"><a class="nxl-link" href="help-knowledgebase.html">KnowledgeBase</a></li> -->
+                            <!-- <li class="nxl-item"><a class="nxl-link" href="/docs/documentations">Documentations</a></li> -->
                         </ul>
                     </li>
 
@@ -496,7 +542,7 @@
                         </a>
                         <ul class="nxl-submenu">
                             <li class="nxl-item"><a class="nxl-link" href="{{ url_for('main.all_exam_papers') }}">View Exam Papers </a></li>
-                            <li class="nxl-item"><a class="nxl-link" href="{{ url_for('main.add_class') }}">Add Paper Questions</a></li>
+                            <!-- <li class="nxl-item"><a class="nxl-link" href="{{ url_for('main.add_class') }}">Add Paper Questions</a></li> -->
                         </ul>
                     </li>
 
