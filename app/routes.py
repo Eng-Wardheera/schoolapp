@@ -14740,8 +14740,9 @@ def print_class_summarise_merit_report():
 
 
 #-------------------------------------
-#----------- 
+#----------- Student Attendance View |
 #-------------------------------------
+
 @bp.route("/student/attendance/view")
 @login_required
 def student_attendance_view():
@@ -14811,8 +14812,9 @@ def student_attendance_view():
         user=current_user
     )
 
-
-
+#--------------------------------------
+#-------- Student Financial Statement |
+#--------------------------------------
 @bp.route("/student/finance/statement")
 @login_required
 def student_financial_statement():
@@ -14889,6 +14891,21 @@ def student_financial_statement():
         to_date=to_date_str,
         user=current_user
     )
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
