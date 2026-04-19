@@ -12667,16 +12667,18 @@ def calculate_student_performance(student_id, exam_id, active_year_id):
 @bp.route("/teacher/exam/marks", methods=["GET", "POST"])
 @login_required
 def teacher_add_exam_marks():
+    # 1. Hubinta Status-ka User-ka
     if getattr(current_user, 'status', 1) == 0:
         flash("Account-kaagu ma shaqeynayo.", "danger")
         return redirect(url_for("main.dashboard"))
 
+    # 2. Hubinta Role-ka
     allowed_roles = ["school_admin", "teacher", "branch_admin"]
     if current_user.role.value not in allowed_roles:
         flash("Ma haysatid ogolaansho.", "danger")
         return redirect(url_for("main.dashboard"))
 
-    # 1. Hubi Macalinka iyo Sanad Dugsiyeedka
+    # 3. Hel Macalinka iyo Sanad Dugsiyeedka Firfircoon
     teacher = Teacher.query.filter_by(user_id=current_user.id).first()
     active_year = AcademicYear.query.filter_by(school_id=current_user.school_id, is_active=True).first()
 
@@ -12701,7 +12703,7 @@ def teacher_add_exam_marks():
             exam_subject = ExamSubject.query.get_or_404(int(ex_sub_id))
             updated_student_ids = set()
 
-            # 2. Keydi dhibcaha maaddada (Loop through form marks)
+            # 4. Keydi dhibcaha maaddada iyo Update-garee Xogta Ardayga
             for key, value in request.form.items():
                 if key.startswith("marks["):
                     # Soo saar Student ID
@@ -12736,19 +12738,24 @@ def teacher_add_exam_marks():
                             marks_obtained=val
                         ))
                     
+                    # --- CUSBOONAYSIINTA SANADKA ARDAYGA (Sync Logic) ---
+                    student = Student.query.get(s_id)
+                    if student:
+                        student.academic_year_id = active_year.id
+                        student.year_name_str = active_year.year_name # String field-ka oo lagu shubay name-ka
+                    
                     updated_student_ids.add(s_id)
 
             # Flush si dhibcaha loo arko ka hor intaan xisaabinta la samayn
             db.session.flush()
 
-            # 3. Dib u xisaabi Performance-ka iyo Natiijada Guud ee arday kasta
+            # 5. Dib u xisaabi Performance-ka iyo Natiijada Guud ee arday kasta
             for s_id in updated_student_ids:
                 calculate_student_performance(s_id, int(exam_id), active_year.id)
 
             db.session.flush()
 
-            # 4. Dib u xisaabi Kaalmaha Fasalka (Class Positions)
-            # Waxaan soo saaraynaa fasallada ay ardayda la taabtay ka tirsan yihiin kaliya
+            # 6. Dib u xisaabi Kaalmaha Fasalka (Class Positions)
             students = Student.query.filter(Student.id.in_(list(updated_student_ids))).all()
             affected_classes = set([s.class_id for s in students])
             
@@ -12764,13 +12771,13 @@ def teacher_add_exam_marks():
                     res.class_position = index + 1
 
             db.session.commit()
-            return jsonify({"success": True, "message": "Dhibcaha iyo kaalmaha waa la kaydiyey!"})
+            return jsonify({"success": True, "message": "Dhibcaha, Sanadka Ardayga, iyo kaalmaha waa la kaydiyey!"})
 
         except Exception as e:
             db.session.rollback()
             return jsonify({"success": False, "error": str(e)}), 500
 
-    # GET Logic: Buuxinta Dropdowns
+    # 7. GET Logic: Buuxinta Dropdowns
     assignments = TeacherAssignment.query.filter_by(teacher_id=teacher.id).all()
     allowed_class_ids = list(set([a.class_id for a in assignments if a.class_id]))
     
@@ -12779,9 +12786,9 @@ def teacher_add_exam_marks():
     
     form.exam_id.choices = [(0, "-- Dooro Imtixaan --")] + \
                            [(e.id, e.exam_name) for e in Exam.query.filter_by(
-                               school_id=current_user.school_id, 
-                               academic_year_id=active_year.id,
-                               status='draft'
+                                school_id=current_user.school_id, 
+                                academic_year_id=active_year.id,
+                                status='draft'
                            ).all()]
 
     return render_template(
@@ -12790,8 +12797,6 @@ def teacher_add_exam_marks():
         user=current_user,
         active_year=active_year
     )
-
-
 
 
 @bp.route("/get-teacher-sections/<int:class_id>")
