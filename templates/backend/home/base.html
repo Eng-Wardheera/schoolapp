@@ -231,7 +231,7 @@
         startUserHeartbeat();
 
         if (typeof updateSingleUserStatus === "function") {
-          updateSingleUserStatus({{ user.id }});
+          updateSingleUserStatus({{ current_user.id }});
         }
 
       } else {
