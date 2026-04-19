@@ -45,7 +45,7 @@ import phonenumbers
 from phonenumbers import NumberParseException, PhoneMetadata, parse, is_valid_number, format_number, PhoneNumberFormat
 from app.modal import (AcademicYear, Branch, Class, ClassLevel, ClassSubject, Exam, ExamHall, ExamHallAssignment, ExamPaper, ExamQuestion, ExamSubject, ExamTicket, ExamTimetable, FeeInvoice, Parent, Permission, Role, RolePermission, School, SchoolSiteSettings, Section, SettingsData, SomaliaLocation, Student, StudentAttendance, StudentExamMark, StudentExamResult, StudentFeeCollection, StudentPromotion, Subject, Teacher, TeacherAssignment, Term, TimeSlot, Timetable,User, UserLog, UserPermission, UserRole, UserSession)
 from app.utils import get_academic_year
-from app.view import AcademicYearForm, AttendanceForm, BranchForm, ChangePasswordForm, ClassForm, ClassLevelForm, ClassSubjectForm, ExamForm, ExamHallAssignmentForm, ExamHallForm, ExamMultiPublishForm, ExamQuestionForm, ExamSubjectForm, ExamTimetableForm, ExamTimetableForm, ForgotPasswordChangeForm, ForgotPasswordForm, LoginForm, ParentForm, RegisterForm, SchoolForm, SchoolSiteSettingsForm, SectionForm, SettingsDataForm, SomaliaLocationForm, StudentExamMarkForm, StudentFeeCollectionForm, StudentForm, StudentPromotionForm, SubjectForm, TeacherAssignmentForm, TeacherForm, TermForm, TimeSlotForm, TimetableForm, TwoFactorForm, UserForm, UserProfileForm, VerifyOTPForm 
+from app.view import AcademicYearForm, AttendanceForm, BranchForm, ChangePasswordForm, ClassForm, ClassLevelForm, ClassSubjectForm, ExamForm, ExamHallAssignmentForm, ExamHallForm, ExamMultiPublishForm, ExamQuestionForm, ExamSubjectForm, ExamTimetableForm, ExamTimetableForm, ForgotPasswordChangeForm, ForgotPasswordForm, LoginForm, ParentForm, RegisterForm, SchoolForm, SchoolSiteSettingsForm, SectionForm, SettingsDataForm, SomaliaLocationForm, StudentExamMarkForm, StudentExamResultForm, StudentFeeCollectionForm, StudentForm, StudentPromotionForm, SubjectForm, TeacherAssignmentForm, TeacherForm, TermForm, TimeSlotForm, TimetableForm, TwoFactorForm, UserForm, UserProfileForm, VerifyOTPForm 
 from user_agents import parse as parse_ua  # install: pip install pyyaml user-agents
 from docx import Document
 from docx.shared import Cm, Pt, RGBColor
@@ -8055,7 +8055,8 @@ def add_fee_collection():
         "backend/pages/components/fee_collections/add_fee_collection.html",
         form=form,
         students_info=students_info,
-        user=current_user
+        user=current_user,
+        current_date = now_eat().date().isoformat(),
     )
 
     
@@ -8218,7 +8219,9 @@ def edit_fee_collection(fee_id):
         fee_record=fee_record,
         students_info=students_info,
         invoices=invoices,
-        user=current_user
+        user=current_user,
+        current_date = now_eat().date().isoformat()
+
     )
 
 
@@ -13211,6 +13214,161 @@ def student_exam_report(student_id, exam_id):
     )
 
 
+
+@bp.route('/student/exam-report/edit/<int:student_id>/<int:exam_id>', methods=['GET', 'POST'])
+@login_required
+def edit_student_exam_report(student_id, exam_id):
+
+    # =========================
+    # CSRF FORM (ONLY FOR TOKEN)
+    # =========================
+    form = StudentExamMarkForm()
+
+    # 1. STATUS CHECK
+    if getattr(current_user, 'status', 1) == 0:
+        flash("Account-kaagu ma shaqeynayo.", "danger")
+        return redirect(url_for("main.dashboard"))
+
+    # 2. ROLE CHECK
+    allowed_roles = ["school_admin", "branch_admin"]
+    if current_user.role.value not in allowed_roles:
+        flash("Ma haysatid ogolaansho.", "danger")
+        return redirect(url_for("main.dashboard"))
+
+    # 3. FETCH DATA
+    student = Student.query.get_or_404(student_id)
+    exam = Exam.query.get_or_404(exam_id)
+
+    summary_result = StudentExamResult.query.filter_by(
+        student_id=student_id,
+        exam_id=exam_id
+    ).first_or_404()
+
+    subject_marks = db.session.query(StudentExamMark)\
+        .join(ExamSubject, ExamSubject.id == StudentExamMark.exam_subject_id)\
+        .filter(
+            StudentExamMark.student_id == student_id,
+            StudentExamMark.exam_id == exam_id
+        ).all()
+
+    total_possible = db.session.query(db.func.sum(ExamSubject.total_marks))\
+        .filter(
+            ExamSubject.exam_id == exam_id,
+            ExamSubject.class_id == summary_result.class_id
+        ).scalar() or 0
+
+    total_possible = float(total_possible)
+
+    # =========================
+    # GRADE FUNCTION
+    # =========================
+    def calculate_grade(p):
+        if p >= 95: return 'A+'
+        elif p >= 90: return 'A'
+        elif p >= 85: return 'A-'
+        elif p >= 80: return 'B+'
+        elif p >= 75: return 'B'
+        elif p >= 70: return 'B-'
+        elif p >= 65: return 'C+'
+        elif p >= 60: return 'C'
+        elif p >= 50: return 'C-'
+        elif p >= 40: return 'D'
+        elif p >= 20: return 'E'
+        else: return 'F'
+
+    # =========================
+    # 🟡 POST (SAFE FIX ONLY)
+    # =========================
+    if request.method == 'POST':
+        try:
+            total_marks = 0
+            errors = []
+
+            for mark in subject_marks:
+                field_name = f"subject_{mark.exam_subject_id}"
+                raw_value = request.form.get(field_name)
+
+                # =========================
+                # 🔥 SAFE FLOAT FIX (87.00 PROBLEM SOLVED)
+                # =========================
+                raw_value = str(raw_value).strip().replace(",", ".")
+
+                if raw_value == "":
+                    errors.append(f"{mark.exam_subject.subject.name}: Qiime waa banaan")
+                    continue
+
+                try:
+                    new_score = float(raw_value)
+                except ValueError:
+                    errors.append(f"{mark.exam_subject.subject.name}: Qiime sax ah geli")
+                    continue
+
+                max_marks = float(mark.exam_subject.total_marks)
+
+                if new_score < 0:
+                    errors.append(f"{mark.exam_subject.subject.name}: Kama yaraan karo 0")
+
+                if new_score > max_marks:
+                    errors.append(f"{mark.exam_subject.subject.name}: Kama badnaan karo {max_marks}")
+
+                mark.marks_obtained = new_score
+                total_marks += new_score
+
+            if errors:
+                for e in errors:
+                    flash(e, "danger")
+                return redirect(request.url)
+
+            if total_marks > total_possible:
+                flash("Wadarta guud kama badnaan karto total-ka imtixaanka.", "danger")
+                return redirect(request.url)
+
+            # =========================
+            # UPDATE RESULT TABLE
+            # =========================
+            percentage = (total_marks / total_possible * 100) if total_possible > 0 else 0
+
+            summary_result.total_marks = total_marks
+            summary_result.percentage = percentage
+            summary_result.grade = calculate_grade(percentage)
+            summary_result.decision = "PASS" if percentage >= 50 else "FAIL"
+            summary_result.updated_at = now_eat()
+
+            db.session.commit()
+
+            flash("Natiijada si guul leh ayaa loo cusbooneysiiyay.", "success")
+
+            return redirect(url_for(
+                'main.student_exam_report',
+                student_id=student_id,
+                exam_id=exam_id
+            ))
+
+        except Exception as e:
+            db.session.rollback()
+            flash(f"Khalad ayaa dhacay: {str(e)}", "danger")
+
+    # =========================
+    # GET
+    # =========================
+    obtained_marks = float(summary_result.total_marks or 0)
+    percentage = (obtained_marks / total_possible * 100) if total_possible > 0 else 0
+
+    return render_template(
+        'backend/pages/components/exam_marks/edit_exam_result.html',
+        form=form,
+        student=student,
+        exam=exam,
+        result=summary_result,
+        subject_marks=subject_marks,
+        total_possible=total_possible,
+        percentage=round(percentage, 2),
+        grade=calculate_grade(percentage),
+        decision="PASS" if percentage >= 50 else "FAIL",
+        user=current_user
+    )
+
+
 @bp.route("/exam/results/cumulative")
 @login_required
 def cumulative_results():
@@ -13432,6 +13590,7 @@ def add_timeslot():
         form=form,
         user=current_user
     )
+
 
 @bp.route("/time-slots/all")
 @login_required
@@ -13931,7 +14090,7 @@ def student_cumulative_view():
         flash("Account-kaagu ma shaqeynayo.", "danger")
         return redirect(url_for("main.dashboard"))
 
-    allowed_roles = ["school_admin", "branch_admin"]
+    allowed_roles = ["school_admin", "student", "branch_admin"]
     if current_user.role.value not in allowed_roles:
         flash("Ma haysatid ogolaansho.", "danger")
         return redirect(url_for("main.dashboard"))

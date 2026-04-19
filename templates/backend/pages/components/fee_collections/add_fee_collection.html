@@ -100,7 +100,8 @@
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label fw-bold"><i class="feather-calendar me-1 text-primary"></i> {{ form.payment_date.label.text }}</label>
-                                {{ form.payment_date(class="form-control form-control-lg") }}
+                                <input type="date" name="payment_date" class="form-control form-control-lg" value="{{ current_date }}" >
+
                                 {% for error in form.payment_date.errors %}
                                     <div class="text-danger small mt-1"><i class="feather-alert-circle me-1"></i>{{ error }}</div>
                                 {% endfor %}

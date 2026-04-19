@@ -1,0 +1,235 @@
+{% extends 'backend/home/base.html' %}
+{% block title %}Edit Student Report{% endblock %}
+
+{% block content %}
+<div class="main-content">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+
+            <form method="POST">
+                {{ form.hidden_tag() }}
+
+                <div class="card shadow-sm mb-4 border-0">
+                    <div class="card-header bg-warning text-dark py-3">
+                        <h5 class="mb-0">
+                            <i class="fas fa-edit me-2"></i>
+                            Edit Report - {{ student.full_name }}
+                        </h5>
+                    </div>
+
+                    <div class="card-body bg-light">
+                        <div class="row g-3">
+
+                            <div class="col-md-4">
+                                <label class="fw-bold small text-uppercase">Exam</label>
+                                <input type="text" class="form-control" value="{{ exam.exam_name }}" readonly>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label class="fw-bold small text-uppercase">Total Possible</label>
+                                <input type="text" class="form-control" value="{{ total_possible }}" readonly>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label class="fw-bold small text-uppercase">Current Grade</label>
+                                <input type="text" class="form-control" id="gradeField" value="{{ grade }}" readonly>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SUBJECT MARKS -->
+                <div class="card shadow-sm border-0">
+                    <div class="card-header bg-white py-3">
+                        <h6 class="mb-0 fw-bold text-dark">
+                            <i class="fas fa-book me-2 text-primary"></i>
+                            Subject Marks
+                        </h6>
+                    </div>
+
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+
+                                <thead class="bg-light">
+                                    <tr>
+                                        <th class="ps-4">#</th>
+                                        <th>Subject</th>
+                                        <th width="250">Marks</th>
+                                    </tr>
+                                </thead>
+
+                                <tbody>
+                                {% for mark in subject_marks %}
+                                    <tr>
+                                        <td class="ps-4">{{ loop.index }}</td>
+
+                                        <td class="fw-bold text-primary">
+                                            {{ mark.exam_subject.subject.name }}
+                                        </td>
+
+                                        <td>
+                                            <div class="input-group input-group-sm">
+
+                                                <!-- 🔥 FIX: exam_subject_id instead of subject_id -->
+                                                <input type="number"
+                                                       step="0.01"
+                                                       min="0"
+                                                       max="{{ mark.exam_subject.total_marks }}"
+                                                       name="subject_{{ mark.exam_subject_id }}"
+                                                       value="{{ mark.marks_obtained }}"
+                                                       class="form-control mark-input fw-bold border-primary"
+                                                       required>
+
+                                                <span class="input-group-text bg-light">
+                                                    / {{ mark.exam_subject.total_marks }}
+                                                </span>
+
+                                            </div>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                                </tbody>
+
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="card-footer bg-white d-flex justify-content-between py-3 border-0">
+                        <a href="{{ url_for('main.student_exam_report', student_id=student.id, exam_id=exam.id) }}"
+                           class="btn btn-light px-4">
+                            Cancel
+                        </a>
+
+                        <button type="submit" class="btn btn-warning px-5 shadow-sm">
+                            Update Report
+                        </button>
+                    </div>
+                </div>
+
+                <!-- SUMMARY -->
+                <div class="card mt-4 border-0 shadow-sm">
+                    <div class="card-body bg-light">
+                        <div class="row text-center">
+
+                            <div class="col-md-4">
+                                <h6>Total Marks</h6>
+                                <h4 id="totalMarks">{{ result.total_marks }}</h4>
+                            </div>
+
+                            <div class="col-md-4">
+                                <h6>Percentage</h6>
+                                <h4 id="percentage">{{ percentage }}%</h4>
+                            </div>
+
+                            <div class="col-md-4">
+                                <h6>Decision</h6>
+                                <h4 id="decision"
+                                    class="{{ 'text-success' if decision=='PASS' else 'text-danger' }}">
+                                    {{ decision }}
+                                </h4>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+
+    const inputs = document.querySelectorAll(".mark-input");
+    const totalMarksEl = document.getElementById("totalMarks");
+    const percentageEl = document.getElementById("percentage");
+    const gradeEl = document.getElementById("gradeField");
+    const decisionEl = document.getElementById("decision");
+    const submitBtn = document.querySelector("button[type='submit']");
+    const totalPossible = parseFloat("{{ total_possible }}");
+
+    function calculateGrade(p) {
+        if (p >= 95) return 'A+';
+        if (p >= 90) return 'A';
+        if (p >= 85) return 'A-';
+        if (p >= 80) return 'B+';
+        if (p >= 75) return 'B';
+        if (p >= 70) return 'B-';
+        if (p >= 65) return 'C+';
+        if (p >= 60) return 'C';
+        if (p >= 50) return 'C-';
+        if (p >= 40) return 'D';
+        if (p >= 20) return 'E';
+        return 'F';
+    }
+
+    function validateInput(input) {
+        const max = parseFloat(input.getAttribute("max"));
+        let val = parseFloat(input.value) || 0;
+        let valid = true;
+
+        let feedback = input.parentElement.parentElement.querySelector(".error-msg");
+        if (feedback) feedback.remove();
+
+        if (val > max) {
+            valid = false;
+            input.classList.add("is-invalid");
+
+            let msg = document.createElement("div");
+            msg.className = "error-msg text-danger small mt-1";
+            msg.innerText = `Ma dhaafi karo ${max}`;
+
+            input.parentElement.parentElement.appendChild(msg);
+
+        } else {
+            input.classList.remove("is-invalid");
+        }
+
+        return valid;
+    }
+
+    function updateSummary() {
+        let total = 0;
+        let hasError = false;
+
+        inputs.forEach(input => {
+            let valid = validateInput(input);
+            if (!valid) hasError = true;
+
+            let val = parseFloat(input.value) || 0;
+            total += val;
+        });
+
+        let percentage = totalPossible > 0 ? (total / totalPossible * 100) : 0;
+        let grade = calculateGrade(percentage);
+        let decision = percentage >= 50 ? "PASS" : "FAIL";
+
+        totalMarksEl.textContent = total.toFixed(2);
+        percentageEl.textContent = percentage.toFixed(2) + "%";
+        gradeEl.value = grade;
+
+        decisionEl.textContent = decision;
+        decisionEl.className = decision === "PASS" ? "text-success" : "text-danger";
+
+        submitBtn.disabled = hasError;
+    }
+
+    inputs.forEach(input => {
+        input.addEventListener("input", updateSummary);
+    });
+
+    updateSummary();
+});
+</script>
+
+<style>
+.mark-input.is-invalid {
+    border-color: #dc3545 !important;
+    background-color: #fff5f5;
+}
+</style>
+
+{% endblock %}

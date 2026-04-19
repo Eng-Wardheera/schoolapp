@@ -188,6 +188,12 @@
                                         </td>
                                         <td class="text-end pe-4 d-print-none">
                                             <div class="btn-group">
+                                                 <a href="{{ url_for('main.edit_student_exam_report', student_id=result.student_id, exam_id=exam.id) }}" 
+                                                    class="btn btn-sm btn-soft-warning rounded-pill me-2" 
+                                                    title="Edit Result">
+                                                        <i class="feather-edit"></i>
+                                                    </a>
+
                                                 <a href="{{ url_for('main.student_exam_report', student_id=result.student_id, exam_id=exam.id) }}" 
                                                    class="btn btn-sm btn-soft-info rounded-pill me-2" 
                                                    title="View Details">

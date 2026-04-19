@@ -81,11 +81,18 @@
                             </div>
                             <div class="col-md-6">
                                 {{ form.payment_date.label(class="form-label fw-bold") }}
-                                {{ form.payment_date(class="form-control") }}
+
+                                <input type="date"
+                                    name="payment_date"
+                                    class="form-control"
+                                    value="{{ current_date }}"
+                                    >
+
                                 {% for error in form.payment_date.errors %}
                                     <div class="text-danger small">{{ error }}</div>
                                 {% endfor %}
                             </div>
+
                         </div>
 
                         <div class="row g-3 mb-3">

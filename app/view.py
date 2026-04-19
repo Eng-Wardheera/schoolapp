@@ -1693,7 +1693,7 @@ class StudentExamResultForm(FlaskForm):
             self.section_id.choices = [(s.id, s.section_name) for s in Section.query.filter_by(school_id=s_id).all()] or [(0, 'Qayb lama helin')]
 
             # Ardayda Firfircoon (Limit 100 si looga fogaado gaabiska bogga haddii ardaydu badanyihiin)
-            self.student_id.choices = [(s.id, f"{s.first_name} {s.last_name}") for s in Student.query.filter_by(
+            self.student_id.choices = [(s.id, f"{s.full_name}") for s in Student.query.filter_by(
                 school_id=s_id, 
                 status='active'
             ).limit(100).all()] or [(0, 'Arday lama helin')]
