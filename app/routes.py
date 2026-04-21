@@ -9,6 +9,7 @@ import socket
 import string
 import sys
 import traceback
+from types import SimpleNamespace
 from xml.dom.minidom import Document
 from flask_wtf import FlaskForm
 from googletrans import Translator
@@ -1292,11 +1293,25 @@ def dashboard():
     # Waxaan ku daray in haddii uu macalin yahayna uu Branch-kiisa kaliya arko
     def apply_filters(model):
         query = model.query
-        if user_role != 'superadmin':
-            query = query.filter_by(school_id=s_id)
-            if b_id:
-                query = query.filter_by(branch_id=b_id)
-        return query
+
+        if user_role == 'superadmin':
+            return query
+
+        if user_role == 'school_admin':
+            return query.filter_by(
+                school_id=s_id,
+                branch_id=None   # 🔥 muhiim
+            )
+
+        if user_role == 'branch_admin':
+            return query.filter_by(
+                school_id=s_id,
+                branch_id=b_id
+            )
+
+        # other roles
+        return query.filter_by(school_id=s_id)
+
 
     # --- 3. Xisaabinta Lacagaha (Financial Analytics) ---
     # Logic-gan wuxuu hadda si otomaatig ah u raacayaa qofka soo galay
@@ -1306,19 +1321,40 @@ def dashboard():
         func.sum(StudentFeeCollection.remaining_balance).label('total_balance')
     )
 
-    if user_role != 'superadmin':
-        financial_query = financial_query.filter(StudentFeeCollection.school_id == s_id)
-        if b_id:
-            financial_query = financial_query.filter(StudentFeeCollection.branch_id == b_id)
+    if user_role == 'school_admin':
+        financial_query = financial_query.filter(
+            StudentFeeCollection.school_id == s_id,
+            StudentFeeCollection.branch_id == None
+        )
+
+    elif user_role == 'branch_admin':
+        financial_query = financial_query.filter(
+            StudentFeeCollection.school_id == s_id,
+            StudentFeeCollection.branch_id == b_id
+        )
+
+    elif user_role != 'superadmin':
+        financial_query = financial_query.filter(
+            StudentFeeCollection.school_id == s_id
+        )
 
     financials = financial_query.first()
 
-    total_due = financials.total_due or 0.0
-    total_paid = financials.total_paid or 0.0
-    total_balance = financials.total_balance or 0.0
-    
+    total_due = float(financials.total_due or 0)
+    total_paid = float(financials.total_paid or 0)
+    total_balance = float(financials.total_balance or 0)
+
+    # 🔥 NEW: computed remaining (extra safety)
+    calculated_remaining = total_due - total_paid
+
+    # 🔥 percentages
     paid_percentage = round((total_paid / total_due * 100), 1) if total_due > 0 else 0
     balance_percentage = round((total_balance / total_due * 100), 1) if total_due > 0 else 0
+
+    # 🔥 NEW: remaining % (from calculation)
+    remaining_percentage_calc = round((calculated_remaining / total_due * 100), 1) if total_due > 0 else 0
+
+
 
     # --- 1. Gender Stats (Pie Chart) ---
     gender_query = db.session.query(
@@ -1344,27 +1380,50 @@ def dashboard():
     monthly_query = db.session.query(
         extract('month', StudentFeeCollection.payment_date).label('month'),
         func.sum(StudentFeeCollection.amount_paid).label('monthly_total')
-    ).filter(extract('year', StudentFeeCollection.payment_date) == current_year)
+    ).filter(
+        extract('year', StudentFeeCollection.payment_date) == current_year
+    )
 
+    # =========================
+    # ROLE-BASED FILTER (FIXED)
+    # =========================
     if user_role != 'superadmin':
-        monthly_query = monthly_query.filter(StudentFeeCollection.school_id == s_id)
-        if b_id:
-            monthly_query = monthly_query.filter(StudentFeeCollection.branch_id == b_id)
+        monthly_query = monthly_query.filter(
+            StudentFeeCollection.school_id == s_id
+        )
 
+        # 🔥 school_admin → ONLY school level (NO branches)
+        if user_role == 'school_admin':
+            monthly_query = monthly_query.filter(
+                StudentFeeCollection.branch_id == None
+            )
+
+        # 🔥 branch_admin → ONLY own branch
+        elif user_role == 'branch_admin':
+            monthly_query = monthly_query.filter(
+                StudentFeeCollection.branch_id == b_id
+            )
+
+    # =========================
+    # FINAL QUERY
+    # =========================
     monthly_stats = monthly_query.group_by('month').order_by('month').all()
 
-    # Diyaarinta xogta 12-ka bilood
+    # =========================
+    # DATA PROCESSING
+    # =========================
     monthly_revenue = [0] * 12
+
     for month, total in monthly_stats:
-        monthly_revenue[int(month) - 1] = float(total)
+        monthly_revenue[int(month) - 1] = float(total or 0)
 
-    # 1. Wadarta Guud ee Sanadka (Yearly Income)
-    total_yearly_income = sum(monthly_revenue) 
+    total_yearly_income = sum(monthly_revenue)
 
-    # 2. Magacyada bilaha ee Chart-ka
-    month_names = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+    month_names = [
+        "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+        "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+    ]
 
-    # 3. Dakhliga bishan (April)
     current_month_index = datetime.now().month - 1
     current_month_earning = monthly_revenue[current_month_index]
 
@@ -1375,24 +1434,36 @@ def dashboard():
     yearly_query = db.session.query(
         extract('year', StudentFeeCollection.payment_date).label('year'),
         func.sum(StudentFeeCollection.amount_paid).label('yearly_total')
-    ).filter(StudentFeeCollection.payment_date != None) # Ha ku darin .all() halkan
+    ).filter(StudentFeeCollection.payment_date != None)
 
-    # Shaandhaynta School ama Branch (FILTER-KU WAA INUU HALKAN AHAADAA)
+    # =========================
+    # SAXDA FILTER-KA
+    # =========================
     if user_role != 'superadmin':
-        yearly_query = yearly_query.filter(StudentFeeCollection.school_id == s_id) # OK
-        if b_id:
-            yearly_query = yearly_query.filter(StudentFeeCollection.branch_id == b_id) # OK
+        yearly_query = yearly_query.filter(StudentFeeCollection.school_id == s_id)
 
-    # .all() iyo .group_by() waxaa la qoraa ugu dambaynta
-    yearly_stats = yearly_query.group_by('year').order_by('year').all() 
+        # 🔥 school_admin → ha arkin branch data
+        if user_role == 'school_admin':
+            yearly_query = yearly_query.filter(StudentFeeCollection.branch_id == None)
 
-    # Hadda inta kale waa caadi
+        # 🔥 branch_admin → arko branch-kiisa kaliya
+        elif user_role == 'branch_admin':
+            yearly_query = yearly_query.filter(StudentFeeCollection.branch_id == b_id)
+
+    # =========================
+    # FINAL QUERY
+    # =========================
+    yearly_stats = yearly_query.group_by('year').order_by('year').all()
+
+    # =========================
+    # RESULT
+    # =========================
     years_labels = [str(int(y.year)) for y in yearly_stats if y.year]
     years_totals = [float(y.yearly_total or 0) for y in yearly_stats]
 
    
     # --- 6. Xisaabinta Lacagaha Maqan (Remaining/Balance) ---
-    # Waxaan si toos ah uga soo qaadanaynaa Model-ka StudentFeeCollection
+   # Waxaan si toos ah uga soo qaadanaynaa Model-ka StudentFeeCollection
     pending_query = db.session.query(
         func.sum(StudentFeeCollection.amount_due).label('total_due'),
         func.sum(StudentFeeCollection.amount_paid).label('total_paid'),
@@ -1400,10 +1471,22 @@ def dashboard():
     )
 
     # Shaandhaynta School ama Branch
-    if user_role != 'superadmin':
-        pending_query = pending_query.filter(StudentFeeCollection.school_id == s_id)
-        if b_id:
-            pending_query = pending_query.filter(StudentFeeCollection.branch_id == b_id)
+    if user_role == 'school_admin':
+        pending_query = pending_query.filter(
+            StudentFeeCollection.school_id == s_id,
+            StudentFeeCollection.branch_id == None   # 🔥 muhiim
+        )
+
+    elif user_role == 'branch_admin':
+        pending_query = pending_query.filter(
+            StudentFeeCollection.school_id == s_id,
+            StudentFeeCollection.branch_id == b_id
+        )
+
+    elif user_role != 'superadmin':
+        pending_query = pending_query.filter(
+            StudentFeeCollection.school_id == s_id
+        )
 
     totals = pending_query.one()
 
@@ -1428,65 +1511,121 @@ def dashboard():
         db.extract('year', StudentFeeCollection.payment_date) == datetime.now().year
     )
 
-    # Haddii uu jiro search
+    # =========================
+    # SEARCH FILTER
+    # =========================
     if search_term:
         monthly_debtor_base_query = monthly_debtor_base_query.filter(
-            db.or_(
-                Student.full_name.ilike(f'%{search_term}%')
-            )
+            Student.full_name.ilike(f'%{search_term}%')
         )
 
-    # Global lock check
+    # =========================
+    # ROLE-BASED LOCK (IMPORTANT)
+    # =========================
     if user_role != 'superadmin':
-        monthly_debtor_base_query = monthly_debtor_base_query.filter(StudentFeeCollection.school_id == s_id)
+        monthly_debtor_base_query = monthly_debtor_base_query.filter(
+            StudentFeeCollection.school_id == s_id
+        )
 
-    # Pagination-ka rasmiga ah
+        # 🔥 school_admin → branch data ha arkin
+        if user_role == 'school_admin':
+            monthly_debtor_base_query = monthly_debtor_base_query.filter(
+                StudentFeeCollection.branch_id == None
+            )
+
+        # 🔥 branch_admin → kaliya branch-kiisa
+        elif user_role == 'branch_admin':
+            monthly_debtor_base_query = monthly_debtor_base_query.filter(
+                StudentFeeCollection.branch_id == b_id
+            )
+
+    # =========================
+    # PAGINATION FINAL
+    # =========================
     monthly_debtor_report = monthly_debtor_base_query.order_by(
         StudentFeeCollection.remaining_balance.desc()
     ).paginate(page=page_num, per_page=10)
 
-    # 8. Waxaan soo saaraynaa 10-ka arday ee ugu maqnaanshaha badan bishan
-    # most_absent_students_list
+
+    # =========================
+    # 8. MOST ABSENT STUDENTS
+    # =========================
     query = db.session.query(
-        Student, 
+        Student,
         func.count(StudentAttendance.id).label('absent_count')
-    ).join(StudentAttendance, Student.id == StudentAttendance.student_id).filter(
-        and_(
-            StudentAttendance.status == 'absent',
-            extract('month', StudentAttendance.date) == datetime.now().month,
-            extract('year', StudentAttendance.date) == datetime.now().year
-        )
+    ).join(
+        StudentAttendance,
+        Student.id == StudentAttendance.student_id
+    ).filter(
+        StudentAttendance.status == 'absent',
+        extract('month', StudentAttendance.date) == datetime.now().month,
+        extract('year', StudentAttendance.date) == datetime.now().year
     )
 
-    # 2. Role-based Filter (Global Lock Logic) 
-    # Halkan wali waa Query, marka filter-ka waa uu aqbalayaa
+    # =========================
+    # ROLE-BASED FILTER (FIXED)
+    # =========================
     if user_role != 'superadmin':
         query = query.filter(StudentAttendance.school_id == s_id)
 
-    # 3. Hadda dhammaystir grouping-ka iyo soo saarista xogta (all)
+        # 🔥 school_admin → ONLY school level (no branch data)
+        if user_role == 'school_admin':
+            query = query.filter(StudentAttendance.branch_id == None)
+
+        # 🔥 branch_admin → ONLY their branch
+        elif user_role == 'branch_admin':
+            query = query.filter(StudentAttendance.branch_id == b_id)
+
+    # =========================
+    # FINAL RESULT
+    # =========================
     most_absent_students_list = query.group_by(Student.id).order_by(
         db.desc('absent_count')
     ).limit(10).all()
+
 
     # 9. Helitaanka maalinta maanta (tusaale: 'Monday', 'Tuesday')
     # Fiiro gaar ah: Hubi in maalmaha database-ka ku jira ay u qoran yihiin sidan.
     current_day_name = datetime.now().strftime('%A')
 
     # Query-ga saldhigga ah
-    schedule_query = db.session.query(Timetable).join(TimeSlot).filter(Timetable.day_of_week == current_day_name)
+    schedule_query = db.session.query(Timetable).join(TimeSlot).filter(
+        Timetable.day_of_week == current_day_name
+    )
 
-    # Role-based filtering (Invisible Personalization)
+    # =========================
+    # ROLE-BASED FILTER (FIXED)
+    # =========================
     if user_role != 'superadmin':
-        schedule_query = schedule_query.filter(Timetable.school_id == s_id)
-        if b_id:
-            schedule_query = schedule_query.filter(Timetable.branch_id == b_id)
+        schedule_query = schedule_query.filter(
+            Timetable.school_id == s_id
+        )
 
-    # Shaandhayn gaar u ah Macallinka ama Ardayga
+        # 🔥 school_admin → ONLY school level schedules (NO branch)
+        if user_role == 'school_admin':
+            schedule_query = schedule_query.filter(
+                Timetable.branch_id == None
+            )
+
+        # 🔥 branch_admin → ONLY their branch
+        elif user_role == 'branch_admin':
+            schedule_query = schedule_query.filter(
+                Timetable.branch_id == b_id
+            )
+
+    # =========================
+    # TEACHER FILTER (UNCHANGED)
+    # =========================
     if user_role == 'teacher':
         teacher_rec = Teacher.query.filter_by(user_id=current_user.id).first()
         if teacher_rec:
-            schedule_query = schedule_query.filter(Timetable.teacher_id == teacher_rec.id)
-            
+            schedule_query = schedule_query.filter(
+                Timetable.teacher_id == teacher_rec.id
+            )
+
+    # =========================
+    # STUDENT FILTER (UNCHANGED)
+    # =========================
     elif user_role == 'student':
         student_rec = Student.query.filter_by(user_id=current_user.id).first()
         if student_rec:
@@ -1495,8 +1634,13 @@ def dashboard():
                 Timetable.section_id == student_rec.section_id
             )
 
-    # Soo saar xogta adoo u kala horaysiinaya waqtiga (TimeSlot)
-    upcoming_schedules = schedule_query.order_by(TimeSlot.start_time.asc()).all()
+    # =========================
+    # FINAL RESULT
+    # =========================
+    upcoming_schedules = schedule_query.order_by(
+        TimeSlot.start_time.asc()
+    ).all()
+
 
     # --- 3. Financial Stats (Waa kuwii hore u xisaabsanaa) ---
     # Waxaan u baahanahay total_paid iyo total_balance si aan chart ugu samayno
@@ -1622,6 +1766,8 @@ def dashboard():
         total_balance=total_balance,
         paid_percentage=paid_percentage,
         balance_percentage=balance_percentage,
+        remaining_percentage_calc=remaining_percentage_calc,
+        
         teacher_stats=teacher_stats,
         student_stats=student_stats,
         male_count=male_count,
@@ -1662,48 +1808,101 @@ def get_dashboard_data():
     try:
         s_id = current_user.school_id
         b_id = current_user.branch_id
-        # Hubi in role-ka uu yahay string
         user_role = current_user.role.value if hasattr(current_user.role, 'value') else current_user.role
 
-        # 1. Financials
+        # =========================
+        # 🔥 FILTER FUNCTION
+        # =========================
+        def apply_filter(query, model):
+
+            if user_role == "superadmin":
+                return query
+
+            # user leeyahay branch → kaliya branch-kiisa
+            if b_id is not None:
+                return query.filter(
+                    model.school_id == s_id,
+                    model.branch_id == b_id
+                )
+
+            # user ma leh branch → school-level only
+            return query.filter(
+                model.school_id == s_id,
+                model.branch_id == None
+            )
+
+        # =========================
+        # 1. FINANCIAL
+        # =========================
         financial_query = db.session.query(
+            func.sum(StudentFeeCollection.amount_due).label('total_due'),
             func.sum(StudentFeeCollection.amount_paid).label('paid'),
             func.sum(StudentFeeCollection.remaining_balance).label('balance')
         )
-        if user_role != 'superadmin':
-            financial_query = financial_query.filter(StudentFeeCollection.school_id == s_id)
-            if b_id: financial_query = financial_query.filter(StudentFeeCollection.branch_id == b_id)
-        
+
+        financial_query = apply_filter(financial_query, StudentFeeCollection)
         fin = financial_query.first()
 
-        # 2. Gender
-        gender_query = db.session.query(Student.gender, func.count(Student.id)).group_by(Student.gender)
-        if user_role != 'superadmin':
-            gender_query = gender_query.filter(Student.school_id == s_id)
-            if b_id: gender_query = gender_query.filter(Student.branch_id == b_id)
-        
+        # SAFE VALUES
+        total_due = float(fin.total_due or 0)
+        total_paid = float(fin.paid or 0)
+        total_balance = float(fin.balance or 0)
+
+        # 🔥 calculated remaining (extra safety)
+        calculated_remaining = total_due - total_paid
+
+        # PERCENTAGES
+        paid_percentage = round((total_paid / total_due * 100), 1) if total_due > 0 else 0
+        balance_percentage = round((total_balance / total_due * 100), 1) if total_due > 0 else 0
+        remaining_percentage_calc = round(
+            (calculated_remaining / total_due * 100), 1
+        ) if total_due > 0 else 0
+
+        # =========================
+        # 2. GENDER
+        # =========================
+        gender_query = db.session.query(
+            Student.gender,
+            func.count(Student.id)
+        ).group_by(Student.gender)
+
+        gender_query = apply_filter(gender_query, Student)
+
         g_data = dict(gender_query.all())
-        # Hubi Case-sensitivity ('Male' vs 'male')
+
         m_count = g_data.get('Male', 0) + g_data.get('male', 0)
         f_count = g_data.get('Female', 0) + g_data.get('female', 0)
 
-        # 3. Attendance
+        # =========================
+        # 3. ATTENDANCE
+        # =========================
         attendance_query = StudentAttendance.query
-        if user_role != 'superadmin':
-            attendance_query = attendance_query.filter_by(school_id=s_id)
-            if b_id: attendance_query = attendance_query.filter_by(branch_id=b_id)
-        
-        present = attendance_query.filter_by(status='present').count()
-        absent = attendance_query.filter_by(status='absent').count()
+        attendance_query = apply_filter(attendance_query, StudentAttendance)
 
+        present = attendance_query.filter(StudentAttendance.status == 'present').count()
+        absent = attendance_query.filter(StudentAttendance.status == 'absent').count()
+
+        # =========================
+        # RESPONSE 🔥 (FIXED)
+        # =========================
         return jsonify({
             "gender": [int(m_count), int(f_count)],
             "attendance": [int(present), int(absent)],
-            "financial": [float(fin.paid or 0), float(fin.balance or 0)]
+            "financial": {
+                "total_due": total_due,
+                "paid": total_paid,
+                "balance": total_balance,
+                "calculated_remaining": calculated_remaining,
+                "paid_percentage": paid_percentage,
+                "balance_percentage": balance_percentage,
+                "remaining_percentage": remaining_percentage_calc
+            }
         })
+
     except Exception as e:
-        print(f"Dashboard Error: {e}") # Kani wuxuu ku tusi doonaa terminal-ka haddii qalad jiro
+        print(f"Dashboard Error: {e}")
         return jsonify({"error": str(e)}), 500
+
 
 
 @bp.route("/user/toggle-status/<int:user_id>", methods=["POST"])
@@ -8631,69 +8830,34 @@ def branches_reports_fees():
 # -----------------------------
 # GET SECTIONS for selected class (AJAX)
 # -----------------------------
+
 @bp.route("/get-attendance-sections/<int:class_id>")
 @login_required
 def get_attendance_sections(class_id):
-    if getattr(current_user, 'status', 1) == 0:
-        flash("Account-kaagu ma shaqeynayo.", "danger")
-        return redirect(url_for("main.dashboard"))
-
-    allowed_roles = ["school_admin","teacher", "branch_admin"]
-    if current_user.role.value not in allowed_roles:
-        flash("Ma haysatid ogolaansho.", "danger")
-        return redirect(url_for("main.dashboard"))
 
     teacher = Teacher.query.filter_by(user_id=current_user.id).first()
     if not teacher:
         return jsonify([])
 
-    assignments = TeacherAssignment.query.filter_by(teacher_id=teacher.id, class_id=class_id).all()
-    section_ids = set(a.section_id for a in assignments if a.section_id is not None)
-    sections = Section.query.filter(Section.id.in_(section_ids)).all()
-    return jsonify([{"id": s.id, "name": s.name} for s in sections])
+    assignments = TeacherAssignment.query.filter_by(
+        teacher_id=teacher.id,
+        class_id=class_id
+    ).all()
 
-# -----------------------------
-# GET STUDENTS (AJAX)
-# -----------------------------
-@bp.route("/get-students")
-@login_required
-def get_students():
-    if getattr(current_user, 'status', 1) == 0:
-        flash("Account-kaagu ma shaqeynayo.", "danger")
-        return redirect(url_for("main.dashboard"))
+    section_ids = list({a.section_id for a in assignments if a.section_id})
 
-    allowed_roles = ["school_admin","teacher", "branch_admin"]
-    if current_user.role.value not in allowed_roles:
-        flash("Ma haysatid ogolaansho.", "danger")
-        return redirect(url_for("main.dashboard"))
-
-    class_id = request.args.get("class_id", type=int)
-    section_id = request.args.get("section_id", type=int)
-    if not class_id:
+    if not section_ids:
         return jsonify([])
 
-    query = Student.query.filter_by(class_id=class_id)
-    if section_id:
-        query = query.filter_by(section_id=section_id)
+    sections = Section.query.filter(Section.id.in_(section_ids)).all()
 
-    students = query.order_by(Student.full_name).all()
-    return jsonify([{"id": s.id, "name": s.full_name, "roll_no": s.roll_no} for s in students])
+    return jsonify([
+        {"id": s.id, "name": s.name} for s in sections
+    ])
 
-
-# -----------------------------
-# GET SUBJECTS (AJAX)
-# -----------------------------
 @bp.route("/get-subjects")
 @login_required
 def get_subjects():
-    if getattr(current_user, 'status', 1) == 0:
-        flash("Account-kaagu ma shaqeynayo.", "danger")
-        return redirect(url_for("main.dashboard"))
-
-    allowed_roles = ["school_admin","teacher", "branch_admin"]
-    if current_user.role.value not in allowed_roles:
-        flash("Ma haysatid ogolaansho.", "danger")
-        return redirect(url_for("main.dashboard"))
 
     class_id = request.args.get("class_id", type=int)
     section_id = request.args.get("section_id", type=int)
@@ -8702,17 +8866,108 @@ def get_subjects():
     if not teacher or not class_id:
         return jsonify([])
 
-    assignments = TeacherAssignment.query.filter_by(teacher_id=teacher.id, class_id=class_id).all()
+    assignments = TeacherAssignment.query.filter_by(
+        teacher_id=teacher.id,
+        class_id=class_id
+    ).all()
+
     subject_ids = set()
+
     for a in assignments:
-        if section_id is None or a.section_id == section_id:
+
+        # ✅ FIX: ignore broken section logic
+        if section_id and a.section_id and a.section_id != section_id:
+            continue
+
+        if a.subject_ids:
             subject_ids.update(a.subject_ids)
 
     if not subject_ids:
         return jsonify([])
 
     subjects = Subject.query.filter(Subject.id.in_(subject_ids)).all()
-    return jsonify([{"id": s.id, "name": s.name} for s in subjects])
+
+    return jsonify([
+        {"id": s.id, "name": s.name}
+        for s in subjects
+    ])
+
+
+
+@bp.route("/get-students")
+@login_required
+def get_students():
+
+    class_id = request.args.get("class_id", type=int)
+    section_id = request.args.get("section_id", type=int)
+    subject_id = request.args.get("subject_id", type=int)
+
+    if not class_id or not subject_id:
+        return jsonify([])
+
+    teacher = Teacher.query.filter_by(user_id=current_user.id).first()
+    if not teacher:
+        return jsonify([])
+
+    today = date.today()
+
+    # =========================
+    # STEP 1: CHECK IF ALREADY SUBMITTED TODAY
+    # =========================
+    existing = StudentAttendance.query.filter_by(
+        teacher_id=teacher.id,
+        class_id=class_id,
+        subject_id=subject_id,
+        date=today
+    )
+
+    if section_id:
+        existing = existing.filter_by(section_id=section_id)
+    else:
+        existing = existing.filter(StudentAttendance.section_id.is_(None))
+
+    if existing.first():
+        return jsonify({
+            "error": "already_submitted",
+            "message": "❌ Attendance already submitted for this class/subject today"
+        })
+
+    # =========================
+    # STEP 2: GET STUDENTS (EXCLUDE ALREADY MARKED TODAY)
+    # =========================
+    subquery = db.session.query(StudentAttendance.student_id).filter(
+        StudentAttendance.class_id == class_id,
+        StudentAttendance.subject_id == subject_id,
+        StudentAttendance.date == today
+    )
+
+    if section_id:
+        subquery = subquery.filter(StudentAttendance.section_id == section_id)
+
+    students_query = Student.query.filter(
+        Student.class_id == class_id,
+        ~Student.id.in_(subquery)
+    )
+
+    if section_id:
+        students_query = students_query.filter(Student.section_id == section_id)
+
+    students = students_query.order_by(Student.full_name).all()
+
+    return jsonify([
+        {
+            "id": s.id,
+            "name": s.full_name,
+            "roll_no": s.roll_no
+        } for s in students
+    ])
+
+
+
+
+
+
+
 
 # -----------------------------
 # TAKE ATTENDANCE
@@ -8721,113 +8976,88 @@ def get_subjects():
 # -----------------------------
 # TAKE ATTENDANCE
 # -----------------------------
-
 @bp.route("/attendance/take", methods=["GET", "POST"])
 @login_required
 def take_attendance():
-    if getattr(current_user, 'status', 1) == 0:
-        flash("Account-kaagu ma shaqeynayo.", "danger")
-        return redirect(url_for("main.dashboard"))
-
-    allowed_roles = ["school_admin","teacher", "branch_admin"]
-    if current_user.role.value not in allowed_roles:
-        flash("Ma haysatid ogolaansho.", "danger")
-        return redirect(url_for("main.dashboard"))
 
     form = AttendanceForm()
     teacher = Teacher.query.filter_by(user_id=current_user.id).first()
 
-    # Security
-    if current_user.status == 0:
-        flash("Your account is inactive.", "danger")
-        return redirect(url_for("main.index"))
-
-    if current_user.role.value != "teacher":
-        flash("Unauthorized", "danger")
-        return redirect(url_for("main.dashboard"))
-
-    if not teacher:
-        flash("❌ Teacher profile not found.", "danger")
-        return redirect(url_for("main.dashboard"))
-
     if request.method == "POST":
         try:
-            # ✅ IMPORTANT FIXES
-            class_id = int(request.form.get("class_id"))
-
-            section_id = request.form.get("section_id")
-            section_id = int(section_id) if section_id and section_id != "-" else None
-
-            subject_id = int(request.form.get("subject_id"))
+            class_id = request.form.get("class_id", type=int)
+            section_id = request.form.get("section_id", type=int)
+            subject_id = request.form.get("subject_id", type=int)
 
             today = date.today()
-            school_id = current_user.school_id
-            branch_id = current_user.branch_id
 
-            # =========================
-            # CHECK (SUBJECT PER DAY ONLY)
-            # =========================
-            query = StudentAttendance.query.filter(
-                StudentAttendance.teacher_id == teacher.id,
-                StudentAttendance.subject_id == subject_id,
-                StudentAttendance.school_id == school_id,
-                StudentAttendance.branch_id == branch_id,
-                StudentAttendance.date == today
-            )
+            # ❌ duplicate check
+            exists = StudentAttendance.query.filter_by(
+                teacher_id=teacher.id,
+                class_id=class_id,
+                section_id=section_id,
+                subject_id=subject_id,
+                date=today
+            ).first()
 
-            if section_id is None:
-                query = query.filter(StudentAttendance.section_id.is_(None))
-            else:
-                query = query.filter(StudentAttendance.section_id == section_id)
+            if exists:
+                flash("❌ Attendance already submitted today for this subject.", "danger")
+                return redirect(url_for("main.take_attendance"))
 
-            if query.first():
-                flash("❌ Attendance already submitted for this subject today.", "warning")
-                return redirect(url_for("attendance.take_attendance"))
+            # ======================
+            # FIXED LOOP (SAFE PARSE)
+            # ======================
+            students_data = []
 
-            # =========================
-            # SAVE STUDENTS
-            # =========================
-            index = 0
-            while True:
-                student_key = f"students[{index}][student_id]"
-                status_key = f"students[{index}][status]"
+            for key in request.form:
+                if "students[" in key and "[student_id]" in key:
+                    index = key.split("[")[1].split("]")[0]
+                    student_id = request.form.get(f"students[{index}][student_id]")
+                    status = request.form.get(f"students[{index}][status]")
 
-                if student_key not in request.form:
-                    break
+                    if student_id:
+                        students_data.append({
+                            "student_id": int(student_id),
+                            "status": status or "absent"
+                        })
 
-                student_id = int(request.form[student_key])
-                status = request.form[status_key]
+            if not students_data:
+                flash("❌ No students submitted.", "danger")
+                return redirect(url_for("bp.take_attendance"))
 
-                new_attendance = StudentAttendance(
-                    student_id=student_id,
+            # ======================
+            # SAVE
+            # ======================
+            for s in students_data:
+                db.session.add(StudentAttendance(
+                    student_id=s["student_id"],
                     class_id=class_id,
                     section_id=section_id,
                     subject_id=subject_id,
                     teacher_id=teacher.id,
-                    school_id=school_id,
-                    branch_id=branch_id,
-                    status=status,
+                    school_id=current_user.school_id,
+                    branch_id=current_user.branch_id,
+                    status=s["status"],
                     date=today
-                )
-
-                db.session.add(new_attendance)
-                index += 1
+                ))
 
             db.session.commit()
 
             flash("✅ Attendance saved successfully!", "success")
-            return redirect(url_for("attendance.take_attendance"))
+            return redirect(url_for("main.take_attendance"))
 
         except Exception as e:
             db.session.rollback()
             print("ERROR:", e)
+
             flash("❌ Error saving attendance.", "danger")
+            return redirect(url_for("main.take_attendance"))
 
     return render_template(
         "backend/pages/components/attendance/take_attendance.html",
-        form=form,
-        user=current_user
+        form=form
     )
+
 
 
 # -----------------------------
@@ -8871,36 +9101,42 @@ def check_attendance():
     return jsonify({"submitted": bool(existing.first())})
 
 
+
 @bp.route("/attendance/all")
 @login_required
 def all_attendance():
+
     if getattr(current_user, 'status', 1) == 0:
         flash("Account-kaagu ma shaqeynayo.", "danger")
         return redirect(url_for("main.dashboard"))
 
-    allowed_roles = ["school_admin", "branch_admin"]
-    if current_user.role.value not in allowed_roles:
-        flash("Ma haysatid ogolaansho.", "danger")
-        return redirect(url_for("main.dashboard"))
+    user_role = current_user.role.value if hasattr(current_user.role, 'value') else current_user.role
 
     from sqlalchemy import and_
-    
-    query = StudentAttendance.query.join(Teacher, StudentAttendance.teacher_id == Teacher.id)
 
-    # ================= TEACHER =================
-    if current_user.role.value == "teacher":
-        teacher = Teacher.query.filter_by(user_id=current_user.id).first()
-        if not teacher:
-            flash("❌ Teacher profile not found.", "danger")
-            return redirect(url_for("main.dashboard"))
-        query = query.filter(StudentAttendance.teacher_id == teacher.id)
+    # =========================
+    # BASE QUERY
+    # =========================
+    query = StudentAttendance.query.join(
+        Teacher, StudentAttendance.teacher_id == Teacher.id
+    )
 
-    # ================= SCHOOL ADMIN =================
-    elif current_user.role.value == "school_admin":
-        query = query.filter(StudentAttendance.school_id == current_user.school_id)
+    # =========================
+    # ROLE FILTER (FIXED)
+    # =========================
 
-    # ================= BRANCH ADMIN =================
-    elif current_user.role.value == "branch_admin":
+    if user_role == "superadmin":
+        pass
+
+    # 🔥 SCHOOL ADMIN → ONLY SCHOOL LEVEL (branch=None ONLY)
+    elif user_role == "school_admin":
+        query = query.filter(
+            StudentAttendance.school_id == current_user.school_id,
+            StudentAttendance.branch_id.is_(None)   # ✅ IMPORTANT FIX
+        )
+
+    # BRANCH ADMIN → ONLY OWN BRANCH
+    elif user_role == "branch_admin":
         query = query.filter(
             and_(
                 StudentAttendance.school_id == current_user.school_id,
@@ -8908,18 +9144,197 @@ def all_attendance():
             )
         )
 
+    # TEACHER → ONLY OWN RECORDS
+    elif user_role == "teacher":
+        teacher = Teacher.query.filter_by(user_id=current_user.id).first()
+
+        if not teacher:
+            flash("❌ Teacher profile not found.", "danger")
+            return redirect(url_for("main.dashboard"))
+
+        query = query.filter(StudentAttendance.teacher_id == teacher.id)
+
     else:
-        flash("Unauthorized", "danger")
+        flash("❌ Unauthorized access.", "danger")
         return redirect(url_for("main.dashboard"))
 
-    # ✅ SORT BY LAST UPDATED
-    attendances = query.order_by(StudentAttendance.updated_at.desc()).all()
+    # =========================
+    # DATA
+    # =========================
+    attendances = query.order_by(
+        StudentAttendance.updated_at.desc()
+    ).all()
+
+    # =========================
+    # DROPDOWNS (ROLE SAFE)
+    # =========================
+    class_query = Class.query
+    section_query = Section.query
+    subject_query = Subject.query
+
+    if user_role == "school_admin":
+        class_query = class_query.filter(
+            Class.school_id == current_user.school_id,
+            Class.branch_id.is_(None)   # 🔥 IMPORTANT (only school level)
+        )
+        section_query = section_query.filter(
+            Section.school_id == current_user.school_id,
+            Section.branch_id.is_(None) # 🔥 ONLY SCHOOL LEVEL SECTIONS
+        )
+        subject_query = subject_query.filter(
+            Subject.school_id == current_user.school_id,
+            Subject.branch_id.is_(None)
+        )
+
+    elif user_role == "branch_admin":
+        class_query = class_query.filter(
+            Class.school_id == current_user.school_id,
+            Class.branch_id == current_user.branch_id
+        )
+        section_query = section_query.filter(
+            Section.school_id == current_user.school_id,
+            Section.branch_id == current_user.branch_id
+        )
+        subject_query = subject_query.filter(
+            Subject.school_id == current_user.school_id,
+            Subject.branch_id == current_user.branch_id
+        )
+
+    # superadmin → no filter
+
+    classes = class_query.all()
+    sections = section_query.all()
+    subjects = subject_query.all()
+
+    # =========================
+    # FORM FIX
+    # =========================
+    DummyField = lambda: SimpleNamespace(data=None)
+
+    form = SimpleNamespace(
+        class_id=DummyField(),
+        section_id=DummyField(),
+        subject_id=DummyField()
+    )
 
     return render_template(
         "backend/pages/components/attendance/all_attendance.html",
         attendances=attendances,
-        user=current_user
+        user=current_user,
+        classes=classes,
+        sections=sections,
+        subjects=subjects,
+        form=form
     )
+
+
+@bp.route("/attendance/delete/<int:id>", methods=["POST"])
+@login_required
+def delete_attendance(id):
+
+    attendance = StudentAttendance.query.get_or_404(id)
+
+    try:
+        db.session.delete(attendance)
+        db.session.commit()
+
+        flash("✅ Attendance deleted successfully!", "success")
+        return redirect(url_for("main.all_attendance"))
+
+    except Exception as e:
+        db.session.rollback()
+        print(e)
+        flash("❌ Failed to delete attendance.", "danger")
+        return redirect(url_for("main.all_attendance"))
+
+
+@bp.route("/attendance/delete_all", methods=["POST"])
+@login_required
+def delete_all_attendance():
+
+    user_role = current_user.role.value if hasattr(current_user.role, "value") else current_user.role
+
+    class_id = request.form.get("class_id", type=int)
+    section_id = request.form.get("section_id", type=int)
+    subject_id = request.form.get("subject_id", type=int)
+    today = date.today()
+
+    try:
+
+        # =========================
+        # BASE QUERY (NO HARD LOCKS YET)
+        # =========================
+        query = StudentAttendance.query.filter(
+            StudentAttendance.date == today
+        )
+
+        # =========================
+        # OPTIONAL FILTERS (CLASS / SECTION / SUBJECT)
+        # =========================
+        if class_id:
+            query = query.filter(StudentAttendance.class_id == class_id)
+
+        if section_id:
+            query = query.filter(StudentAttendance.section_id == section_id)
+        else:
+            query = query.filter(StudentAttendance.section_id.is_(None))
+
+        if subject_id:
+            query = query.filter(StudentAttendance.subject_id == subject_id)
+
+        # =========================
+        # 🔥 ROLE-BASED ACCESS CONTROL (SECURE FIX)
+        # =========================
+
+        # SUPERADMIN → ALL ACCESS
+        if user_role == "superadmin":
+            pass
+
+        # SCHOOL ADMIN → ONLY THEIR SCHOOL + NO BRANCH ACCESS
+        elif user_role == "school_admin":
+            query = query.filter(
+                StudentAttendance.school_id == current_user.school_id,
+                StudentAttendance.branch_id.is_(None)
+            )
+
+        # BRANCH ADMIN → ONLY THEIR BRANCH
+        elif user_role == "branch_admin":
+            query = query.filter(
+                StudentAttendance.school_id == current_user.school_id,
+                StudentAttendance.branch_id == current_user.branch_id
+            )
+
+        # TEACHER → ONLY OWN RECORDS
+        elif user_role == "teacher":
+            teacher = Teacher.query.filter_by(user_id=current_user.id).first()
+
+            if not teacher:
+                flash("❌ Not authorized.", "danger")
+                return redirect(url_for("main.all_attendance"))
+
+            query = query.filter(
+                StudentAttendance.teacher_id == teacher.id,
+                StudentAttendance.school_id == current_user.school_id
+            )
+
+        else:
+            flash("❌ Not authorized.", "danger")
+            return redirect(url_for("main.all_attendance"))
+
+        # =========================
+        # DELETE ACTION
+        # =========================
+        deleted_count = query.delete(synchronize_session=False)
+        db.session.commit()
+
+        flash(f"✅ {deleted_count} records deleted successfully!", "success")
+
+    except Exception as e:
+        db.session.rollback()
+        print("Delete Attendance Error:", e)
+        flash("❌ Failed to delete attendance.", "danger")
+
+    return redirect(url_for("main.all_attendance"))
 
 
 

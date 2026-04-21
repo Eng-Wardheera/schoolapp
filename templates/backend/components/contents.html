@@ -1987,7 +1987,7 @@ document.addEventListener('DOMContentLoaded', function() {
         </div>
         <div class="card-footer">
             <div class="row g-4">
-                <div class="col-lg-4">
+                <div class="col-lg-3">
                     <div class="p-3 border border-dashed rounded">
                         <div class="fs-12 text-muted mb-1">Grand Total (Amount Due)</div>
                         <h6 class="fw-bold text-dark">${{ "{:,.2f}".format(total_due) }}</h6>
@@ -1996,26 +1996,53 @@ document.addEventListener('DOMContentLoaded', function() {
                         </div>
                     </div>
                 </div>
-                <div class="col-lg-4">
+                <div class="col-lg-3">
                     <div class="p-3 border border-dashed rounded">
                         <div class="fs-12 text-muted mb-1">Amount Paid (Collected)</div>
-                        <h6 class="fw-bold text-dark">${{ "{:,.2f}".format(total_paid) }}</h6>
+                        <h6 class="fw-bold text-dark">
+                            ${{ "{:,.2f}".format(total_paid) }}
+                        </h6>
                         <div class="progress mt-2 ht-3">
-                            <div class="progress-bar bg-success" role="progressbar" style="width: {{ paid_percentage }}%"></div>
+                            <div class="progress-bar bg-success" style="width: {{ paid_percentage }}%"></div>
                         </div>
-                        <small class="text-success fs-10">{{ paid_percentage }}% recovered</small>
+                        <small class="text-success fs-10">
+                            {{ paid_percentage }}% collected
+                        </small>
                     </div>
                 </div>
-                <div class="col-lg-4">
+
+                <div class="col-lg-3">
                     <div class="p-3 border border-dashed rounded">
-                        <div class="fs-12 text-muted mb-1">Remaining Balance</div>
-                        <h6 class="fw-bold text-dark">${{ "{:,.2f}".format(total_balance) }}</h6>
+                        <div class="fs-12 text-muted mb-1">Amount Waiting ($)</div>
+                        <h6 class="fw-bold text-dark">
+                            ${{ "{:,.2f}".format(total_due - total_paid) }}
+                        </h6>
                         <div class="progress mt-2 ht-3">
-                            <div class="progress-bar bg-danger" role="progressbar" style="width: {{ balance_percentage }}%"></div>
+                            <div class="progress-bar bg-warning" style="width: {{ remaining_percentage_calc }}%"></div>
                         </div>
-                        <small class="text-danger fs-10">{{ balance_percentage }}% outstanding</small>
+                        <small class="text-warning fs-10">
+                            {{ remaining_percentage_calc }}% remaining
+                        </small>
                     </div>
                 </div>
+
+
+                <div class="col-lg-3">
+                    <div class="p-3 border border-dashed rounded">
+                        <div class="fs-12 text-muted mb-1">Remaining Balance (DB)</div>
+                        <h6 class="fw-bold text-dark">
+                            ${{ "{:,.2f}".format(total_balance) }}
+                        </h6>
+                        <div class="progress mt-2 ht-3">
+                            <div class="progress-bar bg-danger" style="width: {{ balance_percentage }}%"></div>
+                        </div>
+                        <small class="text-danger fs-10">
+                            {{ balance_percentage }}% outstanding
+                        </small>
+                    </div>
+                </div>
+
+
             </div>
         </div>
     </div>
@@ -2023,7 +2050,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     <!-- [Payment Records] end -->
 
-    <div class="row">
+   <div class="row">
     <div class="col-xl-4 col-md-6">
         <div class="card stretch stretch-full border-0 shadow-sm">
             <div class="card-header border-0 pb-0">
@@ -2063,108 +2090,115 @@ document.addEventListener('DOMContentLoaded', function() {
 
 <meta name="csrf-token" content="{{ csrf_token() }}">
 <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
-<script>
-    var genderChart, attendanceChart, financialChart;
 
-    function initCharts() {
-        const commonOptions = {
-            chart: { 
-                height: 350, 
-                type: 'donut', 
-                // Sparkline: false ayaan u deynay si aan booska u koontaroolno
-                sparkline: { enabled: false },
-                animations: { 
-                    enabled: true,
-                    easing: 'linear',
-                    speed: 800,
-                    animateGradually: { enabled: false }, 
-                    dynamicAnimation: { enabled: true, speed: 600 }
-                }
-            },
-            // DARBIGA: Width: 0 waxay hubinaysaa inaysan jirin line go'aya
-            stroke: { 
-                show: false,
-                width: 0 
-            },
-            fill: { type: 'solid' },
-            legend: { 
-                position: 'bottom',
-                offsetY: 0
-            },
-            dataLabels: { 
-                enabled: true, 
-                formatter: function (val) {
-                    return val.toFixed(1) + "%"
-                },
-                dropShadow: { enabled: false }
-            },
-            plotOptions: {
-                pie: {
-                    // Cabbirka Donut-ka gudaha
-                    donut: {
-                        size: '0%', 
-                        labels: {
+<script>
+var genderChart, attendanceChart, financialChart;
+
+function initCharts() {
+    const commonOptions = {
+        chart: { 
+            height: 350, 
+            type: 'donut',
+            sparkline: { enabled: false },
+            animations: { 
+                enabled: true,
+                easing: 'linear',
+                speed: 800,
+                animateGradually: { enabled: false }, 
+                dynamicAnimation: { enabled: true, speed: 600 }
+            }
+        },
+        stroke: { show: false, width: 0 },
+        fill: { type: 'solid' },
+        legend: { position: 'bottom', offsetY: 0 },
+        dataLabels: { 
+            enabled: true, 
+            formatter: function (val) {
+                return val.toFixed(1) + "%"
+            }
+        },
+        plotOptions: {
+            pie: {
+                donut: {
+                    size: '0%',
+                    labels: {
+                        show: true,
+                        total: {
                             show: true,
-                            total: {
-                                show: true,
-                                label: 'Total',
-                                formatter: function (w) {
-                                    return w.globals.seriesTotals.reduce((a, b) => a + b, 0)
-                                }
+                            label: 'Total',
+                            formatter: function (w) {
+                                return w.globals.seriesTotals.reduce((a, b) => a + b, 0)
                             }
                         }
-                    },
-                    // KANI WAA MUHIIM: Wuxuu yareynayaa shaxda guud si aysan u taaban geesaha container-ka
-                    customScale: 0.9 
-                }
-            },
-            // Padding dheeri ah si geesaha u badbaadaan
-            grid: {
-                padding: {
-                    top: 10,
-                    bottom: 10,
-                    left: 10,
-                    right: 10
-                }
+                    }
+                },
+                customScale: 0.9
             }
-        };
-
-        // 1. Gender Chart
-        genderChart = new ApexCharts(document.querySelector("#gender-pie-chart"), {
-            ...commonOptions, series: [0, 0], labels: ['Male', 'Female'], colors: ['#3498db', '#e91e63']
-        });
-        genderChart.render();
-
-        // 2. Attendance Chart
-        attendanceChart = new ApexCharts(document.querySelector("#attendance-pie-chart"), {
-            ...commonOptions, series: [0, 0], labels: ['Present', 'Absent'], colors: ['#2ecc71', '#e74c3c']
-        });
-        attendanceChart.render();
-
-        // 3. Financial Chart
-        financialChart = new ApexCharts(document.querySelector("#financial-pie-chart"), {
-            ...commonOptions, series: [0, 0], labels: ['Paid', 'Balance'], colors: ['#1abc9c', '#34495e']
-        });
-        financialChart.render();
-    }
-
-    function updateDashboardLive() {
-        fetch("{{ url_for('main.get_dashboard_data') }}")
-            .then(res => res.json())
-            .then(data => {
-                if(data.gender) genderChart.updateSeries(data.gender, true);
-                if(data.attendance) attendanceChart.updateSeries(data.attendance, true);
-                if(data.financial) financialChart.updateSeries(data.financial, true);
-            })
-            .catch(err => console.error("Fetch Error:", err));
-    }
-
-    window.onload = function() {
-        initCharts();
-        updateDashboardLive();
-        setInterval(updateDashboardLive, 20000); 
+        },
+        grid: {
+            padding: { top: 10, bottom: 10, left: 10, right: 10 }
+        }
     };
+
+    // 1. Gender
+    genderChart = new ApexCharts(document.querySelector("#gender-pie-chart"), {
+        ...commonOptions,
+        series: [0, 0],
+        labels: ['Male', 'Female'],
+        colors: ['#3498db', '#e91e63']
+    });
+    genderChart.render();
+
+    // 2. Attendance
+    attendanceChart = new ApexCharts(document.querySelector("#attendance-pie-chart"), {
+        ...commonOptions,
+        series: [0, 0],
+        labels: ['Present', 'Absent'],
+        colors: ['#2ecc71', '#e74c3c']
+    });
+    attendanceChart.render();
+
+    // 3. Financial (UPDATED 🔥)
+    financialChart = new ApexCharts(document.querySelector("#financial-pie-chart"), {
+        ...commonOptions,
+        series: [0, 0, 0],
+        labels: ['Total Due', 'Paid', 'Balance'],
+        colors: ['#f39c12', '#1abc9c', '#e74c3c']
+    });
+    financialChart.render();
+}
+
+function updateDashboardLive() {
+    fetch("{{ url_for('main.get_dashboard_data') }}")
+        .then(res => res.json())
+        .then(data => {
+
+            if(data.gender)
+                genderChart.updateSeries(data.gender, true);
+
+            if(data.attendance)
+                attendanceChart.updateSeries(data.attendance, true);
+
+            // 🔥 UPDATED FINANCIAL
+            if(data.financial){
+                financialChart.updateSeries([
+                    data.financial.total_due,
+                    data.financial.paid,
+                    data.financial.balance
+                ], true);
+            }
+        })
+        .catch(err => console.error("Fetch Error:", err));
+}
+
+window.onload = function() {
+    initCharts();
+    updateDashboardLive();
+    setInterval(updateDashboardLive, 20000);
+};
 </script>
+
+
 
 
     

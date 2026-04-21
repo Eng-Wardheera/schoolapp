@@ -1169,60 +1169,85 @@ class FeeInvoiceForm(FlaskForm):
 
 # Attendance Form
 class AttendanceForm(FlaskForm):
+
     class_id = SelectField("Class", coerce=int, validators=[DataRequired()])
-    section_id = SelectField("Section", coerce=int)
+    section_id = SelectField("Section", coerce=int, choices=[])
     subject_id = SelectField("Subject", coerce=int, validators=[DataRequired()])
     submit = SubmitField("Save Attendance")
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        teacher = Teacher.query.filter_by(user_id=current_user.id).first()
+        teacher = Teacher.query.filter_by(user_id=getattr(current_user, "id", None)).first()
+
+        # =========================
+        # SAFE DEFAULTS
+        # =========================
+        self.class_id.choices = []
+        self.section_id.choices = []
+        self.subject_id.choices = []
+
         if not teacher:
-            self.class_id.choices = []
-            self.section_id.choices = []
-            self.subject_id.choices = []
+            self.class_id.choices = [(0, "-- No Classes --")]
             return
 
-        assignments = TeacherAssignment.query.filter_by(teacher_id=teacher.id).all()
+        assignments = TeacherAssignment.query.filter_by(
+            teacher_id=teacher.id
+        ).all()
+
         if not assignments:
-            self.class_id.choices = []
-            self.section_id.choices = []
-            self.subject_id.choices = []
+            self.class_id.choices = [(0, "-- No Classes --")]
             return
 
-        # -------------------
-        # Classes assigned
-        # -------------------
-        class_map = {a.class_id: a.class_obj.name for a in assignments}
-        class_choices = list(class_map.items())
-        self.class_id.choices = class_choices
-        selected_class = self.class_id.data or (class_choices[0][0] if class_choices else None)
-        self.class_id.data = selected_class
+        # =========================
+        # CLASSES
+        # =========================
+        class_ids = list({a.class_id for a in assignments})
+        classes = Class.query.filter(Class.id.in_(class_ids)).all()
 
-        # -------------------
-        # Sections assigned for selected class
-        # -------------------
-        sections = [(a.section_id, a.section.name) for a in assignments if a.class_id == selected_class and a.section_id]
-        self.section_id.choices = sections
-        selected_section = self.section_id.data or (sections[0][0] if sections else None)
-        self.section_id.data = selected_section
+        self.class_id.choices = [(c.id, c.name) for c in classes]
 
-        # -------------------
-        # Subjects assigned for selected class + section
-        # -------------------
+        # =========================
+        # DEFAULT CLASS (NO LOOP FIX)
+        # =========================
+        selected_class = self.class_id.data
+        if not selected_class and classes:
+            selected_class = classes[0].id
+            self.class_id.data = selected_class
+
+        # =========================
+        # SECTIONS
+        # =========================
+        sections = [
+            (a.section.id, a.section.name)
+            for a in assignments
+            if a.class_id == selected_class and a.section_id
+        ]
+
+        self.section_id.choices = [(0, "-- All Sections --")] + sections
+
+        selected_section = self.section_id.data
+        if selected_section == 0:
+            selected_section = None
+
+        # =========================
+        # SUBJECTS
+        # =========================
         subject_ids = set()
-        for a in assignments:
-            if a.class_id == selected_class and (selected_section is None or a.section_id == selected_section):
-                subject_ids.update(a.subject_ids)
 
-        if subject_ids:
-            subjects = Subject.query.filter(Subject.id.in_(subject_ids)).all()
-            self.subject_id.choices = [(s.id, s.name) for s in subjects]
-            if subjects:
-                self.subject_id.data = subjects[0].id
-        else:
-            self.subject_id.choices = []
+        for a in assignments:
+            if a.class_id == selected_class:
+                if selected_section is None or a.section_id == selected_section:
+                    if a.subject_ids:
+                        subject_ids.update(a.subject_ids)
+
+        subjects = Subject.query.filter(Subject.id.in_(subject_ids)).all() if subject_ids else []
+
+        self.subject_id.choices = [(s.id, s.name) for s in subjects]
+
+        if subjects and not self.subject_id.data:
+            self.subject_id.data = subjects[0].id
+
 
 # Academic Year Form
 class AcademicYearForm(FlaskForm):

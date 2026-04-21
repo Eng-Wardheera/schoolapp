@@ -95,10 +95,10 @@ function downloadPNG() { const shift = getShift(); if (!shift) return; window.lo
                         <td class="roll-no">{{ assign.student.roll_no }}</td>
                         <td class="student-name">{{ assign.student.full_name }}</td>
                         <td>{{ assign.student.shift }}</td>
-                        <td class="class-name">{{ assign.student.class_.name }}</td>
+                        <td class="class-name">{{ assign.student.class_rel.name }}</td>
                         <td>{{ assign.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
                     </tr>
-                    {% set class_name = assign.student.class_.name %}
+                    {% set class_name = assign.student.class_rel.name %}
                     {% if class_name in class_counts_general %}
                         {% set _ = class_counts_general.update({class_name: class_counts_general[class_name] + 1}) %}
                     {% else %}
