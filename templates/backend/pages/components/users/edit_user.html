@@ -356,7 +356,8 @@
 
 
 <!-- password Validation -->
-<!-- <script>
+<!-- password Validation -->
+<script>
 function togglePassword(fieldId, iconContainer) {
   const input = document.getElementById(fieldId);
   const icon = iconContainer.querySelector('i');
@@ -375,40 +376,9 @@ function togglePassword(fieldId, iconContainer) {
 function validatePassword() {
   const password = document.getElementById("new_password").value;
   const confirmPassword = document.getElementById("confirm_password").value;
-  const requirementsContainer = document.getElementById("passwordRequirements");
-
-  const requirements = [
-    { regex: /.{8,}/, message: "At least 8 characters" },
-    { regex: /[A-Z]/, message: "At least one uppercase letter" },
-    { regex: /[a-z]/, message: "At least one lowercase letter" },
-    { regex: /[0-9]/, message: "At least one number" },
-    { regex: /[!@#$%^&*(),.?\":{}|<>]/, message: "At least one special character" }
-  ];
-
-  if (password.length === 0) {
-    // Hide requirements list if password is empty
-    requirementsContainer.style.display = 'none';
-  } else {
-    // Check if all requirements met
-    const allPassed = requirements.every(req => req.regex.test(password));
-
-    if (allPassed) {
-      // Show strong password message
-      requirementsContainer.style.display = 'block';
-      requirementsContainer.innerHTML = `<li style="color: green; font-weight: bold;">✅ Strong Password</li>`;
-    } else {
-      // Show list with individual checks
-      requirementsContainer.style.display = 'block';
-
-      const listItems = requirements.map(req => {
-        const passed = req.regex.test(password);
-        return `<li style="color:${passed ? 'green' : 'red'};">${passed ? '✅ ' : '❌ '}${req.message}</li>`;
-      });
-      requirementsContainer.innerHTML = listItems.join("");
-    }
-  }
 
   const feedback = document.getElementById("confirmFeedback");
+
   if (confirmPassword && password !== confirmPassword) {
     feedback.textContent = "Passwords do not match";
     feedback.classList.add("text-danger");
@@ -421,20 +391,24 @@ function validatePassword() {
     feedback.textContent = "";
   }
 
-  return requirements.every(req => req.regex.test(password)) && password === confirmPassword;
+  return password.length >= 6 && password === confirmPassword;
 }
+
+document.getElementById("new_password").addEventListener("input", validatePassword);
+document.getElementById("confirm_password").addEventListener("input", validatePassword);
 
 document.querySelector("form").addEventListener("submit", function (e) {
   if (!validatePassword()) {
     e.preventDefault();
+
     Swal.fire({
       icon: "error",
       title: "Invalid Password",
-      text: "Please fix password errors before submitting."
+      text: "Password must be at least 6 characters and match the confirmation password."
     });
   }
 });
-</script> -->
+</script>
 
 
 <!-- photo allowed Validation -->

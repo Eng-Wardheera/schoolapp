@@ -1,0 +1,152 @@
+{% extends 'backend/home/base.html' %}
+
+{% block title %}All Permissions | School Management{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-left d-flex align-items-center">
+        <div class="page-header-title"><h5>Permissions</h5></div>
+        <ul class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Home</a></li>
+            <li class="breadcrumb-item">All Permissions</li>
+        </ul>
+    </div>
+
+    <div class="page-header-right ms-auto d-flex gap-2">
+        <a href="{{ url_for('main.add_permission') }}" class="btn btn-primary">
+            <i class="feather-plus me-1"></i> Add Permission
+        </a>
+
+        <form action="{{ url_for('main.delete_all_permissions') }}" method="POST"
+              onsubmit="return confirm('Ma hubtaa inaad tirtirto DHAMMAAN permissions-ka?');">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn btn-outline-danger">
+                <i class="feather-alert-triangle me-1"></i> Delete All
+            </button>
+        </form>
+    </div>
+</div>
+
+<div class="main-content">
+    <div class="card">
+        <div class="card-body">
+
+            <!-- ACTIONS -->
+            <div class="d-flex gap-2 justify-content-end">
+
+                <a href="{{ url_for('main.export_permissions_xlsx') }}" class="btn btn-success">
+                    <i class="feather-download me-2"></i> Export CSV
+                </a>
+
+                <form action="{{ url_for('main.import_permissions') }}" method="POST"
+                      enctype="multipart/form-data"
+                      class="d-inline-flex align-items-center">
+
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="file" name="file" accept=".csv" required
+                           class="form-control form-control-sm me-1">
+
+                    <button type="submit" class="btn btn-info btn-sm">
+                        <i class="feather-upload me-1"></i> Import CSV
+                    </button>
+                </form>
+
+            </div>
+
+            <br><hr>
+
+            <div class="table-responsive">
+                <table class="table table-hover align-middle" id="permissionsList">
+
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Name</th>
+                            <th>Code</th>
+                            <th>Group</th>
+                            <th>School</th>
+                            <th>Branch</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        {% for perm in permissions %}
+                        <tr>
+                            <td>{{ loop.index }}</td>
+                            <td><strong>{{ perm.name }}</strong></td>
+                            <td><code class="text-primary">{{ perm.code }}</code></td>
+                            <td>{{ perm.group_name or 'General' }}</td>
+                            <td>{{ perm.school.name if perm.school else 'Global' }}</td>
+                            <td>{{ perm.branch.name if perm.branch else 'Global' }}</td>
+
+                            <td class="text-end">
+                                <div class="d-flex justify-content-end gap-2 px-3">
+                                    <a href="{{ url_for('main.edit_permission', permission_id=perm.id) }}"
+                                       class="btn btn-sm btn-info">Edit</a>
+
+                                    <form method="POST"
+                                          action="{{ url_for('main.delete_permission', permission_id=perm.id) }}"
+                                          style="display:inline;">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <button type="submit" class="btn btn-sm btn-danger"
+                                                onclick="return confirm('Are you sure?');">
+                                            Delete
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+
+                </table>
+
+                {% if not permissions %}
+                    <div class="text-center p-3 text-muted">
+                        No permissions found.
+                    </div>
+                {% endif %}
+
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- REQUIRED ORDER (IMPORTANT) -->
+<script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/rowgroup/1.4.1/js/dataTables.rowgroup.min.js"></script>
+
+<link rel="stylesheet" href="https://cdn.datatables.net/rowgroup/1.4.1/css/rowGroup.dataTables.min.css">
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+
+    $('#permissionsList').DataTable({
+        responsive: true,
+        pageLength: 10,
+
+        order: [[3, 'asc']],
+
+        rowGroup: {
+            dataSrc: 3,
+            startRender: function (rows, group) {
+                return $('<tr/>')
+                    .append(
+                        '<td colspan="7" style="background:#f1f1f1;font-weight:600;">'
+                        + (group || 'General') +
+                        '</td>'
+                    );
+            }
+        },
+
+        language: {
+            searchPlaceholder: "Search permissions..."
+        }
+    });
+
+});
+</script>
+
+{% endblock %}

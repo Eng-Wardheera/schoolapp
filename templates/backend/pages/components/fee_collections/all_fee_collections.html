@@ -31,6 +31,11 @@
 
                     <!-- Actions -->
                     <div class="d-flex gap-2 justify-content-end align-items-center mb-3">
+                        
+                        <a href="{{ url_for('main.all_expenses') }}" class="btn btn-danger">
+                            <i class="feather-download me-2"></i>Go Expenses
+                        </a>
+
                         <!-- Export CSV -->
                         <a href="{{ url_for('main.export_fee_collections_excel') }}" class="btn btn-success">
                             <i class="feather-download me-2"></i> Export CSV

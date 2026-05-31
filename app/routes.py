@@ -11,6 +11,7 @@ import sys
 import traceback
 from types import SimpleNamespace
 from xml.dom.minidom import Document
+import bcrypt
 from flask_wtf import FlaskForm
 from googletrans import Translator
 import imgkit
@@ -44,9 +45,9 @@ from app import google
 from app import github 
 import phonenumbers
 from phonenumbers import NumberParseException, PhoneMetadata, parse, is_valid_number, format_number, PhoneNumberFormat
-from app.modal import (AcademicYear, Branch, Class, ClassLevel, ClassSubject, Exam, ExamHall, ExamHallAssignment, ExamPaper, ExamQuestion, ExamSubject, ExamTicket, ExamTimetable, FeeInvoice, Parent, Permission, Role, RolePermission, School, SchoolSiteSettings, Section, SettingsData, SomaliaLocation, Student, StudentAttendance, StudentExamMark, StudentExamResult, StudentFeeCollection, StudentPromotion, Subject, Teacher, TeacherAssignment, Term, TimeSlot, Timetable,User, UserLog, UserPermission, UserRole, UserSession)
+from app.modal import (AcademicYear, Branch, Class, ClassLevel, ClassSubject, Exam, ExamHall, ExamHallAssignment, ExamPaper, ExamQuestion, ExamSubject, ExamTicket, ExamTimetable, Expense, FeeInvoice, Parent, PaymentTransaction, Permission, Role, RolePermission, School, SchoolSiteSettings, Section, SettingsData, SomaliaLocation, Student, StudentAttendance, StudentExamMark, StudentExamResult, StudentFeeCollection, StudentPromotion, Subject, Teacher, TeacherAssignment, Term, TimeSlot, Timetable,User, UserLog, UserPermission, UserRole, UserSession)
 from app.utils import get_academic_year
-from app.view import AcademicYearForm, AttendanceForm, BranchForm, ChangePasswordForm, ClassForm, ClassLevelForm, ClassSubjectForm, ExamForm, ExamHallAssignmentForm, ExamHallForm, ExamMultiPublishForm, ExamQuestionForm, ExamSubjectForm, ExamTimetableForm, ExamTimetableForm, ForgotPasswordChangeForm, ForgotPasswordForm, LoginForm, ParentForm, RegisterForm, SchoolForm, SchoolSiteSettingsForm, SectionForm, SettingsDataForm, SomaliaLocationForm, StudentExamMarkForm, StudentExamResultForm, StudentFeeCollectionForm, StudentForm, StudentPromotionForm, SubjectForm, TeacherAssignmentForm, TeacherForm, TermForm, TimeSlotForm, TimetableForm, TwoFactorForm, UserForm, UserProfileForm, VerifyOTPForm 
+from app.view import AcademicYearForm, AttendanceForm, BranchForm, ChangePasswordForm, ClassForm, ClassLevelForm, ClassSubjectForm, ExamForm, ExamHallAssignmentForm, ExamHallForm, ExamMultiPublishForm, ExamQuestionForm, ExamSubjectForm, ExamTimetableForm, ExamTimetableForm, ExpenseForm, ForgotPasswordChangeForm, ForgotPasswordForm, LoginForm, ParentForm, PermissionForm, RegisterForm, RoleForm, SchoolForm, SchoolSiteSettingsForm, SectionForm, SettingsDataForm, SomaliaLocationForm, StudentExamMarkForm, StudentExamResultForm, StudentFeeCollectionForm, StudentForm, StudentPromotionForm, SubjectForm, TeacherAssignmentForm, TeacherForm, TermForm, TimeSlotForm, TimetableForm, TwoFactorForm, UserForm, UserProfileForm, VerifyOTPForm 
 from user_agents import parse as parse_ua  # install: pip install pyyaml user-agents
 from docx import Document
 from docx.shared import Cm, Pt, RGBColor
@@ -186,32 +187,27 @@ def create_user_log(user_id, action, extra_info="", status="info"):
 
     full_device_name = f"{device_name} | {system_info['architecture']} | {system_info['processor']} | RAM {system_info['ram_gb']} GB"
 
-    # Get network interface (optional, demo placeholder)
+    # Get network interface
     interface_name = get_active_network_interface()
-    # Update password
+    
+    # Time
     africa_time = datetime.now(pytz.timezone("Africa/Nairobi"))
     
-    # Create log
-    log = UserLog(
-        user_id=user_id,
-        login_time=africa_time,
-        ip_address=get_ip(),
-        device=device_type,         # Desktop / Mobile / Tablet
-        browser=browser_name,
-        platform=os_name,
-        device_name=full_device_name,
-        interface_name=interface_name,
-        action=action,
-        status=status,
-        extra_info=extra_info
-    )
-
-    # Update the user record
+    # --- HELIDDA XOGTA USER-KA ---
     user = User.query.get(user_id)
+    
+    current_school_id = None
+    current_branch_id = None
+
     if user:
+        current_school_id = user.school_id
+        # Halkan waxaan ku deyneynaa branch_id sida uu yahay (hadii uu None yahay, None ayuu ahaanayaa)
+        current_branch_id = user.branch_id
+
+        # Cusboonaysii xogta qalabka isticmaalaha
         user.device = device_type
         user.browser = browser_name
-        user.ip_address=get_ip()
+        user.ip_address = get_ip()
         user.platform = os_name
         user.device_name = full_device_name
         user.interface_name = interface_name
@@ -220,10 +216,29 @@ def create_user_log(user_id, action, extra_info="", status="info"):
         user.login_time = africa_time
         db.session.add(user)
 
+    # --- ABURISTA LOG-GA ---
+    log = UserLog(
+        user_id=user_id,
+        school_id=current_school_id,
+        # Hadii user-ku yahay School Admin (Branch ID = None), log-gana NULL ayuu ku noqonayaa
+        branch_id=current_branch_id,      
+        login_time=africa_time,
+        ip_address=get_ip(),
+        device=device_type,
+        browser=browser_name,
+        platform=os_name,
+        device_name=full_device_name,
+        interface_name=interface_name,
+        action=action,
+        status=status,
+        extra_info=extra_info,
+        is_read=False  # Si loogu arko ogeysiisyada cusub
+    )
+
     db.session.add(log)
     db.session.commit()
 
-    
+
 @bp.route("/api/device_info", methods=["POST"])
 def device_info():
     data = request.json
@@ -275,20 +290,48 @@ def login():
 
         # 🔍 Fetch user
         user = User.query.filter(
-            (User.email == login_id) |
-            (User.username == login_id) |
-            (User.phone == login_id)
+            or_(
+                User.email == login_id,
+                User.username == login_id,
+                User.phone == login_id
+            )
         ).first()
 
-        if not user or not check_password_hash(user.password, password):
+        # ❌ User not found
+        if not user:
             flash("Invalid login credentials", "danger")
             return redirect(url_for("main.login"))
 
+        # -------------------------------------------------
+        # 🔐 PASSWORD CHECK (bcrypt + scrypt support)
+        # -------------------------------------------------
+        password_valid = False
+
+        if user.password.startswith("$2"):  
+            # ✅ bcrypt hash
+            try:
+                password_valid = bcrypt.checkpw(
+                    password.encode('utf-8'),
+                    user.password.encode('utf-8')
+                )
+            except Exception:
+                password_valid = False
+
+        else:
+            # ✅ werkzeug (scrypt / pbkdf2)
+            from werkzeug.security import check_password_hash
+            password_valid = check_password_hash(user.password, password)
+
+        if not password_valid:
+            flash("Invalid login credentials", "danger")
+            return redirect(url_for("main.login"))
+
+        # 🚫 Account inactive
         if not bool(user.status):
             flash("Your account is inactive", "danger")
             return redirect(url_for("main.login"))
 
-        # 🔹 Clear old local session
+        # 🔹 Clear old session
         session.clear()
 
         now = now_eat()
@@ -296,7 +339,7 @@ def login():
         ip_address = get_ip()
         interface_name = get_active_network_interface()
 
-        # 🔹 Detect device details
+        # 🔹 Device detection
         device_name, os_name, os_version, device_type, browser_name, manufacturer, model = get_device_name_from_ua(
             ua_string,
             user_id=user.username
@@ -305,29 +348,24 @@ def login():
         # ---------------------------------------------------------
         # 🔥 UNIQUE SESSION LOGIC (Hal Qalab = Hal Token)
         # ---------------------------------------------------------
-        # Waxaan fiirinaynaa haddii uu jiro session hore oo isku mid ka ah:
-        # User ID + User Agent (Browser-ka) + IP Address
         existing_session = UserSession.query.filter_by(
             user_id=user.id,
             user_agent=ua_string,
             ip_address=ip_address
         ).first()
 
-        import uuid
-
         if existing_session:
-            # Qofkaas waa la yaqaan, isla Token-kiisii hore u daay
             session_entry = existing_session
             session_entry.last_activity = now
             session_token = session_entry.session_token
             extra_msg = "Existing device & browser session reused."
         else:
-            # Haddii uu yahay qalab cusub ama browser kale: Samey Token cusub
             session_token = str(uuid.uuid4())
+
             session_entry = UserSession(
                 id=uuid.uuid4().hex,
                 user_id=user.id,
-                session_token=session_token,  # Token-kan wuxuu noqonayaa aqoonsiga qalabkan
+                session_token=session_token,
                 ip_address=ip_address,
                 user_agent=ua_string,
                 device=device_type,
@@ -336,14 +374,22 @@ def login():
                 payload=None,
                 last_activity=now
             )
+
             db.session.add(session_entry)
             extra_msg = "New session created (New device/browser)."
 
         # -----------------------------
-        # ✅ Create UserLog
+        # ✅ LOG LOGIN (With School/Branch Logic)
         # -----------------------------
+        # School ID had iyo jeer waa jiri doonaa
+        current_school_id = user.school_id
+        # Branch ID: hadii uusan lahayn (None) waa NULL ahaanayaa (waa School Admin)
+        current_branch_id = user.branch_id
+
         log = UserLog(
             user_id=user.id,
+            school_id=current_school_id,   # 🔥 Lagu daray
+            branch_id=current_branch_id,   # 🔥 Lagu daray (None if School Admin)
             login_time=now,
             ip_address=ip_address,
             device=device_type,
@@ -353,12 +399,13 @@ def login():
             interface_name=interface_name,
             extra_info=f"{extra_msg} | Manufacturer: {manufacturer}, Model: {model}",
             status="login",
-            action="login"
+            action="login",
+            is_read=False                  # 🔥 Si ogeysiiska loogu arko Header-ka
         )
         db.session.add(log)
 
         # -----------------------------
-        # ✅ Update USER Table
+        # ✅ UPDATE USER
         # -----------------------------
         user.device = device_type
         user.browser = browser_name
@@ -373,20 +420,18 @@ def login():
         db.session.add(user)
         db.session.commit()
 
-        # 🔥 SAVE TO FLASK SESSION
+        # 🔥 SAVE SESSION DATA
         session["session_id"] = session_entry.id
-        session["session_token"] = session_token # Token-kan waa kan loo isticmaali doono hubinta qalabka
+        session["session_token"] = session_token
         session["log_id"] = log.id
 
-        # 🔥 LOGIN USER
+        # 🔐 LOGIN USER
         login_user(user)
 
         flash(f"Welcome back, {user.fullname}!", "success")
         return redirect(url_for("main.dashboard"))
 
     return render_template("backend/auth/auth-login.html", form=form)
-
-
 
 @bp.before_request
 def check_session_validity():
@@ -511,17 +556,17 @@ def humanize_time_diff(past_time, now=None):
     
 # Heartbeat (update last_active)
 @bp.route("/api/heartbeat", methods=["POST"])
-@csrf.exempt    # ✅ correct
+@csrf.exempt
 @login_required
 def heartbeat():
     try:
         now = now_eat()  # 🔹 current datetime
 
-        # 🔹 Update USER
+        # 1. Update USER basic status
         current_user.last_active = now
         current_user.auth_status = "login"
 
-        # 🔹 Get session ID safely
+        # 2. Get session ID safely
         session_id = session.get("session_id")
         if not session_id:
             return jsonify({
@@ -529,7 +574,7 @@ def heartbeat():
                 "error": "No session_id found"
             }), 400
 
-        # 🔹 Update CURRENT SESSION (SAFE QUERY)
+        # 3. Update CURRENT SESSION
         user_session = UserSession.query.filter_by(
             id=session_id,
             user_id=current_user.id
@@ -541,31 +586,69 @@ def heartbeat():
                 "error": "Session not found"
             }), 404
 
-        # ✅ SAFE: simply update last_activity
         user_session.last_activity = now
-
-        # optional column
         if hasattr(user_session, "is_active"):
             user_session.is_active = True
+
+        # ---------------------------------------------------------
+        # 🔥 RISK DETECTION LOGIC (HUBINTA SESSIONS-KA)
+        # ---------------------------------------------------------
+        # Waxaan xisaabinaynaa dhamaan sessions-ka u furan user-ka oo firfircoon (tusaale 5 daqiiqo u dambeeyay)
+        active_sessions_count = UserSession.query.filter(
+            UserSession.user_id == current_user.id,
+            UserSession.last_activity >= (now - timedelta(minutes=5))
+        ).count()
+
+        # Go'aami fariinta action-ka
+        if active_sessions_count >= 2:
+            action_msg = "Heartbeat - Account is at Risk (Multiple Sessions)"
+            status_msg = "danger"
+            extra_note = f"Alert: {active_sessions_count} active sessions detected for this user."
+        else:
+            action_msg = "Heartbeat - Account Secure"
+            status_msg = "info"
+            extra_note = "Single session heartbeat update."
+
+        # ---------------------------------------------------------
+        # ✅ KAYDI USER LOG (MAR KASTA OO HEARTBEAT DHACO)
+        # ---------------------------------------------------------
+        heartbeat_log = UserLog(
+            user_id=current_user.id,
+            school_id=current_user.school_id,
+            branch_id=current_user.branch_id,
+            action=action_msg,
+            status=status_msg,
+            login_time=now,
+            ip_address=get_ip(),
+            device=user_session.device,
+            browser=user_session.browser,
+            platform=user_session.platform,
+            extra_info=extra_note,
+            is_read=True if status_msg == "info" else False # Hadii ay khatar tahay ha noqoto Unread
+        )
+        db.session.add(heartbeat_log)
+
+        # ---------------------------------------------------------
 
         db.session.commit()
 
         return jsonify({
             "success": True,
             "last_active": now.strftime('%Y-%m-%d %H:%M:%S'),
-            "session_id": session_id
+            "session_id": session_id,
+            "active_sessions": active_sessions_count,
+            "risk_level": "High" if active_sessions_count >= 2 else "Low"
         })
 
     except Exception as e:
         db.session.rollback()
         print("🔥 HEARTBEAT ERROR:")
-        traceback.print_exc()   # 🔹 full traceback for debugging
-
+        traceback.print_exc()
         return jsonify({
             "success": False,
             "error": "Server error"
         }), 500
-
+    
 
 @bp.route("/api/online-status")
 @login_required
@@ -1259,12 +1342,62 @@ def get_user_site_logo(user):
     }
 
 
+def get_user_site_settings(user):
+    school_id = getattr(user, "school_id", None)
+    branch_id = getattr(user, "branch_id", None)
+
+    # SUPERADMIN
+    if hasattr(user, "role") and user.role.value == "superadmin":
+        return SettingsData.query.order_by(
+            SettingsData.id.desc()
+        ).first()
+
+    # BRANCH SETTINGS
+    if branch_id:
+        settings = SchoolSiteSettings.query.filter_by(
+            branch_id=branch_id
+        ).order_by(
+            SchoolSiteSettings.id.desc()
+        ).first()
+
+        if settings:
+            return settings
+
+        # Branch settings ma jiro → Branch object
+        branch = Branch.query.get(branch_id)
+        if branch:
+            return branch
+
+    # SCHOOL SETTINGS
+    if school_id:
+        settings = SchoolSiteSettings.query.filter_by(
+            school_id=school_id,
+            branch_id=None
+        ).order_by(
+            SchoolSiteSettings.id.desc()
+        ).first()
+
+        if settings:
+            return settings
+
+        # School settings ma jiro → School object
+        school = School.query.get(school_id)
+        if school:
+            return school
+
+    # FINAL FALLBACK
+    return SettingsData.query.order_by(
+        SettingsData.id.desc()
+    ).first()
+
+    
 # ================= BEFORE REQUEST =================
 @bp.before_request
 def load_site_logo():
     # Tani waxay shaqaynaysaa mar walba, xataa login-ka ka hor
     # dynamic-ally waxay u soo saaraysaa logo-ga qof kasta (Guest ama User)
     g.site_logo = get_user_site_logo(current_user)
+    g.site_settings = get_user_site_settings(current_user)
 
 
 
@@ -1904,115 +2037,250 @@ def get_dashboard_data():
         return jsonify({"error": str(e)}), 500
 
 
+@bp.route("/get-notifications")
+@login_required
+def get_notifications():
+    try:
+        s_id = current_user.school_id
+        b_id = current_user.branch_id
+        user_role = current_user.role.value if hasattr(current_user.role, 'value') else current_user.role
+
+        # Waxaan soo kaxeynaa User si aan username-ka u helno (JOIN)
+        query = db.session.query(UserLog, User).join(User, UserLog.user_id == User.id).filter(UserLog.is_read == False)
+
+        if user_role != "superadmin":
+            if b_id is not None:
+                query = query.filter(UserLog.school_id == s_id, UserLog.branch_id == b_id)
+            else:
+                query = query.filter(UserLog.school_id == s_id, UserLog.branch_id == None)
+
+        notifications = query.order_by(UserLog.created_at.desc()).limit(10).all()
+        
+        notif_list = []
+        for log, user in notifications:
+            notif_list.append({
+                "id": log.id,
+                "username": user.username,  # Halkan waa username-ka qofka action-ka sameeyay
+                "action": log.action,
+                "status": log.status,
+                "time": log.created_at.strftime('%Y-%m-%d %H:%M'),
+                "extra": log.extra_info or ""
+            })
+
+        return jsonify({
+            "count": len(notif_list),
+            "notifications": notif_list
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+
+
 
 @bp.route("/user/toggle-status/<int:user_id>", methods=["POST"])
 @login_required
 def toggle_user_status(user_id):
 
-    if current_user.role.value != 'superadmin':
-        flash("Permission denied!", "danger")
-        return redirect(request.referrer)
-
     target_user = User.query.get_or_404(user_id)
 
-    try:
-        new_status = not bool(target_user.status)
-        target_user.status = new_status
+    # ==========================================
+    # SUPER ADMIN
+    # ==========================================
+    if current_user.role.value == "superadmin":
 
-        sid = target_user.school_id
-        bid = target_user.branch_id
+        try:
+            new_status = not bool(target_user.status)
+            target_user.status = new_status
 
-        print("DEBUG:", target_user.id, sid, bid, "NEW:", new_status)
+            sid = target_user.school_id
+            bid = target_user.branch_id
 
-        # ==================================================
-        # 🔴 DEACTIVATE CASE
-        # ==================================================
-        if not new_status:
+            # -------------------------------
+            # DEACTIVATE
+            # -------------------------------
+            if not new_status:
 
-            if sid is not None:
+                if sid is not None:
 
-                User.query.filter(User.school_id == sid).update(
-                    {User.status: False},
-                    synchronize_session=False
-                )
+                    User.query.filter(
+                        User.school_id == sid
+                    ).update(
+                        {User.status: False},
+                        synchronize_session=False
+                    )
 
-                Branch.query.filter(Branch.school_id == sid).update(
-                    {Branch.status: 'inactive'},
-                    synchronize_session=False
-                )
+                    Branch.query.filter(
+                        Branch.school_id == sid
+                    ).update(
+                        {Branch.status: 'inactive'},
+                        synchronize_session=False
+                    )
 
-                School.query.filter(School.id == sid).update(
-                    {School.status: 'inactive'},
-                    synchronize_session=False
-                )
+                    School.query.filter(
+                        School.id == sid
+                    ).update(
+                        {School.status: 'inactive'},
+                        synchronize_session=False
+                    )
 
-                flash("School + branches + users waa la deactivate gareeyay.", "warning")
+                    flash(
+                        "School + Branches + Users waa la deactivate gareeyay.",
+                        "warning"
+                    )
 
-            elif bid is not None:
+                elif bid is not None:
 
-                User.query.filter(User.branch_id == bid).update(
-                    {User.status: False},
-                    synchronize_session=False
-                )
+                    User.query.filter(
+                        User.branch_id == bid
+                    ).update(
+                        {User.status: False},
+                        synchronize_session=False
+                    )
 
-                Branch.query.filter(Branch.id == bid).update(
-                    {Branch.status: 'inactive'},
-                    synchronize_session=False
-                )
+                    Branch.query.filter(
+                        Branch.id == bid
+                    ).update(
+                        {Branch.status: 'inactive'},
+                        synchronize_session=False
+                    )
 
-                flash("Branch + users waa la deactivate gareeyay.", "warning")
+                    flash(
+                        "Branch + Users waa la deactivate gareeyay.",
+                        "warning"
+                    )
 
-        # ==================================================
-        # 🟢 ACTIVATE CASE (NEW ADDITION)
-        # ==================================================
-        else:
+            # -------------------------------
+            # ACTIVATE
+            # -------------------------------
+            else:
 
-            if sid is not None:
+                if sid is not None:
 
-                # activate school users
-                User.query.filter(User.school_id == sid).update(
-                    {User.status: True},
-                    synchronize_session=False
-                )
+                    User.query.filter(
+                        User.school_id == sid
+                    ).update(
+                        {User.status: True},
+                        synchronize_session=False
+                    )
 
-                # activate branches
-                Branch.query.filter(Branch.school_id == sid).update(
-                    {Branch.status: 'active'},
-                    synchronize_session=False
-                )
+                    Branch.query.filter(
+                        Branch.school_id == sid
+                    ).update(
+                        {Branch.status: 'active'},
+                        synchronize_session=False
+                    )
 
-                # activate school
-                School.query.filter(School.id == sid).update(
-                    {School.status: 'active'},
-                    synchronize_session=False
-                )
+                    School.query.filter(
+                        School.id == sid
+                    ).update(
+                        {School.status: 'active'},
+                        synchronize_session=False
+                    )
 
-                flash("School + branches + users waa la activate gareeyay.", "success")
+                    flash(
+                        "School + Branches + Users waa la activate gareeyay.",
+                        "success"
+                    )
 
-            elif bid is not None:
+                elif bid is not None:
 
-                User.query.filter(User.branch_id == bid).update(
-                    {User.status: True},
-                    synchronize_session=False
-                )
+                    User.query.filter(
+                        User.branch_id == bid
+                    ).update(
+                        {User.status: True},
+                        synchronize_session=False
+                    )
 
-                Branch.query.filter(Branch.id == bid).update(
-                    {Branch.status: 'active'},
-                    synchronize_session=False
-                )
+                    Branch.query.filter(
+                        Branch.id == bid
+                    ).update(
+                        {Branch.status: 'active'},
+                        synchronize_session=False
+                    )
 
-                flash("Branch + users waa la activate gareeyay.", "success")
+                    flash(
+                        "Branch + Users waa la activate gareeyay.",
+                        "success"
+                    )
 
-        db.session.commit()
-        db.session.expire_all()
+            db.session.commit()
 
-    except Exception as e:
-        db.session.rollback()
-        flash(f"Cillad: {str(e)}", "danger")
+        except Exception as e:
+            db.session.rollback()
+            flash(f"Cillad: {str(e)}", "danger")
 
-    return redirect(request.referrer or url_for('main.users_list'))
+        return redirect(request.referrer)
 
+    # ==========================================
+    # SCHOOL ADMIN
+    # ==========================================
+    elif current_user.role.value == "school_admin":
 
+        if target_user.school_id != current_user.school_id:
+            flash("Permission denied!", "danger")
+            return redirect(request.referrer)
+
+        if target_user.role.value in [
+            "superadmin",
+            "school_admin",
+            "branch_admin"
+        ]:
+            flash("Admin users lama beddeli karo.", "danger")
+            return redirect(request.referrer)
+
+        try:
+            target_user.status = not bool(target_user.status)
+            db.session.commit()
+
+            flash(
+                f"User {'Activated' if target_user.status else 'Deactivated'} Successfully.",
+                "success"
+            )
+
+        except Exception as e:
+            db.session.rollback()
+            flash(str(e), "danger")
+
+        return redirect(request.referrer)
+
+    # ==========================================
+    # BRANCH ADMIN
+    # ==========================================
+    elif current_user.role.value == "branch_admin":
+
+        if target_user.branch_id != current_user.branch_id:
+            flash("Permission denied!", "danger")
+            return redirect(request.referrer)
+
+        if target_user.role.value in [
+            "superadmin",
+            "school_admin",
+            "branch_admin"
+        ]:
+            flash("Admin users lama beddeli karo.", "danger")
+            return redirect(request.referrer)
+
+        try:
+            target_user.status = not bool(target_user.status)
+            db.session.commit()
+
+            flash(
+                f"User {'Activated' if target_user.status else 'Deactivated'} Successfully.",
+                "success"
+            )
+
+        except Exception as e:
+            db.session.rollback()
+            flash(str(e), "danger")
+
+        return redirect(request.referrer)
+
+    else:
+        flash("Permission denied!", "danger")
+        return redirect(url_for("main.dashboard"))
+
+        
 #--------------- Notificstion Contacts
 
 
@@ -2435,17 +2703,26 @@ def settings():
         current_pw = form.current_password.data
         new_pw = form.new_password.data
 
-        # Validate current password
-        if not check_password_hash(current_user.password, current_pw):
+        # ✅ Check current password (bcrypt)
+        if not bcrypt.checkpw(
+            current_pw.encode('utf-8'),
+            current_user.password.encode('utf-8')
+        ):
             flash('❌ Current password is incorrect.', 'danger')
             return redirect(url_for('main.settings'))
 
-        # Update password
+        # ✅ Hash new password (bcrypt)
+        hashed_pw = bcrypt.hashpw(
+            new_pw.encode('utf-8'),
+            bcrypt.gensalt(rounds=12)
+        )
+
         africa_time = datetime.now(pytz.timezone("Africa/Nairobi"))
-        current_user.password = generate_password_hash(new_pw)
+
+        current_user.password = hashed_pw.decode('utf-8')
         current_user.updated_at = africa_time
 
-        # Log action
+        # ----- Log action -----
         db.session.add(UserLog(
             user_id=current_user.id,
             action=f"{current_user.username} changed password at {africa_time.strftime('%Y-%m-%d %H:%M:%S')}",
@@ -2461,16 +2738,18 @@ def settings():
 
     # ----- Fetch active sessions -----
     eat = pytz.timezone("Africa/Nairobi")
-    user_sessions = UserSession.query.filter_by(user_id=current_user.id).order_by(UserSession.last_activity.desc()).all()
+    user_sessions = UserSession.query.filter_by(user_id=current_user.id)\
+        .order_by(UserSession.last_activity.desc()).all()
 
     # Make sessions timezone-aware
     for s in user_sessions:
         if s.last_activity and s.last_activity.tzinfo is None:
             s.last_activity = eat.localize(s.last_activity)
 
-    # Current user last active & online status
+    # ----- Current user last active -----
     now = datetime.now(eat)
     last_active = current_user.last_active
+
     if last_active:
         if last_active.tzinfo is None:
             last_active = eat.localize(last_active)
@@ -2479,6 +2758,7 @@ def settings():
 
     current_user.is_online = False
     current_user.last_seen_ago = "Never"
+
     if last_active:
         diff_seconds = (now - last_active).total_seconds()
         current_user.is_online = current_user.auth_status == 'login' and diff_seconds < 30
@@ -2495,7 +2775,6 @@ def settings():
         now=now,
         datetime=datetime
     )
-
 
 
 @bp.route('/auth-settings', methods=['GET', 'POST'])
@@ -2960,33 +3239,44 @@ def all_users():
         flash("Account-kaagu ma shaqeynayo.", "danger")
         return redirect(url_for("main.dashboard"))
 
-    allowed_roles = ["school_admin","superadmin", "branch_admin"]
+    allowed_roles = ["school_admin", "superadmin", "branch_admin"]
     if current_user.role.value not in allowed_roles:
         flash("Ma haysatid ogolaansho.", "danger")
         return redirect(url_for("main.dashboard"))
 
     # ------------------- SUPER ADMIN -------------------
     if current_user.role == UserRole.superadmin:
-        # Show only school_admin and branch_admin
         users = User.query.filter(
-            User.role.in_([UserRole.school_admin, UserRole.branch_admin])
+            User.role.in_([
+                UserRole.school_admin,
+                UserRole.branch_admin
+            ])
         ).order_by(User.created_at.desc()).all()
 
     # ------------------- SCHOOL ADMIN -------------------
     elif current_user.role == UserRole.school_admin:
         users = User.query.filter(
             User.school_id == current_user.school_id,
-            User.id != current_user.id,  # Do not show self
-            User.role.in_([UserRole.teacher, UserRole.student, UserRole.parent])
+            User.branch_id.is_(None),  # Main School Only
+            User.id != current_user.id,
+            User.role.in_([
+                UserRole.teacher,
+                UserRole.student,
+                UserRole.parent
+            ])
         ).order_by(User.created_at.desc()).all()
 
     # ------------------- BRANCH ADMIN -------------------
     elif current_user.role == UserRole.branch_admin:
         users = User.query.filter(
             User.school_id == current_user.school_id,
-            User.branch_id == current_user.branch_id,
-            User.id != current_user.id,  # Do not show self
-            User.role.in_([UserRole.teacher, UserRole.student, UserRole.parent])
+            User.branch_id == current_user.branch_id,  # Own Branch Only
+            User.id != current_user.id,
+            User.role.in_([
+                UserRole.teacher,
+                UserRole.student,
+                UserRole.parent
+            ])
         ).order_by(User.created_at.desc()).all()
 
     # ------------------- NO ACCESS -------------------
@@ -2999,7 +3289,6 @@ def all_users():
         users=users,
         user=current_user
     )
-
 
 #----------------------------------------------------
 #---- Route: 6 | View User - Backend Template -------
@@ -3143,10 +3432,7 @@ def add_user():
      
         # ✅ 10. Handle image upload
         image = request.files.get('photo')
-        if not image or not image.filename:
-            flash("Image is required.", "danger")
-            return redirect(request.url)
-
+      
         ext = os.path.splitext(image.filename)[1]
         slug = username.lower().replace(' ', '-').replace('_', '-')
         unique_id = uuid.uuid4().hex[:8]
@@ -3266,9 +3552,6 @@ def edit_user(user_id):
             return redirect(request.url)
 
         if password:
-            if not is_valid_password(password):
-                flash("Password must be at least 8 characters with uppercase, lowercase, number, and special character.", "warning")
-                return redirect(request.url)
             if password != confirm_password:
                 flash("Passwords do not match!", "danger")
                 return redirect(request.url)
@@ -3469,6 +3752,509 @@ def delete_user(user_id):
         flash(f"Error: {str(e)}", "danger")
 
     return redirect(url_for("main.all_users"))
+
+
+
+#----------------------- Role & Permission
+
+@bp.route('/all/permissions')
+@login_required
+def all_permissions():
+    # 1. Hubi status-ka user-ka
+    if getattr(current_user, 'status', 1) == 0:
+        flash("Account-kaagu ma shaqeynayo.", "danger")
+        return redirect(url_for("main.dashboard"))
+
+    # 2. Hubi ogolaanshaha (Authorization)
+    # Halkan waxaad ku dari kartaa 'school_admin' haddii aad rabto inay arkaan 
+    # permissions-ka u gaarka ah iskuulkooda.
+    allowed_roles = ["superadmin"] 
+    if current_user.role.value not in allowed_roles:
+        flash("Ma haysatid ogolaansho inaad aragto boggan.", "danger")
+        return redirect(url_for("main.dashboard"))
+
+    # 3. Soo saar dhammaan permissions-ka
+    permissions = Permission.query.order_by(
+        Permission.group_name.asc(),
+        Permission.name.asc()
+    ).all()
+
+
+    # 4. U gudbi template-ka
+    return render_template('backend/pages/components/permissions/all_permissions.html',
+                           user=current_user,
+                           permissions=permissions)
+
+
+
+@bp.route('/get-branches/<int:school_id>')
+@login_required
+def get_branches(school_id):
+    if getattr(current_user, 'status', 1) == 0:
+        flash("Your account is inactive.", "danger")
+        return redirect(url_for('main.dashboard'))
+
+    # 2. XADDIID: Kaliya Superadmin ayaa tirtiri kara
+    if current_user.role.value != 'superadmin':
+        flash("Unauthorized access.", "danger")
+        return redirect(url_for('main.dashboard'))
+
+    # Waxaan soo saaraynaa laamaha iskuulkaas
+    branches = Branch.query.filter_by(school_id=school_id).all()
+    
+    # Waxaan xogta u bedelaynaa format JSON ah
+    branch_data = [{'id': b.id, 'name': b.name} for b in branches]
+    
+    return jsonify({'branches': branch_data})
+
+
+
+@bp.route("/add/permission", methods=["GET", "POST"])
+@login_required
+def add_permission():
+    # 1. Hubi status-ka user-ka
+    if getattr(current_user, 'status', 1) == 0:
+        flash("Your account is inactive. Please contact admin.", "danger")
+        return redirect(url_for('main.dashboard'))
+
+    # 2. XADDIID: Kaliya Superadmin ayaa isticmaali kara route-kan
+    if current_user.role.value != 'superadmin':
+        flash("Unauthorized access. Only Superadmin can create permissions.", "danger")
+        return redirect(url_for('main.dashboard'))
+
+    form = PermissionForm()
+
+    if form.validate_on_submit():
+        # 3. Hubi in permission code-ka uu unique yahay
+        existing_perm = Permission.query.filter_by(code=form.code.data.strip()).first()
+        if existing_perm:
+            flash("This permission code already exists!", "warning")
+            return redirect(url_for('main.add_permission'))
+
+        # 4. Samee Permission cusub
+        # form.school_id.data iyo form.branch_id.data waxay noqon doonaan None haddii aan la dooran
+        # (Sidaas ayay ku noqonayaan Global permission)
+        new_perm = Permission(
+            name=form.name.data.strip(),
+            code=form.code.data.strip(),
+            group_name=form.group_name.data.strip() if form.group_name.data else None,
+            school_id=form.school_id.data,   # Haddi uu None yahay waa Global
+            branch_id=form.branch_id.data    # Haddi uu None yahay waa School-wide ama Global
+        )
+        
+        db.session.add(new_perm)
+
+        try:
+            db.session.commit()
+            flash(f"Permission '{form.name.data}' created successfully!", "success")
+            return redirect(url_for('main.all_permissions'))
+        except Exception as e:
+            db.session.rollback()
+            flash(f"Error adding permission: {str(e)}", "danger")
+            return redirect(url_for('main.add_permission'))
+
+    return render_template(
+        "backend/pages/components/permissions/add_permission.html",
+        form=form,
+        user=current_user
+    )
+
+@bp.route("/edit/permission/<int:permission_id>", methods=["GET", "POST"])
+@login_required
+def edit_permission(permission_id):
+    # 1. Hubi status-ka user-ka
+    if getattr(current_user, 'status', 1) == 0:
+        flash("Your account is inactive. Please contact admin.", "danger")
+        return redirect(url_for('main.dashboard'))
+
+    # 2. XADDIID: Kaliya Superadmin ayaa wax ka beddeli kara
+    if current_user.role.value != 'superadmin':
+        flash("Unauthorized access.", "danger")
+        return redirect(url_for('main.dashboard'))
+
+    # 3. Soo hel permission-ka
+    permission = Permission.query.get_or_404(permission_id)
+    
+    # 4. Form-ka waxaan u diraynaa obj=permission si uu si toos ah u buuxiyo field-yada
+    form = PermissionForm(obj=permission)
+
+    if form.validate_on_submit():
+        # 5. Hubi in code-ka uusan horey u jirin (reer permission-kan laftiisa)
+        existing_perm = Permission.query.filter(
+            Permission.code == form.code.data.strip(),
+            Permission.id != permission_id  # Muhiim: Ha hubin permission-ka la beddelayo
+        ).first()
+        
+        if existing_perm:
+            flash("This permission code already exists in another record!", "warning")
+            return redirect(url_for('main.edit_permission', permission_id=permission_id))
+
+        # 6. Update-garee xogta
+        permission.name = form.name.data.strip()
+        permission.code = form.code.data.strip()
+        permission.group_name = form.group_name.data.strip() if form.group_name.data else None
+        permission.school_id = form.school_id.data
+        permission.branch_id = form.branch_id.data
+
+        try:
+            db.session.commit()
+            flash(f"Permission '{permission.name}' updated successfully!", "success")
+            return redirect(url_for('main.all_permissions'))
+        except Exception as e:
+            db.session.rollback()
+            flash(f"Error updating permission: {str(e)}", "danger")
+            return redirect(url_for('main.edit_permission', permission_id=permission_id))
+
+    return render_template(
+        "backend/pages/components/permissions/edit_permission.html",
+        form=form,
+        permission=permission
+    )
+
+
+@bp.route("/delete/permission/<int:permission_id>", methods=["POST"])
+@login_required
+def delete_permission(permission_id):
+    # 1. Hubi status-ka user-ka
+    if getattr(current_user, 'status', 1) == 0:
+        flash("Your account is inactive.", "danger")
+        return redirect(url_for('main.dashboard'))
+
+    # 2. XADDIID: Kaliya Superadmin ayaa tirtiri kara
+    if current_user.role.value != 'superadmin':
+        flash("Unauthorized access.", "danger")
+        return redirect(url_for('main.dashboard'))
+
+    # 3. Soo hel permission-ka
+    permission = Permission.query.get_or_404(permission_id)
+
+    try:
+        db.session.delete(permission)
+        db.session.commit()
+        flash(f"Permission '{permission.name}' deleted successfully!", "success")
+    except Exception as e:
+        db.session.rollback()
+        flash(f"Error deleting permission: {str(e)}", "danger")
+
+    return redirect(url_for('main.all_permissions'))
+
+
+# Kani geli qaybta sare ee 
+@bp.route('/export-permissions-xlsx')
+@login_required
+def export_permissions_xlsx():
+    # 1. Hubi status-ka iyo ogolaanshaha
+    if getattr(current_user, 'status', 1) == 0:
+        flash("Your account is inactive.", "danger")
+        return redirect(url_for('main.dashboard'))
+
+    if current_user.role.value != 'superadmin':
+        flash("Unauthorized access.", "danger")
+        return redirect(url_for('main.dashboard'))
+
+    try:
+        # 2. Soo hel xogta
+        permissions = Permission.query.order_by(Permission.group_name).all()
+
+        # 3. Build Data list
+        perm_data = []
+        for p in permissions:
+            perm_data.append({
+                "ID": p.id,
+                "Name": p.name,
+                "Code": p.code,
+                "Group Name": p.group_name or "General",
+                "School": p.school.name if p.school else "Global",
+                "Branch": p.branch.name if p.branch else "Global",
+                "Created At": p.created_at.strftime('%Y-%m-%d %H:%M:%S') if p.created_at else "",
+                "Updated At": p.updated_at.strftime('%Y-%m-%d %H:%M:%S') if p.updated_at else ""
+            })
+
+        # 4. Samee Excel file-ka
+        output = io.BytesIO()
+        with pd.ExcelWriter(output, engine='openpyxl') as writer:
+            pd.DataFrame(perm_data).to_excel(writer, sheet_name='Permissions', index=False)
+        
+        output.seek(0)
+        
+        # 5. U dir user-ka
+        return send_file(
+            output,
+            download_name="permissions_data.xlsx",
+            as_attachment=True,
+            mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+
+    except Exception as e:
+        # Haddii uu jiro wax khalad ah (error)
+        flash(f"Error exporting file: {str(e)}", "danger")
+        return redirect(url_for('main.all_permissions'))
+
+
+@bp.route('/import-permissions', methods=['POST'])
+@login_required
+def import_permissions():
+    # [Status & Auth Checks...]
+    if current_user.role.value != 'superadmin':
+        flash("Unauthorized access.", "danger")
+        return redirect(url_for('main.dashboard'))
+
+    file = request.files.get('file')
+    if not file:
+        flash("No file selected", "danger")
+        return redirect(url_for('main.all_permissions'))
+
+    try:
+        # Pandas ayaa si toos ah u aqrinaya .xlsx ama .csv
+        df = pd.read_excel(file) if file.filename.endswith('.xlsx') else pd.read_csv(file)
+        
+        # Nadiifi magacyada tiirarka (ka saar boosaska bannaan)
+        df.columns = df.columns.str.strip()
+        
+        count = 0
+        skipped = 0
+
+        for index, row in df.iterrows():
+            # Soo saar xogta (Pandas wuxuu u aqoonsanayaa NaN haddii unuggu madhan yahay)
+            code = str(row.get('Code', '')).strip()
+            name = str(row.get('Name', '')).strip()
+            group = row.get('Group Name')
+            group = str(group).strip() if pd.notna(group) else None
+            s_name = str(row.get('School', '')).strip()
+            b_name = str(row.get('Branch', '')).strip()
+
+            if not code or code == 'nan': continue
+
+            # Duplicate Check
+            if Permission.query.filter_by(code=code).first():
+                skipped += 1
+                continue
+
+            # Lookup School & Branch
+            school_id = None
+            branch_id = None
+
+            if s_name and s_name.lower() != 'global' and s_name != 'nan':
+                s = School.query.filter(School.name.ilike(s_name)).first()
+                if s:
+                    school_id = s.id
+                    if b_name and b_name.lower() != 'global' and b_name != 'nan':
+                        b = Branch.query.filter(Branch.name.ilike(b_name), Branch.school_id == school_id).first()
+                        if b:
+                            branch_id = b.id
+
+            # Create New Permission
+            new_perm = Permission(
+                name=name,
+                code=code,
+                group_name=group,
+                school_id=school_id,
+                branch_id=branch_id
+            )
+            db.session.add(new_perm)
+            count += 1
+
+        db.session.commit()
+        flash(f"Import dhammaystiran! {count} waa la daray, {skipped} waa la booday.", "success")
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"ERROR: {str(e)}") 
+        flash(f"Error importing: {str(e)}", "danger")
+
+    return redirect(url_for('main.all_permissions'))
+
+
+@bp.route("/delete/all-permissions", methods=["POST"])
+@login_required
+def delete_all_permissions():
+    # 1. Hubi status-ka user-ka
+    if getattr(current_user, 'status', 1) == 0:
+        flash("Your account is inactive.", "danger")
+        return redirect(url_for('main.dashboard'))
+
+    # 2. XADDIID: Kaliya Superadmin ayaa tirtiri kara
+    if current_user.role.value != 'superadmin':
+        flash("Unauthorized access.", "danger")
+        return redirect(url_for('main.dashboard'))
+
+    try:
+        # 3. Tirtir dhammaan xogta Permission
+        # .delete() wuxuu tirtirayaa dhammaan record-yada
+        num_deleted = Permission.query.delete() 
+        db.session.commit()
+        
+        flash(f"Success! {num_deleted} permissions deleted successfully.", "success")
+    except Exception as e:
+        db.session.rollback()
+        flash(f"Error deleting permissions: {str(e)}", "danger")
+
+    return redirect(url_for('main.all_permissions'))
+
+
+
+#-------------------- Roles
+@bp.route('/all/roles')
+@login_required
+def all_roles():
+    # 1. Hubi status-ka user-ka
+    if getattr(current_user, 'status', 1) == 0:
+        flash("Account-kaagu ma shaqeynayo.", "danger")
+        return redirect(url_for("main.dashboard"))
+
+    # 2. Hubi ogolaanshaha (Authorization)
+    # Halkan waxaad ku dari kartaa 'school_admin' haddii aad rabto inay arkaan 
+    # roles-ka u gaarka ah iskuulkooda.
+    allowed_roles = ["superadmin"] 
+    if current_user.role.value not in allowed_roles:
+        flash("Ma haysatid ogolaansho inaad aragto boggan.", "danger")
+        return redirect(url_for("main.dashboard"))
+
+    # 3. Soo saar dhammaan Roles-ka
+    # joinedload(Role.school) iyo joinedload(Role.branch) waxay yareynayaan 
+    # tirada queries-ka database-ka (Performance Optimization)
+    roles = Role.query.options(
+        joinedload(Role.school), 
+        joinedload(Role.branch)
+    ).order_by(Role.created_at.desc()).all()
+    
+    # 4. U gudbi template-ka
+    return render_template('backend/pages/components/roles/all_roles.html',
+                           user=current_user,
+                           roles=roles)
+
+
+@bp.route("/add/role", methods=["GET", "POST"])
+@login_required
+def add_role():
+    # 1. Hubi status-ka user-ka
+    if getattr(current_user, 'status', 1) == 0:
+        flash("Your account is inactive. Please contact admin.", "danger")
+        return redirect(url_for('main.dashboard'))
+
+    # 2. XADDIID: Kaliya Superadmin ayaa isticmaali kara
+    if current_user.role.value != 'superadmin':
+        flash("Unauthorized access.", "danger")
+        return redirect(url_for('main.dashboard'))
+
+    form = RoleForm()
+
+    if form.validate_on_submit():
+        # 3. Samee Role cusub
+        # Xusuusnow: validate_name() ee ku jira RoleForm ayaa horay u hubiyay 
+        # haddii magacu uu u gaar yahay (unique) school-kaas.
+        new_role = Role(
+            name=form.name.data.strip(),
+            description=form.description.data.strip() if form.description.data else None,
+            school_id=form.school_id.data,
+            branch_id=form.branch_id.data if form.branch_id.data else None
+        )
+        
+        db.session.add(new_role)
+
+        try:
+            db.session.commit()
+            flash(f"Role '{form.name.data}' created successfully!", "success")
+            return redirect(url_for('main.all_roles'))
+        except Exception as e:
+            db.session.rollback()
+            flash(f"Error adding role: {str(e)}", "danger")
+            return redirect(url_for('main.add_role'))
+
+    return render_template(
+        "backend/pages/components/roles/add_role.html",
+        form=form,
+        user=current_user
+    )
+
+
+
+@bp.route("/edit/role/<int:role_id>", methods=["GET", "POST"])
+@login_required
+def edit_role(role_id):
+    # 1. Hubi status-ka user-ka
+    if getattr(current_user, 'status', 1) == 0:
+        flash("Your account is inactive.", "danger")
+        return redirect(url_for('main.dashboard'))
+
+    # 2. XADDIID: Kaliya Superadmin
+    if current_user.role.value != 'superadmin':
+        flash("Unauthorized access.", "danger")
+        return redirect(url_for('main.dashboard'))
+
+    # 3. Soo saar role-ka ama 404
+    role = Role.query.get_or_404(role_id)
+    
+    # 4. Samee Form-ka adigoo u dhiibaya object-ga (obj=role)
+    # Tani waxay u oggolaanaysaa form-ka inuu arko xogta hadda jirta
+    form = RoleForm(obj=role)
+
+    if form.validate_on_submit():
+        # Cusbooneysii xogta
+        role.name = form.name.data.strip()
+        role.description = form.description.data.strip() if form.description.data else None
+        role.school_id = form.school_id.data
+        role.branch_id = form.branch_id.data if form.branch_id.data else None
+        
+        try:
+            db.session.commit()
+            flash(f"Role '{role.name}' updated successfully!", "success")
+            return redirect(url_for('main.all_roles'))
+        except Exception as e:
+            db.session.rollback()
+            flash(f"Error updating role: {str(e)}", "danger")
+
+    return render_template(
+        "backend/pages/components/roles/edit_role.html",
+        form=form,
+        role=role, # Waxaan u baahan karnaa template-ka
+        user=current_user
+    )
+
+
+@bp.route("/delete/role/<int:role_id>", methods=["POST"])
+@login_required
+def delete_role(role_id):
+    # 1. Hubi status-ka iyo ogolaanshaha
+    if getattr(current_user, 'status', 1) == 0 or current_user.role.value != 'superadmin':
+        flash("Unauthorized access.", "danger")
+        return redirect(url_for('main.dashboard'))
+
+    # 2. Soo saar role-ka
+    role = Role.query.get_or_404(role_id)
+
+    # 3. FIX: Isticmaal len() halkii aad isticmaali lahayd .count()
+    # Tani waxay hubinaysaa haddii list-ka user-ka uu madhan yahay iyo in kale
+    if len(role.users) > 0:
+        flash(f"Ma tirtiri kartid '{role.name}' sababtoo ah waxaa jira users isticmaalaya role-kan.", "warning")
+        return redirect(url_for('main.all_roles'))
+
+    try:
+        db.session.delete(role)
+        db.session.commit()
+        flash(f"Role '{role.name}' deleted successfully!", "success")
+    except Exception as e:
+        db.session.rollback()
+        flash(f"Error deleting role: {str(e)}", "danger")
+
+    return redirect(url_for('main.all_roles'))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 # ==================== ALL CLASS LEVELS ====================
 @bp.route("/all/class/levels")
@@ -8012,6 +8798,7 @@ def all_fee_collections():
     )
 
 
+
 # ---------------- INVOICE NUMBER (DYNAMIC WITH YEAR) ----------------
 def generate_invoice_number(school_id, branch_id=None):
     # 1. Soo qaado Sanadka hadda taagan (Tusaale: 2026 -> 26)
@@ -8160,81 +8947,81 @@ def add_fee_collection():
             # 3️⃣ TRANSACTIONS: (Receipt First -> Then Charges)
             # ---------------------------------------------------------
 
-            # A. Safka Payment-ka (Receipt)
-            # Formula: Balance = Previous - Receipt
+            # A. Safka Payment-ka (Receipt + Automation)
             if input_amount > 0:
                 running_balance -= input_amount
                 
+                # Invoice
                 inv_pay = FeeInvoice(
                     student_fee_id=fee_record.id,
-                    school_id=fee_record.school_id,      # ✅ ADD
-                    branch_id=fee_record.branch_id,      # ✅ ADD
-
+                    school_id=fee_record.school_id,
+                    branch_id=fee_record.branch_id,
                     invoice_number=generate_invoice_number(current_user.school_id, current_user.branch_id),
                     type='Payment Memo', 
-                    amount_due=0,             # Charge column (Eber)
-                    amount_paid=input_amount,  # Receipt column
-                    balance=running_balance,   # Current Balance
+                    amount_due=0, 
+                    amount_paid=input_amount,
+                    balance=running_balance,
                     description=f"Payment Received - {add_generate_description()}"
                 )
                 db.session.add(inv_pay)
 
-                # --- UPDATE STUDENT TABLE: REGISTRATION FEE TO 0 ---
-                # Haddii uu jiro registration fee lana bixiyay lacag, u badal 0 si uusan bisha dambe u deynaysan
+                # AUTOMATION: Payment Transaction
+                new_transaction = PaymentTransaction(
+                    school_id=fee_record.school_id,
+                    branch_id=fee_record.branch_id,
+                    student_fee_id=fee_record.id,
+                    amount=input_amount,
+                    payment_method=form.payment_method.data or 'Mobile', # Haddii form-ka laga waayo, 'Mobile' ha noqdo
+                    receipt_number=f"REC-{fee_record.id}-{int(now_eat().timestamp())}", 
+                    transaction_date=now_eat()
+                )
+                db.session.add(new_transaction)
+
+                # Update Student
                 if registration_fee > 0:
                     student.registration_fee = 0
-                    # Waxaan sidoo kale update gareynaynaa 'total' column-ka Student table haddii uu jiro
-                    student.total = float(student.price or 0) 
+                    student.total = float(student.price or 0)
                 
                 db.session.flush()
 
             # B. Safka Registration-ka (Charge)
-            # Formula: Balance = Previous + Charge
             if is_new_record and registration_fee > 0:
                 running_balance += registration_fee 
-                
                 inv_reg = FeeInvoice(
                     student_fee_id=fee_record.id,
-                    school_id=fee_record.school_id,      # ✅ ADD
-                    branch_id=fee_record.branch_id,      # ✅ ADD
-    
+                    school_id=fee_record.school_id,
+                    branch_id=fee_record.branch_id,
                     invoice_number=generate_invoice_number(current_user.school_id, current_user.branch_id),
                     type='Registration',
-                    amount_due=registration_fee, # Charge column
-                    amount_paid=0,               # Receipt column
-                    balance=running_balance,     # Current Balance
+                    amount_due=registration_fee,
+                    amount_paid=0,
+                    balance=running_balance,
                     description=generate_description("Registration Fee")
                 )
                 db.session.add(inv_reg)
                 db.session.flush()
 
             # C. Safka Tuition-ka (Charge)
-            # Formula: Balance = Previous + Charge
             if is_new_record and tuition_fee > 0:
                 running_balance += tuition_fee
-                
                 inv_tui = FeeInvoice(
                     student_fee_id=fee_record.id,
-                    school_id=fee_record.school_id,      # ✅ ADD
-                    branch_id=fee_record.branch_id,      # ✅ ADD
-
+                    school_id=fee_record.school_id,
+                    branch_id=fee_record.branch_id,
                     invoice_number=generate_invoice_number(current_user.school_id, current_user.branch_id),
                     type='Tuition',
-                    amount_due=tuition_fee,   # Charge column
-                    amount_paid=0,            # Receipt column
-                    balance=running_balance,  # Current Balance
+                    amount_due=tuition_fee,
+                    amount_paid=0,
+                    balance=running_balance,
                     description=generate_description("Tuition Fee")
                 )
                 db.session.add(inv_tui)
 
-            # ---------------------------------------------------------
-            # 4️⃣ UPDATE SUMMARY (Fee Collection Record)
-            # ---------------------------------------------------------
+            # 4️⃣ UPDATE SUMMARY RECORD
             fee_record.amount_paid += input_amount
             fee_record.remaining_balance = running_balance 
 
-            # Cusboonaysii Payment Status
-            if fee_record.amount_paid >= fee_record.amount_due:
+            if fee_record.amount_paid >= fee_record.amount_due and fee_record.amount_due > 0:
                 fee_record.payment_status = "Paid"
             elif fee_record.amount_paid > 0:
                 fee_record.payment_status = "Partial"
@@ -8256,9 +9043,7 @@ def add_fee_collection():
         students_info=students_info,
         user=current_user,
         current_date = now_eat().date().isoformat(),
-    )
-
-    
+    )    
 
 @bp.route("/fee-collections/edit/<int:fee_id>", methods=["GET", "POST"])
 @login_required
@@ -8276,18 +9061,14 @@ def edit_fee_collection(fee_id):
     fee_record = StudentFeeCollection.query.get_or_404(fee_id)
     student = fee_record.student
 
-    # Isticmaal Form-ka (Fill-garee xogta jirta)
+    # Isticmaal Form-ka
     form = StudentFeeCollectionForm(obj=fee_record)
 
-    # ------------------- FIXED LOGIC -------------------
-    # Halkan waxaa lagu saxay TypeError-ka: float() ayaa lagu daray labada dhinac
-    # Waxaan ka dhigaynaa float() si aan loogu dhicin khilaafka 'float' and 'decimal.Decimal'
-    
+    # ------------------- LOGIC -------------------
     current_amount_due = float(fee_record.amount_due or 0)
     current_student_price = float(student.price or 0)
     
     original_reg_fee = current_amount_due - current_student_price
-    
     if original_reg_fee < 0: 
         original_reg_fee = 0.0
     
@@ -8300,7 +9081,6 @@ def edit_fee_collection(fee_id):
         form.payment_date.data = fee_record.payment_date
         form.remarks.data = fee_record.remarks
 
-    # Macluumaadka template-ka loo dirayo
     students_info = {
         student.id: {
             "roll_no": student.roll_no,
@@ -8316,7 +9096,7 @@ def edit_fee_collection(fee_id):
         try:
             input_amount = float(form.amount_paid.data or 0)
 
-            # 1️⃣ HEL BAAQIGII HORE (Previous Balance)
+            # 1️⃣ HEL BAAQIGII HORE
             last_invoice_before = FeeInvoice.query.join(StudentFeeCollection)\
                 .filter(
                     StudentFeeCollection.student_id == student.id,
@@ -8331,15 +9111,16 @@ def edit_fee_collection(fee_id):
                 db.session.delete(inv)
 
             db.session.flush()
-
-           
-            # A. Receipt First
+            
+            # A. Receipt & Transaction (Halkan ayaan ku darnay logic-ga)
             if input_amount > 0:
                 running_balance -= input_amount
+                
+                # A1: Create Invoice
                 inv_pay = FeeInvoice(
                     student_fee_id=fee_record.id,
-                    school_id=fee_record.school_id,      # ✅ ADD
-                    branch_id=fee_record.branch_id,      # ✅ ADD
+                    school_id=fee_record.school_id,
+                    branch_id=fee_record.branch_id,
                     invoice_number=generate_invoice_number(current_user.school_id, current_user.branch_id),
                     type='Payment Memo', 
                     amount_due=0, 
@@ -8349,8 +9130,20 @@ def edit_fee_collection(fee_id):
                     extra_info=""
                 )
                 db.session.add(inv_pay)
+
+                # A2: Create Payment Transaction (AUTOMATION)
+                new_transaction = PaymentTransaction(
+                    school_id=fee_record.school_id,
+                    branch_id=fee_record.branch_id,
+                    student_fee_id=fee_record.id,
+                    amount=input_amount,
+                    payment_method=form.payment_method.data, # Hubi in form-kaagu leeyahay field-kan
+                    receipt_number=f"REC-{fee_record.id}-{int(now_eat().timestamp())}", 
+                    transaction_date=now_eat()
+                )
+                db.session.add(new_transaction)
                 
-                # UPDATE STUDENT REGISTRATION TO 0
+                # A3: Update Student Registration status
                 if float(student.registration_fee or 0) > 0:
                     student.registration_fee = 0
                     student.total = float(student.price or 0)
@@ -8360,8 +9153,8 @@ def edit_fee_collection(fee_id):
                 running_balance += original_reg_fee
                 inv_reg = FeeInvoice(
                     student_fee_id=fee_record.id,
-                    school_id=fee_record.school_id,      # ✅ ADD
-                    branch_id=fee_record.branch_id,      # ✅ ADD
+                    school_id=fee_record.school_id,
+                    branch_id=fee_record.branch_id,
                     invoice_number=generate_invoice_number(current_user.school_id, current_user.branch_id),
                     type='Registration',
                     amount_due=original_reg_fee,
@@ -8377,8 +9170,8 @@ def edit_fee_collection(fee_id):
                 running_balance += tuition_fee
                 inv_tui = FeeInvoice(
                     student_fee_id=fee_record.id,
-                    school_id=fee_record.school_id,      # ✅ ADD
-                    branch_id=fee_record.branch_id,      # ✅ ADD
+                    school_id=fee_record.school_id,
+                    branch_id=fee_record.branch_id,
                     invoice_number=generate_invoice_number(current_user.school_id, current_user.branch_id),
                     type='Tuition',
                     amount_due=tuition_fee,
@@ -8394,7 +9187,8 @@ def edit_fee_collection(fee_id):
             fee_record.amount_paid = input_amount
             fee_record.remaining_balance = running_balance 
             
-            if fee_record.amount_paid >= fee_record.amount_due:
+            # Status Update
+            if fee_record.amount_paid >= fee_record.amount_due and fee_record.amount_due > 0:
                 fee_record.payment_status = 'Paid'
             elif fee_record.amount_paid > 0:
                 fee_record.payment_status = 'Partial'
@@ -8405,7 +9199,7 @@ def edit_fee_collection(fee_id):
             fee_record.remarks = form.remarks.data
 
             db.session.commit()
-            flash(f"✅ Collection updated successfully. New Balance: {running_balance}", "success")
+            flash(f"✅ Collection updated & Transaction logged. New Balance: {running_balance}", "success")
             return redirect(url_for("main.all_fee_collections"))
 
         except Exception as e:
@@ -8420,7 +9214,6 @@ def edit_fee_collection(fee_id):
         invoices=invoices,
         user=current_user,
         current_date = now_eat().date().isoformat()
-
     )
 
 
@@ -8437,15 +9230,22 @@ def delete_fee_collection(fee_id):
         flash("Unauthorized", "danger")
         return redirect(url_for("main.dashboard"))
 
-    # ✅ Save student name before deletion
     student_name = fee_record.student.full_name if fee_record.student else "Unknown Student"
 
     try:
-        with db.session.no_autoflush:
-            db.session.delete(fee_record)
-            db.session.commit()
+        # 1. Tirtir Transaction-yada la xiriira
+        PaymentTransaction.query.filter_by(student_fee_id=fee_id).delete()
+        
+        # 2. Tirtir Invoice-yada la xiriira
+        FeeInvoice.query.filter_by(student_fee_id=fee_id).delete()
+        
+        # 3. Tirtir Record-ka ugu weyn (Fee Collection)
+        db.session.delete(fee_record)
+        
+        db.session.commit()
+        
         flash(
-            f"✅ Fee collection for {student_name} deleted successfully, along with all related invoices.",
+            f"✅ Fee collection for {student_name} deleted successfully, along with all invoices and transactions.",
             "success"
         )
     except Exception as e:
@@ -8724,6 +9524,334 @@ def import_fee_collections_excel():
 
     return redirect(url_for("main.all_fee_collections"))
 
+
+#-----------------------------------------
+#----------- Expenses
+#-----------------------------------------
+
+@bp.route("/all-expenses")
+@login_required
+def all_expenses():
+    # 1. Check user status
+    if current_user.status == 0:
+        flash("Your account is inactive.", "danger")
+        return redirect(url_for('main.index'))
+
+    # 2. Only allow school_admin or branch_admin
+    if current_user.role.value not in ['school_admin', 'branch_admin']:
+        flash("Unauthorized", "danger")
+        return redirect(url_for('main.dashboard'))
+
+    # 3. Fetching Expenses based on role & Defining Scope for Summary
+    # Waxaan ku daray base_filter oo aan u isticmaalayno xisaabinta
+    if current_user.role.value == 'school_admin':
+        expenses = Expense.query.filter(
+            Expense.school_id == current_user.school_id,
+            Expense.branch_id == None
+        ).order_by(Expense.date.desc()).all()
+        
+        base_filter = (PaymentTransaction.school_id == current_user.school_id)
+
+    elif current_user.role.value == 'branch_admin':
+        expenses = Expense.query.filter_by(
+            branch_id=current_user.branch_id
+        ).order_by(Expense.date.desc()).all()
+        
+        base_filter = (PaymentTransaction.branch_id == current_user.branch_id)
+    
+    else:
+        expenses = []
+        base_filter = (PaymentTransaction.id == None) # Waxba kama soo baxayaan
+
+    # 5. Xisaabinta Summary (Income vs Expenses)
+    # Income: Transactions-ka aanan ka bilaaban 'EXP-'
+    total_income = db.session.query(func.sum(PaymentTransaction.amount)).filter(
+        base_filter, ~PaymentTransaction.receipt_number.like('EXP-%')
+    ).scalar() or 0
+
+    # Expenses: Transactions-ka ka bilaaban 'EXP-'
+    total_expenses = db.session.query(func.sum(PaymentTransaction.amount)).filter(
+        base_filter, PaymentTransaction.receipt_number.like('EXP-%')
+    ).scalar() or 0
+
+    balance = total_income - total_expenses
+
+    # 4. Preload related entities
+    expense_details = {}
+    for exp in expenses:
+        expense_details[exp.id] = {
+            "school": exp.school,
+            "branch": exp.branch
+        }
+
+    return render_template(
+        "backend/pages/components/expenses/all_expenses.html",
+        expenses=expenses,
+        expense_details=expense_details,
+        user=current_user,
+        total_income=total_income,
+        total_expenses=total_expenses,
+        balance=balance
+    )
+
+
+
+
+@bp.route("/expenses/add", methods=["GET", "POST"])
+@login_required
+def add_expense():
+    # 🔒 1. Check active user
+    if current_user.status == 0:
+        flash("Account inactive", "danger")
+        return redirect(url_for('main.dashboard'))
+
+    # 🔒 2. Role access
+    if current_user.role.value not in ['school_admin', 'branch_admin']:
+        flash("Unauthorized", "danger")
+        return redirect(url_for('main.dashboard'))
+
+    # U diyaarinta scope-ka xisaabinta
+    school_id = current_user.school_id
+    branch_id = current_user.branch_id if current_user.role.value == 'branch_admin' else None
+
+    # Xisaabinta Balance-ka (Income - Expenses)
+    total_income = db.session.query(func.sum(PaymentTransaction.amount)).filter(
+        PaymentTransaction.school_id == school_id,
+        (PaymentTransaction.branch_id == branch_id if branch_id else True),
+        ~PaymentTransaction.receipt_number.like('EXP-%')
+    ).scalar() or 0
+
+    total_expenses = db.session.query(func.sum(PaymentTransaction.amount)).filter(
+        PaymentTransaction.school_id == school_id,
+        (PaymentTransaction.branch_id == branch_id if branch_id else True),
+        PaymentTransaction.receipt_number.like('EXP-%')
+    ).scalar() or 0
+    
+    current_balance = total_income - total_expenses
+
+    form = ExpenseForm()
+
+    # ---------------- GET ----------------
+    if request.method == "GET":
+        if current_user.role.value == 'branch_admin':
+            form.school_id.data = current_user.school_id
+            form.branch_id.data = current_user.branch_id
+        else:
+            form.school_id.data = current_user.school_id
+            form.branch_id.data = None
+
+    # ---------------- POST ----------------
+    if form.validate_on_submit():
+        s_id = form.school_id.data or school_id
+        b_id = form.branch_id.data or branch_id
+        expense_amount = float(form.amount.data)
+
+        # Validation
+        if b_id:
+            branch = Branch.query.get(b_id)
+            if not branch or branch.school_id != s_id:
+                flash("Selected branch does not belong to your school!", "danger")
+                return redirect(url_for('main.add_expense'))
+
+        # Check Balance mar kale (Security check)
+        if expense_amount > current_balance:
+            flash(f"❌ Lacagta xisaabta kuma filna! Waxa kuu haray: ${current_balance:,.2f}", "danger")
+            return redirect(url_for('main.add_expense'))
+
+        # SAVE DATA
+        try:
+            new_expense = Expense(
+                school_id=s_id, branch_id=b_id,
+                description=form.description.data.strip(),
+                category=form.category.data, amount=expense_amount,
+                date=form.date.data or now_eat(), is_paid=True
+            )
+            db.session.add(new_expense)
+            db.session.flush()
+
+            new_transaction = PaymentTransaction(
+                school_id=s_id, branch_id=b_id,
+                amount=expense_amount, payment_method=form.payment_method.data,
+                receipt_number=f"EXP-{new_expense.id}-{int(now_eat().timestamp())}",
+                transaction_date=new_expense.date
+            )
+            db.session.add(new_transaction)
+            db.session.commit()
+
+            flash(f"✅ Expense '{new_expense.description}' added!", "success")
+            return redirect(url_for('main.all_expenses'))
+        except Exception as e:
+            db.session.rollback()
+            flash("❌ Error saving expense.", "danger")
+
+    # Branches list for select field
+    branches = Branch.query.filter_by(id=current_user.branch_id).all() \
+        if current_user.role.value == 'branch_admin' else Branch.query.filter_by(school_id=current_user.school_id).all()
+
+    return render_template(
+        "backend/pages/components/expenses/add_expense.html",
+        form=form, user=current_user, branches=branches,
+        current_balance=current_balance, # Halkan ayaan ku dirnay
+        current_date=now_eat().date().isoformat()
+    )
+
+
+
+@bp.route("/expenses/edit/<int:expense_id>", methods=["GET", "POST"])
+@login_required
+def edit_expense(expense_id):
+    # 🔒 Check active user
+    if current_user.status == 0:
+        flash("Account inactive", "danger")
+        return redirect(url_for('main.dashboard'))
+
+    # 🔒 Role access
+    if current_user.role.value not in ['school_admin', 'branch_admin']:
+        flash("Unauthorized", "danger")
+        return redirect(url_for('main.dashboard'))
+
+    # 1️⃣ Soo hel kharashka
+    expense = Expense.query.get_or_404(expense_id)
+
+    # 🔒 2️⃣ Ownership/Scope Validation
+    if current_user.role.value == 'branch_admin':
+        if expense.branch_id != current_user.branch_id:
+            flash("Unauthorized: You cannot edit expenses from other branches.", "danger")
+            return redirect(url_for('main.all_expenses'))
+    elif expense.school_id != current_user.school_id:
+        flash("Unauthorized: Access denied.", "danger")
+        return redirect(url_for('main.all_expenses'))
+
+    # 3️⃣ Balance Calculation (Xalinta qaladkii hore)
+    school_id = expense.school_id
+    branch_id = expense.branch_id
+
+    total_income = db.session.query(func.sum(PaymentTransaction.amount)).filter(
+        PaymentTransaction.school_id == school_id,
+        (PaymentTransaction.branch_id == branch_id if branch_id else True),
+        ~PaymentTransaction.receipt_number.like('EXP-%')
+    ).scalar() or 0
+
+    total_expenses = db.session.query(func.sum(PaymentTransaction.amount)).filter(
+        PaymentTransaction.school_id == school_id,
+        (PaymentTransaction.branch_id == branch_id if branch_id else True),
+        PaymentTransaction.receipt_number.like('EXP-%')
+    ).scalar() or 0
+    
+    current_balance = total_income - total_expenses
+
+    # 4️⃣ Load Form
+    form = ExpenseForm(obj=expense)
+
+    # ---------------- POST ----------------
+    if form.validate_on_submit():
+        try:
+            # Update Expense details
+            expense.description = form.description.data.strip()
+            expense.category = form.category.data
+            expense.amount = float(form.amount.data)
+            expense.date = form.date.data
+            
+            # Update Transaction details
+            transaction = PaymentTransaction.query.filter(
+                PaymentTransaction.receipt_number.like(f"EXP-{expense.id}-%")
+            ).first()
+
+            if transaction:
+                transaction.amount = float(expense.amount)
+                transaction.payment_method = form.payment_method.data
+                transaction.transaction_date = expense.date
+
+            db.session.commit()
+            flash(f"✅ Expense '{expense.description}' updated successfully!", "success")
+            return redirect(url_for('main.all_expenses'))
+
+        except Exception as e:
+            db.session.rollback()
+            print("DB ERROR:", e)
+            flash("❌ Error updating expense.", "danger")
+
+    # ---------------- RENDER ----------------
+    if current_user.role.value == 'branch_admin':
+        branches = Branch.query.filter_by(id=current_user.branch_id).all()
+    else:
+        branches = Branch.query.filter_by(school_id=current_user.school_id).all()
+
+    return render_template(
+        "backend/pages/components/expenses/add_expense.html",
+        form=form,
+        user=current_user,
+        branches=branches,
+        current_balance=current_balance, # Halkan ayaan ku darnay si aysan Error-ka u dhicin
+         current_date=now_eat().date().isoformat(),
+        is_edit=True 
+    )
+
+
+
+@bp.route("/expenses/delete/<int:expense_id>", methods=["POST"])
+@login_required
+def delete_expense(expense_id):
+    # 🔒 1. Check active user
+    if current_user.status == 0:
+        flash("Account inactive", "danger")
+        return redirect(url_for('main.dashboard'))
+
+    # 🔒 2. Role access check
+    if current_user.role.value not in ['school_admin', 'branch_admin']:
+        flash("Unauthorized", "danger")
+        return redirect(url_for('main.dashboard'))
+
+    # 3. Soo hel kharashka
+    expense = Expense.query.get_or_404(expense_id)
+
+    # 🔒 4. Ownership/Scope Validation (Aad muhiim u ah)
+    # Haddii uu yahay branch_admin, waa inuu kharashka ka tirsan yahay laantiisa
+    if current_user.role.value == 'branch_admin':
+        if expense.branch_id != current_user.branch_id:
+            flash("Unauthorized: You cannot delete expenses from other branches.", "danger")
+            return redirect(url_for('main.all_expenses'))
+    
+    # Haddii uu yahay school_admin, waa inuu ka tirsan yahay iskuulkiisa
+    elif expense.school_id != current_user.school_id:
+        flash("Unauthorized: Access denied.", "danger")
+        return redirect(url_for('main.all_expenses'))
+
+    # 5. Delete Logic
+    try:
+        # Tirtir transaction-ka la socda kharashka (Data Integrity)
+        transaction = PaymentTransaction.query.filter(
+            PaymentTransaction.receipt_number.like(f"EXP-{expense.id}-%")
+        ).first()
+        
+        if transaction:
+            db.session.delete(transaction)
+
+        # Tirtir kharashka
+        db.session.delete(expense)
+        db.session.commit()
+
+        flash(f"🗑️ Expense '{expense.description}' deleted successfully!", "success")
+
+    except Exception as e:
+        db.session.rollback()
+        print("DELETE ERROR:", e)
+        flash("❌ Error deleting expense. Please try again.", "danger")
+
+    return redirect(url_for('main.all_expenses'))
+
+
+
+
+
+
+
+
+
+
+
+
+
 @bp.route("/fee-invoices/edit/<int:invoice_id>", methods=["POST"])
 @login_required
 def edit_invoice(invoice_id):
@@ -8813,6 +9941,16 @@ def branches_reports_fees():
         "backend/pages/components/reports/branches-reports-sales.html",
         user=current_user,
     )
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -10089,7 +11227,7 @@ def update_exam_status(id):
 
 
 #-----------------------------------
-#--------- 
+#--------- Exam Subjects
 #-----------------------------------
 
 @bp.route("/get-exam-subjects/<int:level_id>")
@@ -13953,55 +15091,155 @@ def add_timeslot():
         return redirect(url_for("main.dashboard"))
 
     form = TimeSlotForm()
-    
-    # 1. Hubi haddii user-ku uu yahay active
+
+    # Hubi account status
     if current_user.status == 0:
         flash("Your account is inactive. Please contact the admin.", "danger")
         return redirect(url_for('main.index'))
 
-    # 2. Ogolaanshaha (Only school_admin or branch_admin)
+    # Authorization
     if current_user.role.value not in ['school_admin', 'branch_admin']:
         flash("Unauthorized", "danger")
         return redirect(url_for('main.dashboard'))
 
     if form.validate_on_submit():
+
         school_id = current_user.school_id
-        # Haddii uu yahay school_admin, branch_id waa None, haddii kale waa branch-ka uu maamulo
-        branch_id = current_user.branch_id if current_user.role.value == 'branch_admin' else None
+        branch_id = (
+            current_user.branch_id
+            if current_user.role.value == 'branch_admin'
+            else None
+        )
 
-        # 3. Prevent Duplicates (Hubi haddii slot isku waqti ah uu jiro)
-        existing = TimeSlot.query.filter_by(
-            school_id=school_id,
-            branch_id=branch_id,
-            start_time=form.start_time.data,
-            shift=form.shift.data
-        ).first()
+        try:
+            from datetime import datetime
 
-        if existing:
-            flash(f"❌ Slot leh waqtigan ({form.start_time.data}) mar hore ayaa loo sameeyay shift-ka {form.shift.data}.", "warning")
-        else:
-            try:
-                new_slot = TimeSlot(
-                    school_id=school_id,
-                    branch_id=branch_id,
-                    label=form.label.data,
-                    start_time=form.start_time.data,
-                    end_time=form.end_time.data,
-                    is_break=form.is_break.data,
-                    shift=form.shift.data
+            # ----------------------------------
+            # Soo qaado slot-kii ugu dambeeyey
+            # ----------------------------------
+            last_slot = TimeSlot.query.filter_by(
+                school_id=school_id,
+                branch_id=branch_id,
+                shift=form.shift.data
+            ).order_by(
+                TimeSlot.end_time.desc()
+            ).first()
+
+            # ----------------------------------
+            # Duration-ka user-ku doortay
+            # ----------------------------------
+            duration = (
+                datetime.combine(
+                    datetime.today(),
+                    form.end_time.data
                 )
-                db.session.add(new_slot)
-                db.session.commit()
-                flash("✅ Time Slot created successfully!", "success")
-                return redirect(url_for('main.all_timeslots')) # Bedel haddii route-kaagu magac kale leeyahay
-            
-            except Exception as e:
-                db.session.rollback()
-                print("ERROR saving TimeSlot:", e)
-                flash("❌ Error saving time slot.", "danger")
+                -
+                datetime.combine(
+                    datetime.today(),
+                    form.start_time.data
+                )
+            )
+
+            # ----------------------------------
+            # Auto Start & End Time
+            # ----------------------------------
+            if last_slot:
+                auto_start_time = last_slot.end_time
+
+                auto_end_time = (
+                    datetime.combine(
+                        datetime.today(),
+                        auto_start_time
+                    )
+                    +
+                    duration
+                ).time()
+
+            else:
+                auto_start_time = form.start_time.data
+                auto_end_time = form.end_time.data
+
+            # ----------------------------------
+            # Duplicate Check
+            # ----------------------------------
+            existing = TimeSlot.query.filter_by(
+                school_id=school_id,
+                branch_id=branch_id,
+                start_time=auto_start_time,
+                shift=form.shift.data
+            ).first()
+
+            if existing:
+                flash(
+                    f"❌ Slot leh waqtigan "
+                    f"({auto_start_time.strftime('%I:%M %p')}) "
+                    f"mar hore ayaa jira.",
+                    "warning"
+                )
+                return render_template(
+                    "backend/pages/components/timetable/add_timeslot.html",
+                    form=form,
+                    user=current_user
+                )
+
+            # ----------------------------------
+            # Overlap Check
+            # ----------------------------------
+            overlap_slot = TimeSlot.query.filter(
+                TimeSlot.school_id == school_id,
+                TimeSlot.branch_id == branch_id,
+                TimeSlot.shift == form.shift.data,
+                TimeSlot.start_time < auto_end_time,
+                TimeSlot.end_time > auto_start_time
+            ).first()
+
+            if overlap_slot:
+                flash(
+                    f"❌ Waqtigaan wuxuu ku dhacayaa "
+                    f"{overlap_slot.label} "
+                    f"({overlap_slot.start_time.strftime('%I:%M %p')} - "
+                    f"{overlap_slot.end_time.strftime('%I:%M %p')})",
+                    "danger"
+                )
+
+                return render_template(
+                    "backend/pages/components/timetable/add_timeslot.html",
+                    form=form,
+                    user=current_user
+                )
+
+            # ----------------------------------
+            # Save Slot
+            # ----------------------------------
+            new_slot = TimeSlot(
+                school_id=school_id,
+                branch_id=branch_id,
+                label=form.label.data,
+                start_time=auto_start_time,
+                end_time=auto_end_time,
+                is_break=form.is_break.data,
+                shift=form.shift.data
+            )
+
+            db.session.add(new_slot)
+            db.session.commit()
+
+            flash(
+                f"✅ Time Slot created successfully! "
+                f"({auto_start_time.strftime('%I:%M %p')} - "
+                f"{auto_end_time.strftime('%I:%M %p')})",
+                "success"
+            )
+
+            return redirect(url_for('main.all_timeslots'))
+
+        except Exception as e:
+            db.session.rollback()
+            print("ERROR saving TimeSlot:", e)
+            flash("❌ Error saving time slot.", "danger")
 
     return render_template(
-        "backend/pages/components/timetable/add_timeslot.html", # Hubi path-ka template-kaaga
+        "backend/pages/components/timetable/add_timeslot.html",
         form=form,
         user=current_user
     )
@@ -14042,6 +15280,7 @@ def all_timeslots():
         user=current_user
     )
 
+
 @bp.route("/time-slots/edit/<int:id>", methods=["GET", "POST"])
 @login_required
 def edit_timeslot(id):
@@ -14054,35 +15293,39 @@ def edit_timeslot(id):
         flash("Ma haysatid ogolaansho.", "danger")
         return redirect(url_for("main.dashboard"))
 
-    # 1. Hubi Account Status
+    # Hubi Account Status
     if current_user.status == 0:
         flash("Your account is inactive. Please contact the admin.", "danger")
         return redirect(url_for('main.index'))
 
-    # 2. Soo saar slot-ka, haddii kale 404
+    # Soo saar slot-ka
     slot = TimeSlot.query.get_or_404(id)
 
-    # 3. Sharciga Authorization & Ownership
-    # School Admin wuxuu bedeli karaa kuwa branch_id-ga leh iyo kuwa aan lahayn ee school-kiisa ah
-    # Branch Admin wuxuu bedeli karaa KALIYA kuwa laantiisa
+    # Authorization
     if current_user.role.value == 'branch_admin':
         if slot.branch_id != current_user.branch_id:
-            flash("Unauthorized: Ma bedeli kartid slot aan laantaada ka tirsanayn.", "danger")
+            flash(
+                "Unauthorized: Ma bedeli kartid slot aan laantaada ka tirsanayn.",
+                "danger"
+            )
             return redirect(url_for('main.all_timeslot_list'))
+
     elif current_user.role.value == 'school_admin':
         if slot.school_id != current_user.school_id:
             flash("Unauthorized access.", "danger")
             return redirect(url_for('main.all_timeslot_list'))
+
     else:
         flash("Unauthorized", "danger")
         return redirect(url_for('main.dashboard'))
 
-    form = TimeSlotForm(obj=slot) # Ku shub xogta jirta foomka
+    form = TimeSlotForm(obj=slot)
 
     if form.validate_on_submit():
-        # 4. Hubi Duplicates (Waqti isku mid ah oo aan ahayn kan hadda la bedelayo)
+
+        # Duplicate Check
         existing = TimeSlot.query.filter(
-            TimeSlot.id != id, # Ka saar kan hadda la edit-gareynayo
+            TimeSlot.id != id,
             TimeSlot.school_id == current_user.school_id,
             TimeSlot.branch_id == slot.branch_id,
             TimeSlot.start_time == form.start_time.data,
@@ -14090,34 +15333,93 @@ def edit_timeslot(id):
         ).first()
 
         if existing:
-            flash(f"❌ Error: Waqtigan ({form.start_time.data}) hore ayaa loogu diwaangeliyey {form.shift.data}.", "warning")
+            flash(
+                f"❌ Error: Waqtigan ({form.start_time.data}) hore ayaa loogu diwaangeliyey {form.shift.data}.",
+                "warning"
+            )
+
         else:
             try:
-                # Update xogta
+                from datetime import datetime, timedelta
+
+                # Kaydi waqtigii hore
+                old_start_time = slot.start_time
+
+                # Update current slot
                 slot.label = form.label.data
                 slot.start_time = form.start_time.data
                 slot.end_time = form.end_time.data
                 slot.shift = form.shift.data
                 slot.is_break = form.is_break.data
-                
-                # Haddii school_admin wax bedelayo, wuxuu dooran karaa branch
+
                 if current_user.role.value == 'school_admin':
                     slot.branch_id = form.branch_id.data or None
 
+                # Duration-ka cusub ee slot-ka la edit-gareeyay
+                edited_start = datetime.combine(
+                    datetime.today(),
+                    slot.start_time
+                )
+
+                edited_end = datetime.combine(
+                    datetime.today(),
+                    slot.end_time
+                )
+
+                new_duration = edited_end - edited_start
+
+                # Soo qaado dhammaan slots-ka ka dambeeya
+                next_slots = TimeSlot.query.filter(
+                    TimeSlot.school_id == slot.school_id,
+                    TimeSlot.branch_id == slot.branch_id,
+                    TimeSlot.shift == slot.shift,
+                    TimeSlot.id != slot.id,
+                    TimeSlot.start_time > old_start_time
+                ).order_by(
+                    TimeSlot.start_time.asc()
+                ).all()
+
+                previous_end = slot.end_time
+
+                for next_slot in next_slots:
+
+                    new_start = datetime.combine(
+                        datetime.today(),
+                        previous_end
+                    )
+
+                    new_end = new_start + new_duration
+
+                    next_slot.start_time = new_start.time()
+                    next_slot.end_time = new_end.time()
+
+                    previous_end = next_slot.end_time
+
                 db.session.commit()
-                flash("✅ Time Slot updated successfully!", "success")
-                return redirect(url_for('main.all_timeslots'))
-            
+
+                flash(
+                    "✅ Time Slot updated successfully!",
+                    "success"
+                )
+
+                return redirect(
+                    url_for('main.all_timeslots')
+                )
+
             except Exception as e:
                 db.session.rollback()
                 print("ERROR updating TimeSlot:", e)
-                flash("❌ Error saving changes.", "danger")
+
+                flash(
+                    "❌ Error saving changes.",
+                    "danger"
+                )
 
     return render_template(
-        "backend/pages/components/timetable/edit_timeslot.html", # Waxaad isticmaali kartaa isla template-ka Add-ka
+        "backend/pages/components/timetable/edit_timeslot.html",
         form=form,
         user=current_user,
-        edit_mode=True, # Si aad ugu muujiso "Update" halkii ay ka ahaan lahayd "Save"
+        edit_mode=True,
         slot=slot
     )
 

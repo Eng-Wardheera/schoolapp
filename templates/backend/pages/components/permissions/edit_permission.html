@@ -1,0 +1,121 @@
+{% extends 'backend/home/base.html' %}
+
+{% block title %}Edit Permission | School Management{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+    <div class="page-header-left d-flex align-items-center">
+        <div class="page-header-title">
+            <h5 class="m-b-10">Permissions</h5>
+        </div>
+        <ul class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Home</a></li>
+            <li class="breadcrumb-item"><a href="{{ url_for('main.all_permissions') }}">Permissions</a></li>
+            <li class="breadcrumb-item">Edit Permission</li>
+        </ul>
+    </div>
+</div>
+
+<div class="main-content mt-4">
+    <form method="POST" id="permissionForm">
+        {{ form.hidden_tag() }}
+        <div class="card border-top-0">
+            <div class="card-header p-0">
+                <ul class="nav nav-tabs flex-wrap w-100 text-center customers-nav-tabs">
+                    <li class="nav-item flex-fill border-top">
+                        <a href="#permTab" class="nav-link active" data-bs-toggle="tab">Edit Permission Details</a>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="tab-content">
+                <div class="tab-pane fade show active" id="permTab">
+                    <div class="card-body">
+
+                        <div class="row mb-4 align-items-center">
+                            <div class="col-lg-4"><label class="fw-semibold">Permission Name:</label></div>
+                            <div class="col-lg-8">
+                                {{ form.name(class="form-control", placeholder="e.g. Manage Users") }}
+                                {% for error in form.name.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+                            </div>
+                        </div>
+
+                        <div class="row mb-4 align-items-center">
+                            <div class="col-lg-4"><label class="fw-semibold">Permission Code:</label></div>
+                            <div class="col-lg-8">
+                                {{ form.code(class="form-control", placeholder="e.g. manage_users") }}
+                                {% for error in form.code.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+                            </div>
+                        </div>
+
+                        <div class="row mb-4 align-items-center">
+                            <div class="col-lg-4"><label class="fw-semibold">Group Name:</label></div>
+                            <div class="col-lg-8">
+                                {{ form.group_name(class="form-control", placeholder="e.g. User Management") }}
+                            </div>
+                        </div>
+
+                        <div class="row mb-4 align-items-center">
+                            <div class="col-lg-4"><label class="fw-semibold">School:</label></div>
+                            <div class="col-lg-8">
+                                {{ form.school_id(class="form-select", id="school_id") }}
+                            </div>
+                        </div>
+
+                        <div class="row mb-4 align-items-center">
+                            <div class="col-lg-4"><label class="fw-semibold">Branch:</label></div>
+                            <div class="col-lg-8">
+                                {{ form.branch_id(class="form-select", id="branch_id") }}
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <div class="card-footer bg-light p-4">
+                        <div class="d-flex justify-content-center gap-3">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="feather-save me-1"></i> Update Permission
+                            </button>
+                            <a href="{{ url_for('main.all_permissions') }}" class="btn btn-outline-secondary px-4">
+                                <i class="feather-x me-1"></i> Discard
+                            </a>
+                        </div>
+                    </div>
+
+
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const schoolSelect = document.getElementById('school_id');
+    const branchSelect = document.getElementById('branch_id');
+
+    schoolSelect.addEventListener('change', function() {
+        const schoolId = this.value;
+
+        // Mar walba dib ugu bilow "No Branch (Global)"
+        branchSelect.innerHTML = '<option value="">--- No Branch (Global) ---</option>';
+
+        if (!schoolId) return;
+
+        fetch(`/get-branches/${schoolId}`)
+        .then(response => response.json())
+        .then(data => {
+            data.branches.forEach(branch => {
+                const option = document.createElement('option');
+                option.value = branch.id;
+                option.textContent = branch.name;
+                branchSelect.appendChild(option);
+            });
+        })
+        .catch(error => console.error('Error fetching branches:', error));
+    });
+});
+</script>
+
+{% endblock %}

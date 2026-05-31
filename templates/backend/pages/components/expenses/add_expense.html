@@ -1,0 +1,138 @@
+{% extends 'backend/home/base.html' %}
+
+{% block title %}{{ 'Edit' if is_edit else 'Add' }} Expense | School Management{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+    <div class="page-header-left d-flex align-items-center">
+        <div class="page-header-title">
+            <h5 class="fw-bold">{{ 'Edit' if is_edit else 'Add' }} Expense</h5>
+        </div>
+        <ul class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}"><i class="feather-home me-1"></i>Home</a></li>
+            <li class="breadcrumb-item active text-primary">Expenses</li>
+        </ul>
+    </div>
+</div>
+
+<div class="main-content">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <form method="POST">
+                {{ form.hidden_tag() }}
+
+                <div class="card shadow-sm border-0">
+                    <div class="card-header bg-primary text-white py-3">
+                        <h5 class="card-title mb-0 text-white"><i class="feather-trending-down me-2"></i>Expense Details</h5>
+                    </div>
+                    <div class="card-body p-4">
+
+                        <div class="card mb-4 border-0 shadow-sm">
+                            <div class="card-body bg-light">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <span class="text-muted d-block">Available Balance:</span>
+                                        <h4 class="mb-0 text-dark" id="display-balance">${{ "{:,.2f}".format(current_balance | default(0)) }}</h4>
+                                    </div>
+                                    <div>
+                                        <span class="text-muted d-block">Remaining After:</span>
+                                        <h4 class="mb-0 text-primary" id="remaining-balance">${{ "{:,.2f}".format(current_balance | default(0)) }}</h4>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row g-4 mb-4">
+                            <div class="col-md-12">
+                                <label class="form-label fw-bold">{{ form.description.label.text }}</label>
+                                {{ form.description(class="form-control form-control-lg", id="description-input", placeholder="E.g. Monthly Electricity Bill") }}
+                                {% for error in form.description.errors %}
+                                    <div class="text-danger small mt-1">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">{{ form.category.label.text }}</label>
+                                {{ form.category(class="form-select form-select-lg", id="category-select") }}
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">{{ form.amount.label.text }}</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light border-0">$</span>
+                                    {{ form.amount(class="form-control form-control-lg", id="amount-input", placeholder="0.00") }}
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">{{ form.payment_method.label.text }}</label>
+                                {{ form.payment_method(class="form-select form-select-lg") }}
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">{{ form.date.label.text }}</label>
+                                {{ form.date(class="form-control form-control-lg", value=current_date) }}
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <div class="card-footer bg-light p-4">
+                        <div class="d-flex justify-content-end gap-3">
+                            <a href="{{ url_for('main.all_expenses') }}" class="btn btn-outline-secondary px-4">
+                                <i class="feather-x me-1"></i> Discard
+                            </a>
+                            <button type="submit" class="btn btn-primary px-5 shadow-sm">
+                                <i class="feather-check-circle me-1"></i> {{ 'Update' if is_edit else 'Save' }} Expense
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+    .card { border-radius: 12px; overflow: hidden; }
+    .form-control-lg, .form-select-lg { border-radius: 8px; font-size: 1rem; }
+    .btn { border-radius: 8px; font-weight: 600; }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Category to Description logic
+        const categorySelect = document.getElementById('category-select');
+        const descriptionInput = document.getElementById('description-input');
+
+        categorySelect.addEventListener('change', function() {
+            const selectedText = this.options[this.selectedIndex].text;
+            if (selectedText && selectedText !== 'Select Category') {
+                descriptionInput.value = 'Monthly ' + selectedText;
+            }
+        });
+
+        // Balance Calculation Logic
+        const amountInput = document.getElementById('amount-input');
+        const remainingDisplay = document.getElementById('remaining-balance');
+        const originalBalance = parseFloat("{{ current_balance | default(0) }}");
+
+        amountInput.addEventListener('input', function() {
+            let inputAmount = parseFloat(this.value) || 0;
+            let newBalance = originalBalance - inputAmount;
+
+            // Update UI
+            remainingDisplay.innerText = '$' + newBalance.toLocaleString(undefined, {minimumFractionDigits: 2});
+            
+            // Color logic
+            if (newBalance < 0) {
+                remainingDisplay.classList.replace('text-primary', 'text-danger');
+            } else {
+                remainingDisplay.classList.replace('text-danger', 'text-primary');
+            }
+        });
+    });
+</script>
+
+{% endblock %}

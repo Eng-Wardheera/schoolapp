@@ -1,0 +1,95 @@
+{% extends 'backend/home/base.html' %}
+
+{% block title %}All Roles | School Management{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-left d-flex align-items-center">
+        <div class="page-header-title"><h5>Roles & Permissions</h5></div>
+        <ul class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Home</a></li>
+            <li class="breadcrumb-item">All Roles</li>
+        </ul>
+    </div>
+
+    <div class="page-header-right ms-auto">
+        <a href="{{ url_for('main.add_role') }}" class="btn btn-primary">
+            <i class="feather-plus me-1"></i> Add New Role
+        </a>
+    </div>
+</div>
+
+<div class="main-content">
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle" id="rolesList">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Role Name</th>
+                            <th>Description</th>
+                            <th>School</th>
+                            <th>Branch</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for role in roles %}
+                        <tr>
+                            <td>{{ loop.index }}</td>
+                            <td><strong>{{ role.name }}</strong></td>
+                            <td>{{ role.description or 'No description' }}</td>
+                            <td>
+                                <span class="badge bg-soft-primary text-primary">
+                                    {{ role.school.name if role.school else 'Global' }}
+                                </span>
+                            </td>
+                            <td>
+                                <span class="badge bg-soft-secondary text-secondary">
+                                    {{ role.branch.name if role.branch else 'All Branches' }}
+                                </span>
+                            </td>
+                            <td class="text-end">
+                                <div class="d-flex justify-content-end gap-2 px-3">
+                                    <a href="{{ url_for('main.edit_role', role_id=role.id) }}" class="btn btn-sm btn-info">
+                                        <i class="feather-edit"></i> Edit
+                                    </a>
+                                    
+                                    <form method="POST" action="{{ url_for('main.delete_role', role_id=role.id) }}" style="display:inline;">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <button type="submit" class="btn btn-sm btn-danger" 
+                                                onclick="return confirm('Ma hubtaa inaad tirtirto role-kan? Tani waxay saamayn kartaa isticmaalayaasha qaatay role-kan.');">
+                                            <i class="feather-trash-2"></i> Delete
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                
+                {% if not roles %}
+                    <div class="text-center p-3 text-muted">No roles found. <a href="{{ url_for('main.add_role') }}">Create one</a>.</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    $('#rolesList').DataTable({
+        responsive: true,
+        pageLength: 15,
+        ordering: true,
+        order: [[1, 'asc']], // U kala sarrayn magaca role-ka
+        language: { searchPlaceholder: "Search roles..." }
+    });
+});
+</script>
+{% endblock %}
+
+{% endblock %}

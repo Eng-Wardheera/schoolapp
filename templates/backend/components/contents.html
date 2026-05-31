@@ -1135,8 +1135,7 @@
 
 
 
-     
-    <!-- [Payment Records] start -->
+   <!-- [Payment Records] start -->
 
 <div class="col-xxl-8">
     <div class="card stretch stretch-full">
@@ -1148,7 +1147,7 @@
         </div>
         <div class="card-footer">
             <div class="row g-4">
-                <div class="col-lg-4">
+                <div class="col-lg-3">
                     <div class="p-3 border border-dashed rounded">
                         <div class="fs-12 text-muted mb-1">Grand Total (Amount Due)</div>
                         <h6 class="fw-bold text-dark">${{ "{:,.2f}".format(total_due) }}</h6>
@@ -1157,33 +1156,59 @@
                         </div>
                     </div>
                 </div>
-                <div class="col-lg-4">
+                <div class="col-lg-3">
                     <div class="p-3 border border-dashed rounded">
                         <div class="fs-12 text-muted mb-1">Amount Paid (Collected)</div>
-                        <h6 class="fw-bold text-dark">${{ "{:,.2f}".format(total_paid) }}</h6>
+                        <h6 class="fw-bold text-dark">
+                            ${{ "{:,.2f}".format(total_paid) }}
+                        </h6>
                         <div class="progress mt-2 ht-3">
-                            <div class="progress-bar bg-success" role="progressbar" style="width: {{ paid_percentage }}%"></div>
+                            <div class="progress-bar bg-success" style="width: {{ paid_percentage }}%"></div>
                         </div>
-                        <small class="text-success fs-10">{{ paid_percentage }}% recovered</small>
+                        <small class="text-success fs-10">
+                            {{ paid_percentage }}% collected
+                        </small>
                     </div>
                 </div>
-                <div class="col-lg-4">
+
+                <div class="col-lg-3">
                     <div class="p-3 border border-dashed rounded">
-                        <div class="fs-12 text-muted mb-1">Remaining Balance</div>
-                        <h6 class="fw-bold text-dark">${{ "{:,.2f}".format(total_balance) }}</h6>
+                        <div class="fs-12 text-muted mb-1">Amount Waiting ($)</div>
+                        <h6 class="fw-bold text-dark">
+                            ${{ "{:,.2f}".format(total_due - total_paid) }}
+                        </h6>
                         <div class="progress mt-2 ht-3">
-                            <div class="progress-bar bg-danger" role="progressbar" style="width: {{ balance_percentage }}%"></div>
+                            <div class="progress-bar bg-warning" style="width: {{ remaining_percentage_calc }}%"></div>
                         </div>
-                        <small class="text-danger fs-10">{{ balance_percentage }}% outstanding</small>
+                        <small class="text-warning fs-10">
+                            {{ remaining_percentage_calc }}% remaining
+                        </small>
                     </div>
                 </div>
+
+
+                <div class="col-lg-3">
+                    <div class="p-3 border border-dashed rounded">
+                        <div class="fs-12 text-muted mb-1">Remaining Balance (DB)</div>
+                        <h6 class="fw-bold text-dark">
+                            ${{ "{:,.2f}".format(total_balance) }}
+                        </h6>
+                        <div class="progress mt-2 ht-3">
+                            <div class="progress-bar bg-danger" style="width: {{ balance_percentage }}%"></div>
+                        </div>
+                        <small class="text-danger fs-10">
+                            {{ balance_percentage }}% outstanding
+                        </small>
+                    </div>
+                </div>
+
+
             </div>
         </div>
     </div>
 </div>
     
     <!-- [Payment Records] end -->
-
 
     
     <div class="row">

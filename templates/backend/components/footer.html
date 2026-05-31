@@ -1,4 +1,5 @@
 <footer class="footer">
+
     <p class="fs-11 text-muted fw-medium text-uppercase mb-0 copyright">
         <span>Copyright ©</span>
         <script>
@@ -6,24 +7,72 @@
         </script>
     </p>
 
+    {% set display_name = 'Engr Kulmiye' %}
+
+    {% if current_user.is_authenticated %}
+
+        {% if current_user.branch %}
+            {% set display_name = current_user.branch.name %}
+
+        {% elif current_user.school %}
+            {% set display_name = current_user.school.name %}
+
+        {% endif %}
+
+    {% elif g.site_settings and g.site_settings.system_name is defined and g.site_settings.system_name %}
+        {% set display_name = g.site_settings.system_name %}
+    {% endif %}
+
     <p>
         <span>
-            By: 
-            <a target="_blank" href="{{ settings.facebook if settings and settings.facebook else '#' }}">
-                {{ settings.system_name if settings and settings.system_name else 'Eng Kulmiye' }}
+            By:
+            <a target="_blank"
+               href="{{ g.site_settings.facebook if g.site_settings and g.site_settings.facebook is defined else '#' }}">
+                {{ display_name }}
             </a>
-        </span> • 
+        </span>
+
+        &bull;
+
         <span>
-            Distributed by: 
-            <a target="_blank" href="{{ settings.twitter if settings and settings.twitter else '#' }}">
-                {{ settings.system_name if settings and settings.system_name else 'Engr Kulmiye' }}
+            Distributed by:
+            <a target="_blank"
+               href="{{ g.site_settings.twitter if g.site_settings and g.site_settings.twitter is defined else '#' }}">
+                {{ display_name }}
             </a>
         </span>
     </p>
 
     <div class="d-flex align-items-center gap-4">
+
+        {% if g.site_settings and g.site_settings.facebook is defined and g.site_settings.facebook %}
+        <a href="{{ g.site_settings.facebook }}"
+           target="_blank"
+           class="fs-11 fw-semibold text-uppercase">
+            Facebook
+        </a>
+        {% endif %}
+
+        {% if g.site_settings and g.site_settings.twitter is defined and g.site_settings.twitter %}
+        <a href="{{ g.site_settings.twitter }}"
+           target="_blank"
+           class="fs-11 fw-semibold text-uppercase">
+            Twitter
+        </a>
+        {% endif %}
+
+        {% if g.site_settings and g.site_settings.instagram is defined and g.site_settings.instagram %}
+        <a href="{{ g.site_settings.instagram }}"
+           target="_blank"
+           class="fs-11 fw-semibold text-uppercase">
+            Instagram
+        </a>
+        {% endif %}
+
         <a href="javascript:void(0);" class="fs-11 fw-semibold text-uppercase">Help</a>
         <a href="javascript:void(0);" class="fs-11 fw-semibold text-uppercase">Terms</a>
         <a href="javascript:void(0);" class="fs-11 fw-semibold text-uppercase">Privacy</a>
+
     </div>
+
 </footer>

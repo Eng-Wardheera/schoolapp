@@ -6,7 +6,7 @@ from flask_wtf import FlaskForm
 from sqlalchemy.orm import joinedload
 from wtforms import DateField, DecimalField, FileField, FloatField, HiddenField, IntegerField, SelectField, SelectMultipleField, StringField, PasswordField, BooleanField, SubmitField, TextAreaField, TimeField, ValidationError
 from wtforms.validators import URL, DataRequired, Email, EqualTo, InputRequired, Length, NumberRange, Optional, Regexp
-from app.modal import AcademicYear, Branch, Class, ClassLevel, Exam, ExamSubject, ExamTimetable, Parent, School, Section, Student, StudentFeeCollection, Subject, Teacher, TeacherAssignment, Term, TimeSlot, UserRole
+from app.modal import AcademicYear, Branch, Class, ClassLevel, Exam, ExamSubject, ExamTimetable, Parent, Role, School, Section, Student, StudentFeeCollection, Subject, Teacher, TeacherAssignment, Term, TimeSlot, UserRole
 from flask_wtf.file import FileField, FileAllowed
 
 from app.utils import get_academic_year
@@ -1050,6 +1050,13 @@ class StudentFeeCollectionForm(FlaskForm):
         default=0.0,
         validators=[InputRequired(message="Amount is required"), NumberRange(min=0)]
     )
+    # ✅ Halkan ayaan ku darnay Payment Method
+    payment_method = SelectField(
+        "Payment Method",
+        choices=[('Mobile', 'Mobile'), ('Cash', 'Cash'), ('Bank', 'Bank')],
+        default='Mobile',
+        validators=[DataRequired(message="Please select a payment method")]
+    )
     payment_date = DateField(
         "Payment Date", 
         format="%Y-%m-%d", 
@@ -1165,6 +1172,44 @@ class FeeInvoiceForm(FlaskForm):
             (f.id, f"{f.student.full_name} - {f.class_obj.name} - {f.payment_status}")
             for f in fee_collections
         ]
+
+
+
+
+class ExpenseForm(FlaskForm):
+    description = StringField("Description", validators=[DataRequired(message="Please enter description")])
+    category = SelectField(
+        "Category", 
+        choices=[('Salary', 'Salary'), ('Rent', 'Rent'), ('Utilities', 'Utilities'), ('Maintenance', 'Maintenance'), ('Other', 'Other')],
+        validators=[DataRequired()]
+    )
+    amount = FloatField(
+        "Amount", 
+        validators=[InputRequired(), NumberRange(min=0)]
+    )
+    payment_method = SelectField(
+        "Payment Method",
+        choices=[('Mobile', 'Mobile'), ('Cash', 'Cash'), ('Bank', 'Bank')],
+        default='Mobile'
+    )
+    date = DateField("Date", format="%Y-%m-%d", validators=[DataRequired()])
+    
+    school_id = HiddenField()
+    branch_id = HiddenField()
+    submit = SubmitField("Save Expense")
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # ---------------- SCOPING LOGIC ----------------
+        if current_user.role.value == "school_admin":
+            self.school_id.data = current_user.school_id
+            self.branch_id.data = None
+        elif current_user.role.value == "branch_admin":
+            self.school_id.data = current_user.school_id
+            self.branch_id.data = current_user.branch_id
+
+
+
 
 
 # Attendance Form
@@ -1987,13 +2032,87 @@ class TimetableForm(FlaskForm):
 
 
 
+#---------------- Role & Permission
+class PermissionForm(FlaskForm):
+    name = StringField('Permission Name', validators=[DataRequired()])
+    code = StringField('Permission Code (e.g., manage_users)', validators=[DataRequired()])
+    group_name = StringField('Group Name', validators=[Optional()])
+    
+    school_id = SelectField('School', coerce=lambda x: int(x) if x else None, validators=[Optional()])
+    branch_id = SelectField('Branch', coerce=lambda x: int(x) if x else None, validators=[Optional()])
+    
+    submit = SubmitField('Save Permission')
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        
+        # 1. Load Schools
+        schools = School.query.all()
+        self.school_id.choices = [('', '--- Select School ---')] + [(s.id, s.name) for s in schools]
+        
+        # 2. Dynamic Branch Loading
+        # Bilowgii geli option-ka Global
+        self.branch_id.choices = [('', '--- No Branch (Global) ---')]
+        
+        # Halkan waa halka la saxay (Indentation-ka)
+        if self.school_id.data:
+            branches = Branch.query.filter_by(school_id=self.school_id.data).all()
+            # Hadda kani wuxuu ku dhex jiraa 'if' block-ka, markaa error ma dhacayo
+            self.branch_id.choices += [(b.id, b.name) for b in branches]
+
+    def validate_code(self, field):
+        if not field.data.replace('_', '').isalnum():
+            raise ValidationError("Code-ka wuxuu ka koobnaan karaa kaliya xarfo, tirooyin iyo underscore.")
+        
 
 
+class RoleForm(FlaskForm):
+    name = StringField('Role Name', validators=[DataRequired()])
+    description = TextAreaField('Description', validators=[Optional()])
+    
+    # 1. school_id iyo branch_id waa Optional (Global ayaa loo isticmaali karaa)
+    school_id = SelectField('School', coerce=lambda x: int(x) if x else None, validators=[Optional()])
+    branch_id = SelectField('Branch', coerce=lambda x: int(x) if x else None, validators=[Optional()])
+    
+    submit = SubmitField('Save Role')
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        
+        # Load Schools + Global Option
+        schools = School.query.all()
+        self.school_id.choices = [('', '--- Global (All Schools) ---')] + [(s.id, s.name) for s in schools]
+        
+        # Load Branches + Global Option
+        self.branch_id.choices = [('', '--- All Branches (Global) ---')]
+        
+        # Check current data for dynamic branch loading
+        target_school_id = self.school_id.data
+        if not target_school_id and 'obj' in kwargs:
+            target_school_id = kwargs['obj'].school_id
+            
+        if target_school_id:
+            branches = Branch.query.filter_by(school_id=target_school_id).all()
+            self.branch_id.choices += [(b.id, b.name) for b in branches]
 
-
-
-
+    # VALIDATION: Hubi in Name-ku uu u gaar yahay heerka uu joogo
+    def validate_name(self, field):
+        # Query-ga aasaasiga ah (raadi magaca)
+        query = Role.query.filter_by(name=field.data)
+        
+        # Haddii uu school_id jiro, kaliya ka raadi school-kaas
+        if self.school_id.data:
+            query = query.filter_by(school_id=self.school_id.data)
+        else:
+            # Haddii uusan jirin (Global), hubi inaysan jirin role global ah oo magacan leh
+            query = query.filter(Role.school_id == None)
+            
+        # Edit scenario: Ka saar nafteeda
+        if 'obj' in self.__dict__ and self.obj:
+            query = query.filter(Role.id != self.obj.id)
+            
+        if query.first():
+            raise ValidationError("Role magacan leh horay ayaa loogu diiwaangeliyay heerkan (Global ama School-kan).")
 
 
 

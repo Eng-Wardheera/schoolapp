@@ -105,12 +105,12 @@
                             <div class="d-flex align-items-center gap-3">
                                 <div style="width:120px;height:120px;border:1px solid #ddd;border-radius:6px;overflow:hidden;">
                                     <img
-                                        id="subLogoPreview"
+                                        id="signLogoPreview"
                                         src="{{ url_for('static', filename='backend/uploads/images/no_image.jpg') }}"
                                         class="img-fluid h-100 w-100"
                                     >
                                 </div>
-                                {{ form.sign_logo(class="form-control", onchange="previewImage(event,'subLogoPreview')") }}
+                                {{ form.sign_logo(class="form-control", onchange="previewImage(event,'signLogoPreview')") }}
                             </div>
                         </div>
 
