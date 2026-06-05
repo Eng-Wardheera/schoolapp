@@ -819,6 +819,7 @@ def forgot_password_change_password():
         flash("User not found.", "error")
         return redirect(url_for('main.forgot_password'))
 
+    # Hubi in loo dhiibay foomka saxda ah
     form = ForgotPasswordChangeForm()
 
     # 3. Marka foomka la soo gudbiyo (POST)
@@ -836,20 +837,35 @@ def forgot_password_change_password():
             flash("Password-ada aad qortay isku mid ma ahan!", "danger")
             return redirect(request.url)
 
-        # 6. Beddel password-ka oo keydi
+        # 6. Beddel password-ka oo ku khasab FORCE LOGOUT dhammaan aaladaha (Devices)
         try:
+            # Beddel password-ka hashed-ka ah
             user.password = generate_password_hash(new_password)
+            
+            # ---------------- FORCE LOGOUT LOGIC ----------------
+            # A. Ka tirtir dhammaan session-nada u kaydsan database-ka ee aaladaha kale (UserSession)
+            if user.sessions:
+                for active_session in user.sessions:
+                    db.session.delete(active_session)
+            
+            # B. Dib u cusboonaysii amniga qofka ee gudaha model-ka User
+            user.auth_status = 'logout'
+            user.session_token = None  # Buriyay token-kii hore si aalad kasta loo diido
+            user.remember_token = None # Buriyay 'Remember Me' cookies haddii ay jireen
+            
+            # C. Hubi in isbeddelka la keydiyo kahor intaan la tirtirin session-ka browser-ka hadda jooga
             db.session.commit()
 
-            # Clear session si uusan mar kale u isticmaalin link-ga
-            session.pop('forgot_password_verified_email', None)
+            # D. Si buuxda u tirtir session-ka browser-ka hadda furan si qofka xataa halkan looga tuuro
+            session.clear()
 
-            flash("✅ Password-ka si guul leh ayaa loo beddelay! Hadda waad geli kartaa.", "success")
+            flash("✅ Password-ka si guul leh ayaa loo beddelay! Dhammaan aaladihii aad ka kacsanayd waa lagaa soo tuuray (Logged out). Hadda dib u login gareey.", "success")
             return redirect(url_for('main.login'))
             
         except Exception as e:
             db.session.rollback()
-            flash("Cilad ayaa dhacday intii password-ka la keydinayay.", "error")
+            print("FORCE LOGOUT ERROR:", e)
+            flash("Cilad ayaa dhacday intii password-ka iyo aaladaha la xaqiijinayay.", "error")
 
     # 7. Soo bandhig foomka (GET)
     site_data = SettingsData.query.first()
@@ -1779,45 +1795,82 @@ def dashboard():
     # Waxaan u baahanahay total_paid iyo total_balance si aan chart ugu samayno
 
     # --- 4. Xogta Gaarka u ah Macallinka ---
+    # --- 4. Xogta Gaarka u ah Macallinka ---
     teacher_stats = {
-        'classes_count': 0, 
-        'subjects_count': 0, 
+        'classes_count': 0,
+        'subjects_count': 0,
         'class_subjects_count': 0,
-        'exam_papers_count': 0
+        'exam_papers_count': 0,
+        'detailed_subjects': []   # NEW (for full display)
     }
 
     if user_role == 'teacher':
         teacher_record = Teacher.query.filter_by(user_id=current_user.id).first()
-        
+
         if teacher_record:
-            # Ka soo saar Assignments-ka (Kaliya kuwa Macallinka iyo Laantiisa)
-            assign_query = TeacherAssignment.query.filter_by(teacher_id=teacher_record.id)
-            
-            # Hubi Branch-ka
+
+            assign_query = TeacherAssignment.query.filter_by(
+                teacher_id=teacher_record.id
+            )
+
+            # Branch filter
             if b_id:
                 assign_query = assign_query.filter_by(branch_id=b_id)
-            
+
             assignments = assign_query.all()
 
-            # Unique Counts
-            teacher_stats['classes_count'] = len(set([a.class_id for a in assignments]))
-            
-            sub_ids = []
+            # =========================
+            # ✔ UNIQUE CLASSES ONLY
+            # =========================
+            teacher_stats['classes_count'] = len(
+                set([a.class_id for a in assignments])
+            )
+
+            # =========================
+            # ✔ SUBJECTS (NO LOSS, NO WRONG UNIQUE)
+            # =========================
+            subject_pairs = []   # (class_id, subject_id)
+
+            all_subject_ids = []
+
+            detailed = []
+
             for a in assignments:
+                class_id = a.class_id
+
                 if a.subject_ids:
-                    sub_ids.extend(a.subject_ids)
-            teacher_stats['subjects_count'] = len(set(sub_ids))
-            
+                    for sid in a.subject_ids:
+                        all_subject_ids.append(sid)
+                        subject_pairs.append((class_id, sid))
+
+                        # optional: store detailed view
+                        detailed.append({
+                            "class_id": class_id,
+                            "subject_id": sid
+                        })
+
+            # ✔ TOTAL SUBJECT COUNT (REAL)
+            teacher_stats['subjects_count'] = len(all_subject_ids)
+
+            # ✔ CLASS-SUBJECT ASSIGNMENTS COUNT (REAL)
             teacher_stats['class_subjects_count'] = len(assignments)
 
-            # Exam Papers (Kaliya kuwa Macallinka uu qoray iyo Laantiisa)
-            paper_query = ExamPaper.query.filter_by(teacher_id=teacher_record.id)
+            # ✔ FULL DETAIL LIST (NO DUPLICATE LOSS)
+            teacher_stats['detailed_subjects'] = detailed
+
+            # =========================
+            # ✔ EXAM PAPERS
+            # =========================
+            paper_query = ExamPaper.query.filter_by(
+                teacher_id=teacher_record.id
+            )
+
             if b_id:
                 paper_query = paper_query.filter_by(branch_id=b_id)
-            
+
             teacher_stats['exam_papers_count'] = paper_query.count()
-   
-    # --- Student Specific Logic ---
+
+     # --- Student Specific Logic ---
     student_stats = {
         'attendance_rate': 0,
         'present_days': 0,
@@ -1870,6 +1923,7 @@ def dashboard():
           
 
     # --- 5. Tirada Guud (Dynamic Counts) ---
+    # --- 5. Tirada Guud (Dynamic Counts) ---
     counts = {
         'students': apply_filters(Student).count(),
         'teachers': apply_filters(Teacher).count(),
@@ -1877,9 +1931,21 @@ def dashboard():
         'classes': apply_filters(Class).count(),
         'subjects': apply_filters(Subject).count(),
         'class_subjects': apply_filters(ClassSubject).count(),
-        'teacher_assignments': apply_filters(TeacherAssignment).count(),
         'exams': apply_filters(Exam).count(),
     }
+
+    # ==============================
+    # ✔ REAL TEACHER SUBJECT COUNT
+    # ==============================
+    assignments = apply_filters(TeacherAssignment).all()
+
+    all_subjects = []
+
+    for a in assignments:
+        if a.subject_ids:
+            all_subjects.extend(a.subject_ids)
+
+    counts['teacher_assignments'] = len(all_subjects)
 
     # --- 6. Session & Settings ---
     active_sessions_count = UserSession.query.filter_by(user_id=current_user.id, is_active=True).count()
@@ -2084,7 +2150,7 @@ def toggle_user_status(user_id):
 
     target_user = User.query.get_or_404(user_id)
 
-    # ==========================================
+   # ==========================================
     # SUPER ADMIN
     # ==========================================
     if current_user.role.value == "superadmin":
@@ -2101,7 +2167,10 @@ def toggle_user_status(user_id):
             # -------------------------------
             if not new_status:
 
-                if sid is not None:
+                # =====================================
+                # SCHOOL ADMIN
+                # =====================================
+                if target_user.role.value == "school_admin":
 
                     User.query.filter(
                         User.school_id == sid
@@ -2129,7 +2198,10 @@ def toggle_user_status(user_id):
                         "warning"
                     )
 
-                elif bid is not None:
+                # =====================================
+                # BRANCH ADMIN
+                # =====================================
+                elif target_user.role.value == "branch_admin":
 
                     User.query.filter(
                         User.branch_id == bid
@@ -2150,12 +2222,27 @@ def toggle_user_status(user_id):
                         "warning"
                     )
 
+                # =====================================
+                # NORMAL USER
+                # =====================================
+                else:
+
+                    target_user.status = False
+
+                    flash(
+                        "User waa la deactivate gareeyay.",
+                        "warning"
+                    )
+
             # -------------------------------
             # ACTIVATE
             # -------------------------------
             else:
 
-                if sid is not None:
+                # =====================================
+                # SCHOOL ADMIN
+                # =====================================
+                if target_user.role.value == "school_admin":
 
                     User.query.filter(
                         User.school_id == sid
@@ -2183,7 +2270,10 @@ def toggle_user_status(user_id):
                         "success"
                     )
 
-                elif bid is not None:
+                # =====================================
+                # BRANCH ADMIN
+                # =====================================
+                elif target_user.role.value == "branch_admin":
 
                     User.query.filter(
                         User.branch_id == bid
@@ -2201,6 +2291,18 @@ def toggle_user_status(user_id):
 
                     flash(
                         "Branch + Users waa la activate gareeyay.",
+                        "success"
+                    )
+
+                # =====================================
+                # NORMAL USER
+                # =====================================
+                else:
+
+                    target_user.status = True
+
+                    flash(
+                        "User waa la activate gareeyay.",
                         "success"
                     )
 
@@ -2280,7 +2382,7 @@ def toggle_user_status(user_id):
         flash("Permission denied!", "danger")
         return redirect(url_for("main.dashboard"))
 
-        
+
 #--------------- Notificstion Contacts
 
 
@@ -2931,8 +3033,7 @@ def remove_photo():
 
 
 
-#-------------- School All
-
+#------------- Schools All
 @bp.route('/all/schools')
 @login_required
 def all_schools():
@@ -3480,15 +3581,10 @@ def edit_user(user_id):
         flash("Account-kaagu ma shaqeynayo.", "danger")
         return redirect(url_for("main.dashboard"))
 
-    allowed_roles = ["school_admin","superadmin", "branch_admin"]
-    if current_user.role.value not in allowed_roles:
-        flash("Ma haysatid ogolaansho.", "danger")
-        return redirect(url_for("main.dashboard"))
-
     # ------------------- ROLE ACCESS -------------------
     if current_user.role not in [UserRole.superadmin, UserRole.school_admin, UserRole.branch_admin]:
-        flash("Unauthorized", "danger")
-        return redirect(url_for('main.dashboard'))
+        flash("Ma haysatid ogolaansho.", "danger")
+        return redirect(url_for("main.dashboard"))
 
     user = User.query.get_or_404(user_id)
 
@@ -3497,15 +3593,13 @@ def edit_user(user_id):
         flash("You cannot edit your own account here.", "warning")
         return redirect(url_for('main.all_users'))
 
-    # ------------------- ROLE-BASED ACCESS -------------------
+    # ------------------- ROLE-BASED ACCESS (GET) -------------------
     if current_user.role == UserRole.school_admin:
-        # School admin can only edit teachers, students, parents in their school
         if user.school_id != current_user.school_id or user.role in [UserRole.school_admin, UserRole.branch_admin, UserRole.superadmin]:
             flash("Unauthorized to edit this user", "danger")
             return redirect(url_for('main.all_users'))
 
     elif current_user.role == UserRole.branch_admin:
-        # Branch admin can only edit users in their branch
         if user.school_id != current_user.school_id or user.branch_id != current_user.branch_id or user.role in [UserRole.school_admin, UserRole.superadmin]:
             flash("Unauthorized to edit this user", "danger")
             return redirect(url_for('main.all_users'))
@@ -3527,7 +3621,7 @@ def edit_user(user_id):
         username = request.form.get("username", "").strip()
         fullname = request.form.get("fullname", "").strip()
         email = request.form.get("email", "").strip()
-        role = request.form.get("role")
+        role_str = request.form.get("role")
         status = request.form.get("status")
         school_id = request.form.get("school_id")
         branch_id = request.form.get("branch_id")
@@ -3539,7 +3633,7 @@ def edit_user(user_id):
         phone = request.form.get("phone", "")
 
         # ------------------- VALIDATION -------------------
-        if not username or not email or not role:
+        if not username or not email or not role_str:
             flash("Required fields missing", "danger")
             return redirect(request.url)
 
@@ -3557,24 +3651,27 @@ def edit_user(user_id):
                 return redirect(request.url)
             user.password = generate_password_hash(password)
 
+        # ------------------- ROLE SECURITY -------------------
+        requested_role = UserRole[role_str]
+
+        if current_user.role == UserRole.school_admin and requested_role in [UserRole.superadmin, UserRole.school_admin]:
+            flash("Ma siin kartid qofka door ka sarreeya kanaga.", "danger")
+            return redirect(request.url)
+        
+        if current_user.role == UserRole.branch_admin and requested_role in [UserRole.superadmin, UserRole.school_admin, UserRole.branch_admin]:
+            flash("Ma siin kartid qofka door la mid ah ama ka sarreeya kanaga.", "danger")
+            return redirect(request.url)
+
         # ------------------- UPDATE BASIC INFO -------------------
         user.username = username
         user.fullname = fullname
         user.email = email
-        user.role = UserRole[role]
+        user.role = requested_role
         user.status = True if status == '1' else False
         user.updated_at = datetime.now(pytz.timezone("Africa/Nairobi"))
 
-        # ------------------- SCHOOL / BRANCH SECURITY -------------------
-        if current_user.role == UserRole.superadmin:
-            user.school_id = int(school_id) if school_id and school_id != "0" else None
-            user.branch_id = int(branch_id) if branch_id and branch_id != "0" else None
-        elif current_user.role == UserRole.school_admin:
-            user.school_id = current_user.school_id
-            user.branch_id = int(branch_id) if branch_id and branch_id != "0" else None
-        elif current_user.role == UserRole.branch_admin:
-            user.school_id = current_user.school_id
-            user.branch_id = current_user.branch_id
+        # ------------------- SCHOOL / BRANCH PROTECTION (SAXID) -------------------
+      
 
         # ------------------- COUNTRY + PHONE -------------------
         user.country = country_name
@@ -3617,7 +3714,6 @@ def edit_user(user_id):
             os.makedirs(folder, exist_ok=True)
             path = os.path.join(folder, filename)
             image.save(path)
-            # Delete old
             if user.photo:
                 old_path = os.path.join('static', user.photo)
                 if os.path.exists(old_path):
@@ -3652,7 +3748,6 @@ def edit_user(user_id):
         site_data=site_data,
         UserRole=UserRole 
     )
-
 
 #---------------------------------------------------
 #---- Route: 9 | Delete User - Backend Template ------
@@ -5819,28 +5914,41 @@ def add_parent():
         new_parent.set_password(raw_password)
 
         # Create User
+        # --------------------- CREATE USER LOGIC (DYNAMIC SUFFIX) ---------------------
         first_name = full_name_clean.split()[0].lower() if full_name_clean else 'user'
-        email = f"{first_name}{roll_no_clean}@gmail.com" if roll_no_clean else f"{first_name}@gmail.com"
-        username = f"{first_name}{roll_no_clean}" if roll_no_clean else first_name
+        base_username = f"{first_name}{roll_no_clean}" if roll_no_clean else first_name
 
-        existing_user = User.query.filter_by(email=email).first()
-        if not existing_user:
-            user = User(
-                username=username,
-                fullname=full_name_clean,
-                email=email,
-                school_id=form.school_id.data,
-                branch_id=branch_id,
-                role=UserRole.parent,
-                auth_status='logout',
-                status=True,
-                password=generate_password_hash(raw_password)
-            )
-            db.session.add(user)
-            db.session.flush()
-            new_parent.user_id = user.id
-        else:
-            new_parent.user_id = existing_user.id
+        username = base_username
+        email = f"{username}@gmail.com"
+
+        # 1. DYNAMIC LOOP: Hubi haddii username-ka ama Email-ka uu horey u jiray
+        suffix = 1
+        while User.query.filter((User.username == username) | (User.email == email)).first():
+            # Haddii la arko qof horey u qaatay (ha noqdo arday, macalin ama waalid kale)
+            # Wuxuu magaca ka dhigayaa tusaale: asad260101, asad260102, asad260103...
+            username = f"{base_username}{suffix:02d}"  # ':02d' waxay ka dhigaysaa nambarka labo god (01, 02, 03)
+            email = f"{username}@gmail.com"
+            suffix += 1  # Haddii kale oo la waayo wuu sii kordhinayaa saacad kasta
+
+        # 2. Markaynu helno mid 100% Unique ah oo firaaqo ah, ayaan halkan ku abuureynaa
+        user = User(
+            username=username,
+            fullname=full_name_clean,
+            email=email,
+            country='Somalia',
+            state='Banadir',
+            phone=form.phone.data.strip(),
+            school_id=form.school_id.data,
+            branch_id=branch_id,
+            role=UserRole.parent,
+            auth_status='logout',
+            status=True,
+            password=generate_password_hash(raw_password)
+        )
+
+        db.session.add(user)
+        db.session.flush()  # Toos u soo saar user.id-ga cusub
+        new_parent.user_id = user.id
 
         # Save Parent
         try:
@@ -5921,22 +6029,61 @@ def edit_parent(parent_id):
         if raw_password:
             parent.set_password(raw_password)
 
-        # Sync User
-        user = User.query.filter_by(email=parent.email).first()
+      # --------------------- ADVANCED SYNC USER (DYNAMIC SUFFIX) ---------------------
+        first_name = full_name_clean.split()[0].lower() if full_name_clean else 'user'
+        base_username = f"{first_name}{roll_no_clean or ''}"
+
+        # 1. Ka raadi user-ka hadda jira email-ka waalidka
+        user = User.query.filter_by(email=parent.email).first() if parent.email else None
+
         if user:
-            user.username = full_name_clean.split()[0].lower() + (roll_no_clean or '')
+            # --- UPDATE MODE ---
+            # Haddii magaca ama roll_no isbeddelay, bixi username cusub oo la xaqiFull-iyay
+            proposed_username = base_username
+            proposed_email = parent.email
+
+            # Loop-ka wuxuu hubinayaa in magaca cusub uusan qof kale leeyahay (Marka laga reebo qofkan laftiisa 'user.id')
+            suffix = 1
+            while User.query.filter(
+                ((User.username == proposed_username) | (User.email == proposed_email)) & 
+                (User.id != user.id)
+            ).first():
+                proposed_username = f"{base_username}{suffix:02d}"
+                proposed_email = f"{proposed_username}@gmail.com"
+                suffix += 1
+
+            # Ku shub xogta cusub ee la xaqiijiyay
+            user.username = proposed_username
             user.fullname = full_name_clean
-            user.email = parent.email
+            user.email = proposed_email  # Wuxuu isbeddelayaa kaliya haddii username-ka la dhex-galay
             user.school_id = parent.school_id
             user.branch_id = parent.branch_id
+            
             if raw_password:
                 user.password = generate_password_hash(raw_password)
+                
             parent.user_id = user.id
+
         else:
+            # --- CREATE MODE ---
+            # Haddii waalidku uusan lahayn User horey u jiray, u samee mid gebi ahaanba cusub
+            username = base_username
+            email = parent.email if parent.email else f"{username}@gmail.com"
+
+            # Hubi in database-ka oo dhan uu unique ka yahay
+            suffix = 1
+            while User.query.filter((User.username == username) | (User.email == email)).first():
+                username = f"{base_username}{suffix:02d}"
+                email = f"{username}@gmail.com"
+                suffix += 1
+
             new_user = User(
-                username=full_name_clean.split()[0].lower() + (roll_no_clean or ''),
+                username=username,
                 fullname=full_name_clean,
-                email=parent.email,
+                email=email,
+                country='Somalia',
+                state='Banadir',
+                phone=form.phone.data.strip(),
                 school_id=parent.school_id,
                 branch_id=parent.branch_id,
                 role=UserRole.parent,
@@ -5945,7 +6092,7 @@ def edit_parent(parent_id):
                 password=generate_password_hash(raw_password or generate_parent_password())
             )
             db.session.add(new_user)
-            db.session.flush()
+            db.session.flush()  # Toos u dhal ID-ga adigoo commit gareyn
             parent.user_id = new_user.id
 
         # Commit changes
@@ -6777,6 +6924,25 @@ def add_student():
             flash("A student with this full name already exists in this school/branch!", "warning")
             return redirect(url_for('main.add_student'))
 
+        # Waxaan ka soo xalanaynaa foomka haddii uu joogo 'academic_year_id', haddii kalena kii nidaamka ugu firfirconaa (Active)
+        academic_year_id = request.form.get('academic_year_id') or getattr(form, 'academic_year_id', None)
+        
+        if academic_year_id:
+            active_year = AcademicYear.query.get(academic_year_id)
+        else:
+            active_year = AcademicYear.query.filter_by(is_active=True).first()
+
+        # Haddii geltu dhacdo oo la waayo Sanad Dugsiyood active ah, habka hoose ayaa nidaamka badbaadinaya
+        if active_year:
+            ac_year_id = active_year.id
+            ac_year_str = f"{active_year.start_year} - {active_year.end_year}"
+            year_name_str = active_year.name  # Kani waa kii shalay bur-buriyay MySQL (NOT NULL column)
+        else:
+            # Fallback ammaan ah haddii database-ka laga waayo wax Academic Year ah
+            ac_year_id = None
+            ac_year_str = (form.academic_year.data or "").strip() or "2026 - 2027"
+            year_name_str = ac_year_str  # Nuqul ka dhig si uusan u noqon NULL
+
         # --------------------- CREATE STUDENT INSTANCE ---------------------
         new_student = Student(
             full_name=full_name_clean,
@@ -6787,44 +6953,58 @@ def add_student():
             class_id=form.class_id.data or None,
             level_id=form.level_id.data or None,
             section_id=form.section_id.data or None,
-            shift=form.shift.data,   # ✅ NEW
+            shift=form.shift.data,
             date_of_birth=form.date_of_birth.data,
             place_of_birth=(form.place_of_birth.data or "").strip() or None,
             photo=(form.photo.data or "").strip() or None,
-            academic_year=(form.academic_year.data or "").strip() or None,
             roll_no=roll_no_clean,
             price=form.price.data or 0,
             registration_fee=form.registration_fee.data or 0,
-            status=form.status.data
+            status=form.status.data,
+            # Xogtii sanadka dugsiyeedka ee la saxay:
+            academic_year_id=ac_year_id,
+            academic_year=ac_year_str,
+            year_name_str=year_name_str  # Hadda xog sax ah ayaa halkan galaysa!
         )
 
         # --------------------- SET PASSWORD ---------------------
         raw_password = form.password.data.strip() if form.password.data else generate_student_password()
         new_student.set_password(raw_password)
 
-        # --------------------- CREATE STUDENT USER ---------------------
-        first_name = full_name_clean.split()[0].lower()
-        email = f"{first_name}{roll_no_clean}@gmail.com"
-        username = f"{first_name}{roll_no_clean}"
+        # --------------------- CREATE STUDENT USER (DYNAMIC SUFFIX) ---------------------
+        first_name = full_name_clean.split()[0].lower() if full_name_clean else 'student'
+        base_username = f"{first_name}{roll_no_clean}" if roll_no_clean else first_name
 
-        existing_user = User.query.filter_by(email=email).first()
-        if not existing_user:
-            user = User(
-                username=username,
-                fullname=full_name_clean,
-                email=email,
-                school_id=school_id,
-                branch_id=branch_id,
-                role=UserRole.student,
-                auth_status='logout',
-                status=True
-            )
-            user.password = generate_password_hash(raw_password)
-            db.session.add(user)
-            db.session.flush()  # get user.id
-            new_student.user = user  # ✅ LINK to student
-        else:
-            new_student.user_id = existing_user.id  # ✅ LINK if user already exists
+        username = base_username
+        email = f"{username}@gmail.com"
+
+        # Loop-kani wuxuu hubinayaa database-ka oo dhan haddii username-ka ama email-ka la degan yahay
+        suffix = 1
+        while User.query.filter((User.username == username) | (User.email == email)).first():
+            # Haddii la waayo mid firaaqo ah, wuxuu ku darayaa nambarka labo-god ah (e.g., mohamed260201, mohamed260202)
+            username = f"{base_username}{suffix:02d}"
+            email = f"{username}@gmail.com"
+            suffix += 1
+
+        # Mar kasta wuxuu abuurayaa User cusub oo Unique ah (Haku update-gareynin kii hore)
+        user = User(
+            username=username,
+            fullname=full_name_clean,
+            email=email,
+            school_id=school_id,
+            branch_id=branch_id,
+            role=UserRole.student,
+            auth_status='logout',
+            status=True
+        )
+        user.password = generate_password_hash(raw_password)
+        
+        db.session.add(user)
+        db.session.flush()  # Toos u soo saar user.id-ga cusub
+        
+        # Ku xir Student-ga cusub User ID-gii hadda dhashay
+        new_student.user = user  # ✅ LINK to student
+
 
         # --------------------- SAVE STUDENT AND CREATE FEE COLLECTION ---------------------
         try:
@@ -6952,26 +7132,53 @@ def edit_student(student_id):
                 elif fc.amount_paid < fc.amount_due:
                     fc.payment_status = "Partial"
 
-        # --------------------- SYNC STUDENT USER ---------------------
-        first_name = student.full_name.split()[0].lower()
+        # --------------------- SYNC STUDENT USER (DYNAMIC SUFFIX) ---------------------
+        first_name = student.full_name.split()[0].lower() if student.full_name else 'student'
         roll_no_clean = str(form.roll_no.data).strip() or str(student.roll_no)
-        username = f"{first_name}{roll_no_clean}"
-        email = f"{username}@gmail.com"
+        base_username = f"{first_name}{roll_no_clean}"
 
-        existing_user = User.query.filter_by(email=email).first()
+        # Ka raadi user-ka ku xiran student-ga ama email-ka la dhaliyay
+        existing_user = User.query.filter_by(email=f"{base_username}@gmail.com").first()
 
         if existing_user:
-            # Update existing user
-            existing_user.username = username
+            # --- UPDATE EXISTING USER ---
+            proposed_username = base_username
+            proposed_email = f"{proposed_username}@gmail.com"
+
+            # Loop-kani wuxuu hubinayaa in magaca cusub uusan qof kale leeyahay (Marka laga reebo ardaygan laftiisa)
+            suffix = 1
+            while User.query.filter(
+                ((User.username == proposed_username) | (User.email == proposed_email)) & 
+                (User.id != existing_user.id)
+            ).first():
+                proposed_username = f"{base_username}{suffix:02d}"
+                proposed_email = f"{proposed_username}@gmail.com"
+                suffix += 1
+
+            # Ku shub xogta la xaqiFull-iyay ee ka firaaqada ah database-ka
+            existing_user.username = proposed_username
             existing_user.fullname = student.full_name
+            existing_user.email = proposed_email
             existing_user.school_id = student.school_id
             existing_user.branch_id = student.branch_id
+            
             if raw_password:
                 existing_user.password = generate_password_hash(raw_password)
 
             student.user_id = existing_user.id
+
         else:
-            # Create new user if not exists
+            # --- CREATE NEW USER IF NOT EXISTS ---
+            username = base_username
+            email = f"{username}@gmail.com"
+
+            # Hubi in database-ka oo dhan uu unique ka yahay ka hor intaan la add gareyn
+            suffix = 1
+            while User.query.filter((User.username == username) | (User.email == email)).first():
+                username = f"{base_username}{suffix:02d}"
+                email = f"{username}@gmail.com"
+                suffix += 1
+
             new_user = User(
                 username=username,
                 fullname=student.full_name,
@@ -6984,8 +7191,9 @@ def edit_student(student_id):
                 password=generate_password_hash(raw_password or generate_student_password())
             )
             db.session.add(new_user)
-            db.session.flush()
+            db.session.flush()  # Toos u soo saar user.id-ga cusub
             student.user_id = new_user.id
+
 
         # --------------------- COMMIT ---------------------
         try:
@@ -9525,6 +9733,499 @@ def import_fee_collections_excel():
     return redirect(url_for("main.all_fee_collections"))
 
 
+@bp.route("/fee-payment-report")
+@login_required
+def fee_payment_report():
+    if current_user.status == 0:
+        flash("Your account is inactive.", "danger")
+        return redirect(url_for('main.index'))
+
+    if current_user.role.value not in ['school_admin', 'branch_admin']:
+        flash("Unauthorized access.", "danger")
+        return redirect(url_for('main.dashboard'))
+
+    # 1. Soo qaado Query Parameters-ka shaandhaynta
+    status_filter = request.args.get('status')  # 'Paid', 'Partial', 'Pending'
+    class_id_filter = request.args.get('class_id', type=int)
+    section_id_filter = request.args.get('section_id', type=int)
+
+    # 2. Dhis query-ga saldhigga u ah StudentFeeCollection
+    query = StudentFeeCollection.query
+
+    # Amniga dugsiga/laanta
+    if current_user.role.value == 'school_admin':
+        query = query.filter(
+            StudentFeeCollection.school_id == current_user.school_id,
+            StudentFeeCollection.branch_id == None
+        )
+    elif current_user.role.value == 'branch_admin':
+        query = query.filter_by(branch_id=current_user.branch_id)
+
+    # 3. Codso advanced filters-ka haddii ay jiraan
+    if status_filter and status_filter in ['Paid', 'Partial', 'Pending']:
+        query = query.filter(StudentFeeCollection.payment_status == status_filter)
+        
+    if class_id_filter:
+        query = query.filter(StudentFeeCollection.class_id == class_id_filter)
+        
+    if section_id_filter:
+        query = query.filter(StudentFeeCollection.section_id == section_id_filter)
+
+    # Hel natiijada la sifeeyay
+    fee_collections = query.order_by(StudentFeeCollection.created_at.desc()).all()
+
+    # 4. Soo qaado dhammaan Fasallada iyo Qaybaha (Sections) si loogu buuxiyo dropdowns-ka
+    if current_user.role.value == 'school_admin':
+        available_classes = Class.query.filter_by(school_id=current_user.school_id, branch_id=None).all()
+        available_sections = Section.query.filter_by(school_id=current_user.school_id, branch_id=None).all()
+    else:
+        available_classes = Class.query.filter_by(branch_id=current_user.branch_id).all()
+        available_sections = Section.query.filter_by(branch_id=current_user.branch_id).all()
+
+    # 5. Isku dabarid xogta la muujinayo
+    report_details = {}
+    for fc in fee_collections:
+        report_details[fc.id] = {
+            "student": fc.student,
+            "class": fc.class_obj,
+            "section": fc.section,
+            "amount_due": fc.amount_due,
+            "amount_paid": fc.amount_paid,
+            "remaining_balance": fc.remaining_balance,
+            "status": fc.payment_status,
+            "payment_date": fc.payment_date
+        }
+
+    return render_template(
+        "backend/pages/components/fee_collections/fee_payment_report.html",
+        fee_collections=fee_collections,
+        report_details=report_details,
+        available_classes=available_classes,
+        available_sections=available_sections,
+        current_status=status_filter,
+        current_class=class_id_filter,
+        current_section=section_id_filter,
+        user=current_user
+    )
+
+
+@bp.route("/school-debts-report")
+@login_required
+def school_debts_report():
+    if current_user.status == 0:
+        flash("Your account is inactive.", "danger")
+        return redirect(url_for('main.index'))
+
+    if current_user.role.value not in ['school_admin', 'branch_admin']:
+        flash("Unauthorized access.", "danger")
+        return redirect(url_for('main.dashboard'))
+
+    # Parameterrada Shaandhaynta
+    class_id_filter = request.args.get('class_id', type=int)
+    section_id_filter = request.args.get('section_id', type=int)
+    status_filter = request.args.get('status') 
+    branch_id_filter = request.args.get('branch_id', type=int)
+
+    # Raadi dhammaan biilasha aan weli si buuxda loo wada bixin
+    query = StudentFeeCollection.query.filter(
+        or_(
+            StudentFeeCollection.payment_status.in_(['Pending', 'Partial']),
+            StudentFeeCollection.amount_due > StudentFeeCollection.amount_paid
+        )
+    )
+
+    # Amniga Dugsiga iyo Laanta
+    if current_user.role.value == 'school_admin':
+        if branch_id_filter:
+            query = query.filter(
+                StudentFeeCollection.school_id == current_user.school_id,
+                StudentFeeCollection.branch_id == branch_id_filter
+            )
+        else:
+            query = query.filter(StudentFeeCollection.school_id == current_user.school_id)
+    elif current_user.role.value == 'branch_admin':
+        query = query.filter_by(branch_id=current_user.branch_id)
+
+    # Sifeynta Fasalka iyo Qaybta
+    if class_id_filter:
+        query = query.filter(StudentFeeCollection.class_id == class_id_filter)
+    if section_id_filter:
+        query = query.filter(StudentFeeCollection.section_id == section_id_filter)
+    if status_filter in ['Partial', 'Pending']:
+        query = query.filter(StudentFeeCollection.payment_status == status_filter)
+
+    raw_collections = query.all()
+
+    total_school_receivables = 0.0
+    report_details = {}
+    filtered_collections = []
+    
+    for dc in raw_collections:
+        if dc.student:
+            due = float(dc.amount_due or 0.0)
+            paid = float(dc.amount_paid or 0.0)
+            
+            # Xisaabinta badbaadada leh (Auto-correction)
+            actual_balance = max(0.0, due - paid)
+            
+            # Haddii status-ku yahay Pending laakiin xisaabtu si khaldan eber u noqotay, dib u sax
+            if actual_balance == 0.0 and dc.payment_status == 'Pending':
+                actual_balance = due
+            
+            if actual_balance > 0:
+                total_school_receivables += actual_balance
+                filtered_collections.append(dc)
+                
+                report_details[dc.id] = {
+                    "student": dc.student,
+                    "class": dc.class_obj,
+                    "section": dc.section,
+                    "branch": dc.branch,
+                    "amount_due": due,
+                    "amount_paid": paid,
+                    "remaining_balance": actual_balance,
+                    "status": dc.payment_status
+                }
+
+    # Sort by highest debt
+    filtered_collections.sort(key=lambda x: report_details[x.id]["remaining_balance"], reverse=True)
+
+    # Dropdowns-ka Dynamic-ga ah
+    all_branches = []
+    if current_user.role.value == 'school_admin':
+        available_classes = Class.query.filter_by(school_id=current_user.school_id).all()
+        available_sections = Section.query.filter_by(school_id=current_user.school_id).all()
+        all_branches = Branch.query.filter_by(school_id=current_user.school_id).all()
+    else:
+        available_classes = Class.query.filter_by(branch_id=current_user.branch_id).all()
+        available_sections = Section.query.filter_by(branch_id=current_user.branch_id).all()
+
+    return render_template(
+        "backend/pages/components/fee_collections/school_debts_report.html",
+        debt_collections=filtered_collections,
+        report_details=report_details,
+        available_classes=available_classes,
+        available_sections=available_sections,
+        all_branches=all_branches,
+        total_receivables=total_school_receivables,
+        current_class=class_id_filter,
+        current_section=section_id_filter,
+        current_status=status_filter,
+        current_branch=branch_id_filter,
+        user=current_user
+    )
+
+
+
+
+@bp.route("/school-profit-loss-report")
+@login_required
+def school_profit_loss_report():
+    # 1. Hubi in koontadu firfircoontahay
+    if current_user.status == 0:
+        flash("Your account is inactive.", "danger")
+        return redirect(url_for('main.index'))
+
+    # Hubi ogolaanshaha doorarka (Roles)
+    if current_user.role.value not in ['school_admin', 'branch_admin']:
+        flash("Unauthorized access.", "danger")
+        return redirect(url_for('main.dashboard'))
+
+    # 2. Qabashada xogta Shaandheynta (Filters)
+    start_date_str = request.args.get('start_date')
+    end_date_str = request.args.get('end_date')
+    branch_filter_raw = request.args.get('branch_id') # Waxaan u qabanay sidii string si aan u hubino 'none'
+    class_id_filter = request.args.get('class_id', type=int)
+    section_id_filter = request.args.get('section_id', type=int)
+
+    # Dejinta Taariikhda Default-ka ah (Sanadkan bilowgiisa ilaa maanta)
+    if start_date_str:
+        start_date = datetime.strptime(start_date_str, '%Y-%m-%d')
+    else:
+        start_date = datetime(datetime.today().year, 1, 1)
+
+    if end_date_str:
+        end_date = datetime.strptime(end_date_str, '%Y-%m-%d')
+    else:
+        end_date = datetime.today()
+
+    # 3. Bilaabidda Queries-ka (Dakhliga iyo Kharashka)
+    tx_query = PaymentTransaction.query.filter(PaymentTransaction.transaction_date.between(start_date, end_date))
+    exp_query = Expense.query.filter(Expense.date.between(start_date, end_date))
+
+    # 4. AMNIGA STRICT-KA AH (Kala saarista Dugsiga iyo Laamaha)
+    if current_user.role.value == 'school_admin':
+        # Markuu hadda soo galo ama uu doorto "School HQ (No Branch)"
+        if branch_filter_raw == 'none' or not branch_filter_raw:
+            # Kaliya soo baadh xogta uu branch_id- keedu yahay NULL (Waa dugsiga dhexe oo kaliya)
+            tx_query = tx_query.filter(PaymentTransaction.school_id == current_user.school_id, PaymentTransaction.branch_id == None)
+            exp_query = exp_query.filter(Expense.school_id == current_user.school_id, Expense.branch_id == None)
+            current_branch_selected = 'none'
+        else:
+            # Haddii uu maamuluhu liiska ka doorto laan gaar ah
+            branch_id_filter = int(branch_filter_raw)
+            tx_query = tx_query.filter(PaymentTransaction.school_id == current_user.school_id, PaymentTransaction.branch_id == branch_id_filter)
+            exp_query = exp_query.filter(Expense.school_id == current_user.school_id, Expense.branch_id == branch_id_filter)
+            current_branch_selected = branch_id_filter
+            
+    elif current_user.role.value == 'branch_admin':
+        # Branch admin-ku ma arki karo xogta dugsiga dhexe (NULL) iyo laamaha kale toona
+        tx_query = tx_query.filter(PaymentTransaction.branch_id == current_user.branch_id)
+        exp_query = exp_query.filter(Expense.branch_id == current_user.branch_id)
+        current_branch_selected = current_user.branch_id
+
+    # 5. SHAANDHEYNTA FASALKA IYO SECTION-KA
+    if class_id_filter or section_id_filter:
+        tx_query = tx_query.join(StudentFeeCollection, PaymentTransaction.student_fee_id == StudentFeeCollection.id)\
+                           .join(Student, StudentFeeCollection.student_id == Student.id)
+        
+        if class_id_filter:
+            tx_query = tx_query.filter(Student.class_id == class_id_filter)
+        if section_id_filter:
+            tx_query = tx_query.filter(Student.section_id == section_id_filter)
+
+    # 6. Soo bixinta xogta rasmiga ah (Execution)
+    transactions = tx_query.order_by(PaymentTransaction.transaction_date.desc()).all()
+    expenses_list = exp_query.order_by(Expense.date.desc()).all()
+
+    # Xisaabinta Maaliyadda (Totals)
+    total_income = sum(float(tx.amount or 0.0) for tx in transactions)
+    total_expenses = sum(float(exp.amount or 0.0) for exp in expenses_list)
+    net_profit_loss = total_income - total_expenses
+    is_profit = net_profit_loss >= 0
+
+    # 7. DYNAMIC DROPDOWNS (Fasallada iyo Sections-ka ku xidhan doorashada kor ku xusan)
+    all_branches = []
+    if current_user.role.value == 'school_admin':
+        all_branches = Branch.query.filter_by(school_id=current_user.school_id).all()
+
+    # Dynamic Class & Section Loading
+    if current_user.role.value == 'school_admin' and current_branch_selected == 'none':
+        # Fasallada dugsiga dhexe ee aan laamaha ku xidhnayn (branch_id IS NULL)
+        all_classes = Class.query.filter(Class.school_id == current_user.school_id, Class.branch_id == None).all()
+        all_sections = Section.query.filter(Section.school_id == current_user.school_id, Section.branch_id == None).all()
+    else:
+        # Fasallada laanta la doorto ama laanta uu joogo branch_admin-ku
+        b_id = current_branch_selected if current_user.role.value == 'school_admin' else current_user.branch_id
+        all_classes = Class.query.filter_by(branch_id=b_id).all()
+        all_sections = Section.query.filter_by(branch_id=b_id).all()
+
+    return render_template(
+        "backend/pages/components/fee_collections/school_profit_loss_report.html",
+        total_income=total_income,
+        total_expenses=total_expenses,
+        net_profit_loss=abs(net_profit_loss),
+        is_profit=is_profit,
+        transactions=transactions,
+        expenses_list=expenses_list,
+        start_date=start_date.strftime('%Y-%m-%d'),
+        end_date=end_date.strftime('%Y-%m-%d'),
+        all_branches=all_branches,
+        all_classes=all_classes,
+        all_sections=all_sections,
+        current_branch=current_branch_selected,
+        current_class=class_id_filter,
+        current_section=section_id_filter,
+        user=current_user
+    )
+
+
+@bp.route("/invoice/<int:fee_id>")
+@login_required
+def student_invoice_view(fee_id):
+    if current_user.status == 0:
+        flash("Your account is inactive.", "danger")
+        return redirect(url_for('main.index'))
+
+    # 1. Soo qaado xogta biilka guud ee Fee Collection
+    fee_record = StudentFeeCollection.query.get_or_404(fee_id)
+
+    # Security Check: Hubi in maamulku leeyahay ogolaanshaha dugsigaas ama laantaas
+    if current_user.role.value == 'school_admin':
+        if fee_record.school_id != current_user.school_id:
+            flash("Unauthorized access to this school's financial data.", "danger")
+            return redirect(url_for('main.school_profit_loss_report'))
+    elif current_user.role.value == 'branch_admin':
+        if fee_record.branch_id != current_user.branch_id:
+            flash("Unauthorized access to this branch's financial data.", "danger")
+            return redirect(url_for('main.school_profit_loss_report'))
+    else:
+        flash("Unauthorized access.", "danger")
+        return redirect(url_for('main.dashboard'))
+
+    # 2. Soo qaado ardayga biilka iska leh
+    student = fee_record.student
+    if not student:
+        flash("Student record not found for this invoice.", "danger")
+        return redirect(url_for('main.school_profit_loss_report'))
+
+    # 3. Soo qaado dhammaan Invoices-ka hoos yimaada biilkaan
+    invoices = FeeInvoice.query.filter_by(student_fee_id=fee_record.id).all()
+
+    # 4. Xisaabi haraagii hore iyo wadarta guud ee rasiidhka
+    total_fee = float(fee_record.amount_due or 0.0)
+    remaining_balance = max(0.0, total_fee - float(fee_record.amount_paid or 0.0))
+    
+    # Haddii uu jiro haraaga guud ee hadda ku jira account-ka ardayga
+    current_balance = remaining_balance 
+
+    return render_template(
+        "backend/pages/components/fee_collections/invoice_report.html",
+        fee_record=fee_record,
+        student=student,
+        invoices=invoices,
+        total_fee=total_fee,
+        remaining_balance=remaining_balance,
+        current_balance=current_balance,
+        previous_balance=0.0, # Haddii aad leedahay arrears hore halkaan ayaad ka xisaabin kartaa
+        user=current_user
+    )
+
+
+
+
+@bp.route("/print-profit-loss-invoice")
+@login_required
+def print_profit_loss_invoice():
+    # 1. Hubinta Amniga Nidaamka (Multi-tenant Authorization)
+    if current_user.status == 0 or current_user.role.value not in ['school_admin', 'branch_admin']:
+        flash("Unauthorized access.", "danger")
+        return redirect(url_for('main.dashboard'))
+
+    # 2. Qabashada Filters-ka Dynamic-ga ah
+    start_date_str = request.args.get('start_date')
+    end_date_str = request.args.get('end_date')
+    branch_id_param = request.args.get('branch_id')
+
+    # Nadiifinta branch_id
+    branch_id = None
+    if branch_id_param and branch_id_param not in ['none', '', 'null', 'None']:
+        try:
+            branch_id = int(branch_id_param)
+        except ValueError:
+            branch_id = None
+
+    # Amniga Laanta
+    if current_user.role.value == 'branch_admin':
+        branch_id = current_user.branch_id
+
+    # 3. Dejinta Muddada Warbixinta (Time Boundaries)
+    if start_date_str:
+        start_date = datetime.strptime(start_date_str, '%Y-%m-%d').replace(hour=0, minute=0, second=0)
+    else:
+        start_date = datetime(datetime.today().year, datetime.today().month, 1)
+
+    if end_date_str:
+        end_date = datetime.strptime(end_date_str, '%Y-%m-%d').replace(hour=23, minute=59, second=59)
+    else:
+        end_date = datetime.today().replace(hour=23, minute=59, second=59)
+
+    # 4. DAKHLIGA (Xalka Cusub: Toos ugu xir FeeInvoice heer Query)
+    # Halkaan waxaan u bedelnay db.session.query si looga fogaado AttributeError-ka
+    base_query = db.session.query(PaymentTransaction, FeeInvoice).outerjoin(
+        FeeInvoice, PaymentTransaction.invoice_id == FeeInvoice.id  # FIIRO GAAR AH: Haddii foreign key-gaaga la yiraahdo fee_invoice_id, ku beddel halkan
+    ).filter(
+        PaymentTransaction.school_id == current_user.school_id,
+        PaymentTransaction.transaction_date.between(start_date, end_date)
+    )
+    
+    if branch_id:
+        base_query = base_query.filter(PaymentTransaction.branch_id == branch_id)
+    else:
+        base_query = base_query.filter((PaymentTransaction.branch_id == None) | (PaymentTransaction.branch_id == 0))
+        
+    results = base_query.all()
+    
+    income_items = {}
+    
+    for tx, invoice in results:
+        category_raw = ""
+        
+        # A). Mudnaanta Koowaad: Ka soo qaad Enum-ka 'type' ee FeeInvoice-ka la helay
+        if invoice:
+            category_raw = invoice.type
+            
+        # B). Fallback 1: Haddii xiriirka invoice-ka la waayo, eeg meelaha kale ee transaction-ka hoos yimaada
+        if not category_raw:
+            if hasattr(tx, 'fee_allocation') and tx.fee_allocation and tx.fee_allocation.fee_type:
+                category_raw = tx.fee_allocation.fee_type.name
+            elif hasattr(tx, 'fee_structure') and tx.fee_structure:
+                category_raw = tx.fee_structure.name
+        
+        # C). Fallback 2: Sifaynta magacyada lacag bixinta ee caadiga ah (Mobile, Cash jidkeeda ka saar)
+        if not category_raw or str(category_raw).lower().strip() in ['mobile', 'cash', 'evc', 'zaad', 'e-dahab']:
+            category_raw = "Tuition" if not category_raw else "General School Fee"
+            
+        # Nadiifinta iyo habaynta magaca
+        target_key = str(category_raw).replace('_', ' ').replace('-', ' ').strip().title()
+        if not target_key.lower().endswith('fee') and not target_key.lower().endswith('fees'):
+            target_key = f"{target_key} Fees"
+        
+        # Isku-gaynta dakhliga laanta/school-ka gaarka u ah
+        income_items[target_key] = income_items.get(target_key, 0.0) + float(tx.amount or 0.0)
+
+    # 5. KHARASHYADA (Strict Isolation)
+    if branch_id:
+        expense_query = Expense.query.filter(
+            Expense.school_id == current_user.school_id,
+            Expense.branch_id == branch_id,
+            Expense.date.between(start_date, end_date)
+        )
+    else:
+        expense_query = Expense.query.filter(
+            Expense.school_id == current_user.school_id,
+            (Expense.branch_id == None) | (Expense.branch_id == 0),
+            Expense.date.between(start_date, end_date)
+        )
+        
+    expenses = expense_query.all()
+    
+    expense_items = {}
+    for exp in expenses:
+        category = exp.category or "General Operating Expenses"
+        category = category.replace('_', ' ').replace('-', ' ').strip().title()
+        expense_items[category] = expense_items.get(category, 0.0) + float(exp.amount or 0.0)
+
+    # 6. Xisaabinta Maaliyadda Labada Dhinac
+    total_income = sum(income_items.values())
+    total_expenses = sum(expense_items.values())
+    net_profit_loss = total_income - total_expenses
+    financial_result = "PROFIT" if net_profit_loss >= 0 else "LOSS"
+
+    # 7. Soo Qaadashada Macluumaadka Dugsiga iyo Laanta
+    school = School.query.get(current_user.school_id)
+    branch = Branch.query.get(branch_id) if branch_id else None
+
+    settings = None
+    if branch_id:
+        settings = SchoolSiteSettings.query.filter_by(school_id=school.id, branch_id=branch_id).first()
+    if not settings:
+        settings = SchoolSiteSettings.query.filter_by(school_id=school.id, branch_id=None).first()
+
+    # 8. Invoice Number Dynamic ah
+    invoice_no = f"P&L-{start_date.strftime('%Y%m')}-S{current_user.school_id:02d}"
+    if branch_id:
+        invoice_no += f"B{branch_id:02d}"
+
+    return render_template(
+        "backend/pages/components/fee_collections/print_pl_invoice.html",
+        school=school,
+        branch=branch,
+        settings=settings,  
+        invoice_no=invoice_no,
+        invoice_date=datetime.today().strftime('%d %B %Y'),
+        period_from=start_date.strftime('%d %B %Y'),
+        period_to=end_date.strftime('%d %B %Y'),
+        income_items=income_items,
+        expense_items=expense_items,
+        total_income=total_income,
+        total_expenses=total_expenses,
+        net_profit_loss=net_profit_loss, 
+        financial_result=financial_result,
+        user=current_user
+    )
+
+    
 #-----------------------------------------
 #----------- Expenses
 #-----------------------------------------
@@ -9839,11 +10540,6 @@ def delete_expense(expense_id):
         flash("❌ Error deleting expense. Please try again.", "danger")
 
     return redirect(url_for('main.all_expenses'))
-
-
-
-
-
 
 
 

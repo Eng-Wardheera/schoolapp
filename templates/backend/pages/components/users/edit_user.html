@@ -376,36 +376,75 @@ function togglePassword(fieldId, iconContainer) {
 function validatePassword() {
   const password = document.getElementById("new_password").value;
   const confirmPassword = document.getElementById("confirm_password").value;
-
   const feedback = document.getElementById("confirmFeedback");
 
-  if (confirmPassword && password !== confirmPassword) {
-    feedback.textContent = "Passwords do not match";
-    feedback.classList.add("text-danger");
-    feedback.classList.remove("text-success");
-  } else if (confirmPassword) {
-    feedback.textContent = "Passwords match";
-    feedback.classList.add("text-success");
-    feedback.classList.remove("text-danger");
-  } else {
-    feedback.textContent = "";
+  // 1. Haddii labada meeloodba ay maran yihiin (Waa sax maadaama ay Edit tahay)
+  if (!password && !confirmPassword) {
+    if (feedback) feedback.textContent = "";
+    return { isValid: true, reason: "" };
   }
 
-  return password.length >= 6 && password === confirmPassword;
+  // 2. SHURUUDDA 1-AAD: Hubi dhererka Password-ka marka hore
+  if (password.length < 8) {
+    if (feedback) {
+      feedback.textContent = "× Password-ku waa inuu ka koobnaadaa ugu yaraan 8 xaraf!";
+      feedback.className = "text-danger d-block";
+    }
+    return { isValid: false, reason: "length" };
+  }
+
+  // 3. SHURUUDDA 2-AAD: Hubi inay isku mid yihiin (Match)
+  if (password !== confirmPassword) {
+    if (feedback) {
+      feedback.textContent = "× Password-ka cusub iyo kan xaqiijinta isku mid ma ahan!";
+      feedback.className = "text-danger d-block";
+    }
+    return { isValid: false, reason: "mismatch" };
+  }
+
+  // Haddii ay dhammaan buuxisay shuruudaha
+  if (feedback) {
+    feedback.textContent = "✓ Password-adu si sax ah ayay isku la mid yihiin.";
+    feedback.className = "text-success d-block";
+  }
+  return { isValid: true, reason: "" };
 }
 
+// Live validation marka wax la qorayo
 document.getElementById("new_password").addEventListener("input", validatePassword);
 document.getElementById("confirm_password").addEventListener("input", validatePassword);
 
+// Marka foomka la submit gareynayo (Form Submission)
 document.querySelector("form").addEventListener("submit", function (e) {
-  if (!validatePassword()) {
-    e.preventDefault();
+  const password = document.getElementById("new_password").value;
+  const confirmPassword = document.getElementById("confirm_password").value;
 
-    Swal.fire({
-      icon: "error",
-      title: "Invalid Password",
-      text: "Password must be at least 6 characters and match the confirmation password."
-    });
+  // Haddii ay maran yihiin, foomka iska gudbi (Edit mode)
+  if (!password && !confirmPassword) {
+    return;
+  }
+
+  const result = validatePassword();
+
+  if (!result.isValid) {
+    e.preventDefault(); // Jooji foomka
+
+    // Kala saar SweetAlert-ka iyadoo loo eegayo shuruuddii la jebiyey
+    if (result.reason === "length") {
+      Swal.fire({
+        icon: "error",
+        title: "Cilad Dhererka Password-ka!",
+        text: "Password-ka aad qortay aad ayuu u gaaban yahay. Fadlan ka dhig ugu yaraan 8 xaraf ama ka badan.",
+        confirmButtonColor: '#00684a'
+      });
+    } else if (result.reason === "mismatch") {
+      Swal.fire({
+        icon: "warning",
+        title: "Password-ada ma isku mid ahan!",
+        text: "Fadlan hubi in 'New Password' iyo 'Confirm New Password' ay si sax ah isku mid ugu wada qoran yihiin.",
+        confirmButtonColor: '#00684a'
+      });
+    }
   }
 });
 </script>

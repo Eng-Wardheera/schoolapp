@@ -1,0 +1,174 @@
+{% extends 'backend/home/base.html' %}
+
+{% block title %}Advanced Fee Report | School Management{% endblock %}
+
+{% block content %}
+
+<div class="page-header d-flex justify-content-between align-items-center">
+    <div class="page-header-left d-flex align-items-center">
+        <div class="page-header-title">
+            <h5 class="m-b-10">Ogaanshaha Ardada Lacagaha Bixisay iyo Kuwa aan bixin</h5>
+        </div>
+        <ul class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Home</a></li>
+            <li class="breadcrumb-item">Fee Payment Report</li>
+        </ul>
+    </div>
+    <div class="page-header-right ms-auto">
+        <button onclick="window.print();" class="btn btn-secondary shadow-sm">
+            <i class="feather-printer me-2"></i> Print Report
+        </button>
+    </div>
+</div>
+
+<div class="main-content">
+    
+    <div class="row mb-4">
+        <div class="col-lg-12">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-light py-3">
+                    <h6 class="mb-0 text-primary font-weight-bold">
+                        <i class="feather-filter me-2"></i>Kala Shaandheey Warbixinta si Casri ah
+                    </h6>
+                </div>
+                <div class="card-body p-4">
+                    <form method="GET" action="{{ url_for('main.fee_payment_report') }}" class="row g-3">
+                        
+                        <div class="col-md-3">
+                            <label class="form-label font-weight-bold">Xaaladda Lacagta (Status)</label>
+                            <select name="status" class="form-select form-control">
+                                <option value="">-- Dhammaan Xaaladaha --</option>
+                                <option value="Paid" {% if current_status == 'Paid' %}selected{% endif %}>Paid (Wada Bixiyay)</option>
+                                <option value="Partial" {% if current_status == 'Partial' %}selected{% endif %}>Partial (Qabyo / Wax u dhiman)</option>
+                                <option value="Pending" {% if current_status == 'Pending' %}selected{% endif %}>Pending (Aan waxba bixin)</option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-3">
+                            <label class="form-label font-weight-bold">Fasalka (Class)</label>
+                            <select name="class_id" id="classSelect" class="form-select form-control">
+                                <option value="">-- Dhammaan Fasallada --</option>
+                                {% for cls in available_classes %}
+                                    <option value="{{ cls.id }}" {% if current_class == cls.id %}selected{% endif %}>{{ cls.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="col-md-3">
+                            <label class="form-label font-weight-bold">Qaybta (Section)</label>
+                            <select name="section_id" id="sectionSelect" class="form-select form-control">
+                                <option value="">-- Dhammaan Qaybaha --</option>
+                                {% for sec in available_sections %}
+                                    <option value="{{ sec.id }}" {% if current_section == sec.id %}selected{% endif %}>{{ sec.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="col-md-3 d-flex align-items-end gap-2">
+                            <button type="submit" class="btn btn-primary w-100 py-2">
+                                <i class="feather-search me-1"></i> Sifeey (Filter)
+                            </button>
+                            <a href="{{ url_for('main.fee_payment_report') }}" class="btn btn-outline-secondary w-100 py-2">
+                                <i class="feather-refresh-cw me-1"></i> Soo Celi (Reset)
+                            </a>
+                        </div>
+
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="card stretch stretch-full border-0 shadow-sm">
+                <div class="card-body p-3">
+                    
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle" id="advancedFeeReportTable">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>#</th>
+                                    <th>Ardayga (Student Name)</th>
+                                    <th>Fasalka (Class)</th>
+                                    <th>Qaybta (Section)</th>
+                                    <th>Lacagta Laga Rabo</th>
+                                    <th>Lacagta uu Bixiyay</th>
+                                    <th>Haraaga (Remaining)</th>
+                                    <th>Xaaladda (Status)</th>
+                                    <th>Taariikhda Bixinta</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for fc in fee_collections %}
+                                {% set details = report_details[fc.id] %}
+                                <tr>
+                                    <td>{{ loop.index }}</td>
+                                    <td>
+                                        <span class="font-weight-bold text-dark">{{ details.student.full_name if details.student else 'N/A' }}</span>
+                                    </td>
+                                    <td><span class="badge bg-light text-dark px-2.5 py-1.5 fs-12">{{ details.class.name if details.class else 'N/A' }}</span></td>
+                                    <td>{{ details.section.name if details.section else 'Full Class' }}</td>
+                                    <td class="text-primary fw-bold">${{ "%.2f"|format(details.amount_due) }}</td>
+                                    <td class="text-success fw-bold">${{ "%.2f"|format(details.amount_paid) }}</td>
+                                    <td class="text-danger fw-bold">${{ "%.2f"|format(details.remaining_balance) }}</td>
+                                    <td>
+                                        {% if details.status == 'Paid' %}
+                                            <span class="badge bg-soft-success text-success p-2 w-100 border border-success">Paid</span>
+                                        {% elif details.status == 'Partial' %}
+                                            <span class="badge bg-soft-warning text-warning p-2 w-100 border border-warning">Partial</span>
+                                        {% else %}
+                                            <span class="badge bg-soft-danger text-danger p-2 w-100 border border-danger">Pending</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ details.payment_date.strftime('%Y-%m-%d') if details.payment_date else 'Aan la bixin' }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+
+                        {% if not fee_collections %}
+                        <div class="p-5 text-center text-muted">
+                            <i class="feather-info display-4 d-block mb-3 text-warning"></i>
+                            Xog laguma helin shuruudaha aad dooratay. Fadlan bedel shaandhaynta sare.
+                        </div>
+                        {% endif %}
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Burburi haddii uu hore u dhisnaa DataTable si looga fogaado error
+        if ($.fn.DataTable.isDataTable('#advancedFeeReportTable')) {
+            $('#advancedFeeReportTable').DataTable().destroy();
+        }
+        
+        // Dhis DataTable-ka
+        $('#advancedFeeReportTable').DataTable({
+            responsive: true,
+            pageLength: 25,
+            searching: true,
+            ordering: true,
+            order: [[0, 'asc']],
+            language: {
+                search: "_INPUT_",
+                searchPlaceholder: "Ka raadi warbixintaan..."
+            }
+        });
+    });
+</script>
+<style>
+    /* Habayn qurux weyn u yeelaysa badges-ka dhex fadhiya miiska */
+    .bg-soft-success { background-color: rgba(40, 167, 69, 0.1); }
+    .bg-soft-warning { background-color: rgba(255, 193, 7, 0.1); }
+    .bg-soft-danger { background-color: rgba(220, 53, 69, 0.1); }
+</style>
+{% endblock %}
+
+{% endblock %}

@@ -14,17 +14,18 @@
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='backend/assets/vendors/css/vendors.min.css') }}">
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='backend/assets/css/theme.min.css') }}">
     
-    <script src="https://unpkg.com/feather-icons"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <style>
         :root {
             --mongo-green: #00ed64;
             --mongo-dark-green: #00684a;
             --mongo-dark: #001e2b;
-            --border-gray: #889196;
+            --border-gray: #cfd8dc;
             --text-muted: #5d6c74;
             --success-green: #00684a;
             --error-red: #d93025;
+            --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         body { 
@@ -50,51 +51,69 @@
         .password-container { position: relative; }
         
         .form-control-custom { 
-            width: 100%; border: 2px solid var(--border-gray); border-radius: 6px; padding: 12px 15px;
+            width: 100%; border: 2px solid var(--border-gray); border-radius: 8px; padding: 14px 15px;
             padding-right: 45px; font-size: 15px; color: var(--mongo-dark);
-            transition: all 0.2s;
+            transition: var(--transition-smooth);
+            background-color: #fcfdfe;
         }
 
         .form-control-custom:focus { 
             border-color: var(--mongo-dark-green); outline: none; 
-            box-shadow: 0 0 0 3px rgba(0, 104, 74, 0.1); 
+            box-shadow: 0 0 0 4px rgba(0, 104, 74, 0.15);
+            background-color: #ffffff;
         }
 
         .toggle-password {
             position: absolute; right: 15px; top: 50%; transform: translateY(-50%);
             cursor: pointer; color: var(--text-muted); display: flex; align-items: center;
+            transition: var(--transition-smooth);
+        }
+        .toggle-password:hover { color: var(--mongo-dark-green); }
+
+        /* Progress Bar Advanced Styling */
+        .progress-container {
+            height: 6px; width: 100%; background-color: #edf2f4; border-radius: 10px;
+            margin-top: 12px; overflow: hidden; display: none;
+        }
+        #strength-meter {
+            height: 100%; width: 0%; border-radius: 10px;
+            transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.4s ease;
+        }
+        #strength-text { 
+            font-size: 12px; font-weight: 800; margin-top: 6px; display: block; 
+            text-transform: uppercase; letter-spacing: 0.5px; 
         }
 
-        /* Requirements Box */
+        /* Requirements Box Advanced Styling */
         .requirements-box {
-            background: #f0f2f2; padding: 20px; border-radius: 8px; margin-top: 15px; 
-            border-left: 5px solid var(--border-gray); display: none;
+            background: #f8f9fa; padding: 20px; border-radius: 8px; margin-top: 15px; 
+            border: 1px solid #e9ecef; border-left: 5px solid var(--border-gray); 
+            display: none; transition: var(--transition-smooth);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.02);
         }
         
         .requirement { 
-            font-size: 14px; color: var(--text-muted); margin-bottom: 10px; 
-            display: flex; align-items: center; gap: 12px; transition: 0.3s;
+            font-size: 13.5px; color: var(--text-muted); margin-bottom: 12px; 
+            display: flex; align-items: center; gap: 12px; transition: var(--transition-smooth);
         }
+        .requirement:last-child { margin-bottom: 0; }
         
-        .requirement.valid { color: var(--success-green); font-weight: 600; }
-        .requirement i { width: 16px; height: 16px; }
-
-        /* Strength Meter */
-        #strength-meter {
-            height: 6px; width: 0%; margin-top: 10px; border-radius: 10px;
-            transition: width 0.4s ease, background-color 0.4s;
-            background-color: #eee;
-        }
-        #strength-text { font-size: 12px; font-weight: 800; margin-top: 5px; display: block; text-transform: uppercase; }
+        /* Markay saxanto weji cusub iyo cagaar */
+        .requirement.valid { color: #00684a; font-weight: 600; transform: translateX(5px); }
+        .requirement.valid i { color: #00ed64; class: "fas fa-check-circle"; }
+        .requirement i { width: 16px; font-size: 14px; transition: var(--transition-smooth); color: #a0aec0; }
 
         .btn-mongo {
             background-color: var(--mongo-dark-green); color: white; font-weight: 700; border: none;
             padding: 14px; border-radius: 6px; width: 100%; margin-top: 20px; cursor: pointer; font-size: 16px;
+            transition: var(--transition-smooth); box-shadow: 0 4px 12px rgba(0, 104, 74, 0.2);
         }
+        .btn-mongo:hover:not(:disabled) { background-color: #00523a; transform: translateY(-1px); box-shadow: 0 6px 15px rgba(0, 104, 74, 0.3); }
+        .btn-mongo:disabled { background-color: #a5b5b0; cursor: not-allowed; box-shadow: none; transform: none; }
 
         .auth-right { 
             width: 55%; background-color: var(--mongo-dark); 
-            background-image: linear-gradient(rgba(0, 30, 43, 0.8), rgba(0, 30, 43, 0.9)), url('https://webassets.mongodb.com/static/images/atlas/login_background.png'); 
+            background-image: linear-gradient(rgba(0, 30, 43, 0.85), rgba(0, 30, 43, 0.95)), url('https://webassets.mongodb.com/static/images/atlas/login_background.png'); 
             background-size: cover; background-position: center; display: flex; align-items: center; justify-content: center; padding: 60px; color: white;
         }
 
@@ -126,20 +145,22 @@
                     <div class="password-container">
                         {{ form.new_password(class="form-control-custom", placeholder="••••••••", id="passwordInput", autocomplete="new-password") }}
                         <span class="toggle-password" onclick="togglePass('passwordInput', this)">
-                            <i data-feather="eye"></i>
+                            <i class="fas fa-eye"></i>
                         </span>
                     </div>
 
-                    <div id="strength-meter"></div>
+                    <div class="progress-container" id="progressContainer">
+                        <div id="strength-meter"></div>
+                    </div>
                     <small id="strength-text"></small>
 
-                    <!-- <div id="req-box" class="requirements-box">
-                        <div id="req-length" class="requirement"><i data-feather="circle"></i> Ugu yaraan 8 xaraf</div>
-                        <div id="req-upper" class="requirement"><i data-feather="circle"></i> Hal xaraf oo weyn (ABC)</div>
-                        <div id="req-lower" class="requirement"><i data-feather="circle"></i> Hal xaraf oo yar (abc)</div>
-                        <div id="req-number" class="requirement"><i data-feather="circle"></i> Ugu yaraan hal nambar (123)</div>
-                        <div id="req-special" class="requirement"><i data-feather="circle"></i> Hal astaan gaar ah (@#$%^&*)</div>
-                    </div> -->
+                    <div id="req-box" class="requirements-box">
+                        <div id="req-length" class="requirement"><i class="far fa-circle"></i> Ugu yaraan 8 xaraf</div>
+                        <div id="req-upper" class="requirement"><i class="far fa-circle"></i> Hal xaraf oo weyn (ABC)</div>
+                        <div id="req-lower" class="requirement"><i class="far fa-circle"></i> Hal xaraf oo yar (abc)</div>
+                        <div id="req-number" class="requirement"><i class="far fa-circle"></i> Ugu yaraan hal nambar (123)</div>
+                        <div id="req-special" class="requirement"><i class="far fa-circle"></i> Hal astaan gaar ah (@#$%^&*)</div>
+                    </div>
                 </div>
 
                 <div class="mb-4">
@@ -147,20 +168,20 @@
                     <div class="password-container">
                         {{ form.confirm_password(class="form-control-custom", placeholder="••••••••", id="confirmPasswordInput") }}
                         <span class="toggle-password" onclick="togglePass('confirmPasswordInput', this)">
-                            <i data-feather="eye"></i>
+                            <i class="fas fa-eye"></i>
                         </span>
                     </div>
-                    <small id="match-text" class="d-none" style="font-size: 12px; font-weight: 600; margin-top: 5px; display: block;"></small>
+                    <small id="match-text" class="d-none" style="font-size: 12px; font-weight: 600; margin-top: 8px; display: block;"></small>
                 </div>
 
-                <button type="submit" id="submitBtn" class="btn-mongo">Update Password</button>
+                <button type="submit" id="submitBtn" class="btn-mongo" disabled>Update Password</button>
             </form>
         </div>
 
         <div class="auth-right">
             <div class="promo-content text-center">
                 <div style="background: rgba(0,237,100,0.1); width: 80px; height: 80px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px;">
-                    <i data-feather="lock" style="width: 40px; height: 40px; color: var(--mongo-green);"></i>
+                    <i class="fas fa-lock" style="width: 40px; height: 40px; font-size: 35px; display: flex; align-items: center; justify-content: center; color: var(--mongo-green);"></i>
                 </div>
                 <h2 style="color: var(--mongo-green);">Very Strong Security</h2>
                 <p>Nidaamka amniga dugsiga wuxuu u baahan yahay password adag si loo ilaaliyo xogtaada.</p>
@@ -172,14 +193,14 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <script>
-        feather.replace();
-
         const pInput = document.getElementById('passwordInput');
         const cInput = document.getElementById('confirmPasswordInput');
         const reqBox = document.getElementById('req-box');
+        const progressContainer = document.getElementById('progressContainer');
         const strengthMeter = document.getElementById('strength-meter');
         const strengthText = document.getElementById('strength-text');
         const matchText = document.getElementById('match-text');
+        const submitBtn = document.getElementById('submitBtn');
 
         const reqElements = {
             length: document.getElementById('req-length'),
@@ -189,17 +210,35 @@
             special: document.getElementById('req-special')
         };
 
+        // Eye Toggle logic for Password visibility
         function togglePass(id, btn) {
             const input = document.getElementById(id);
-            input.type = input.type === "password" ? "text" : "password";
-            btn.innerHTML = `<i data-feather="${input.type === 'password' ? 'eye' : 'eye-off'}"></i>`;
-            feather.replace();
+            const icon = btn.querySelector('i');
+            if (input.type === "password") {
+                input.type = "text";
+                icon.className = "fas fa-eye-slash";
+            } else {
+                input.type = "password";
+                icon.className = "fas fa-eye";
+            }
         }
 
+        // Live Real-Time Validation & Ticking Engine
         pInput.addEventListener('input', () => {
             const val = pInput.value;
-            reqBox.style.display = val.length > 0 ? 'block' : 'none';
+            
+            if (val.length > 0) {
+                reqBox.style.display = 'block';
+                progressContainer.style.display = 'block';
+            } else {
+                reqBox.style.display = 'none';
+                progressContainer.style.display = 'none';
+                strengthText.textContent = '';
+                submitBtn.disabled = true;
+                return;
+            }
 
+            // Real-time conditional checking
             const checks = {
                 length: val.length >= 8,
                 upper: /[A-Z]/.test(val),
@@ -209,33 +248,40 @@
             };
 
             let score = 0;
+            
+            // DYNAMIC TICK GENERATOR
             for (const key in checks) {
                 const el = reqElements[key];
                 const icon = el.querySelector('i');
+                
                 if (checks[key]) {
                     el.classList.add('valid');
-                    icon.setAttribute('data-feather', 'check-circle');
+                    icon.className = "fas fa-check-circle"; // Toos u bedel class-ka si uu live u tick gareeyo
                     score++;
                 } else {
                     el.classList.remove('valid');
-                    icon.setAttribute('data-feather', 'circle');
+                    icon.className = "far fa-circle"; // Ku soo celi goobadii madhnayd haduu tirtiro
                 }
             }
-            feather.replace();
+            
             updateStrengthIndicator(score);
             checkMatch();
         });
 
+        // Dynamic Fluid Progress bar calculator
         function updateStrengthIndicator(score) {
             const widths = ['0%', '20%', '40%', '60%', '80%', '100%'];
-            const colors = ['#eee', '#ff4b2b', '#ffa500', '#2ecc71', '#009e52', '#00ed64'];
-            const labels = ['', 'Aad u tabar yar', 'Tabar yar', 'Wuu fiican yahay', 'Wuu adag yahay', 'VERY STRONG ✓'];
+            const colors = ['#eee', '#d93025', '#ffa500', '#ffcc00', '#2ecc71', '#00ed64'];
+            const labels = ['', 'Aad u tabar yar (Weak)', 'Tabar yar (Fair)', 'Wuu fiican yahay (Good)', 'Wuu adag yahay (Strong)', 'VERY STRONG ✓ (Aad u Xoogan)'];
 
             strengthMeter.style.width = widths[score];
             strengthMeter.style.backgroundColor = colors[score];
             strengthText.textContent = labels[score];
-            strengthText.style.color = (score === 5) ? '#00684a' : colors[score];
-            reqBox.style.borderLeftColor = (score === 5) ? '#00ed64' : '#889196';
+            strengthText.style.color = (score === 5) ? 'var(--mongo-dark-green)' : colors[score];
+            reqBox.style.borderLeftColor = colors[score];
+
+            // Lock submission unless 100% full and matched
+            enableOrDisableButton(score);
         }
 
         cInput.addEventListener('input', checkMatch);
@@ -245,34 +291,40 @@
                 matchText.classList.add('d-none');
                 return;
             }
+            
             matchText.classList.remove('d-none');
+            const val = pInput.value;
+            const score = (val.length >= 8) + /[A-Z]/.test(val) + /[a-z]/.test(val) + /[0-9]/.test(val) + /[!@#$%^&*(),.?":{}|<>]/.test(val);
+
             if (pInput.value === cInput.value) {
-                matchText.textContent = "✓ Password-adu waa isku mid";
+                matchText.textContent = "✓ Password-adu waa isku mid (Matched)";
                 matchText.style.color = "var(--success-green)";
             } else {
-                matchText.textContent = "× Password-adu ma isku mid ahan";
+                matchText.textContent = "× Password-adu ma isku mid ahan (Mismatch)";
                 matchText.style.color = "var(--error-red)";
+            }
+            enableOrDisableButton(score);
+        }
+
+        function enableOrDisableButton(score) {
+            if (score === 5 && pInput.value === cInput.value && cInput.value.length > 0) {
+                submitBtn.disabled = false;
+            } else {
+                submitBtn.disabled = true;
             }
         }
 
+        // Final Secure Form Interceptor
         document.getElementById('passwordForm').addEventListener('submit', function(e) {
             const val = pInput.value;
             const isValid = val.length >= 8 && /[A-Z]/.test(val) && /[a-z]/.test(val) && /[0-9]/.test(val) && /[!@#$%^&*(),.?":{}|<>]/.test(val);
             
-            if (!isValid) {
+            if (!isValid || pInput.value !== cInput.value) {
                 e.preventDefault();
                 Swal.fire({
                     icon: 'error',
-                    title: 'Password-ku ma xoogana!',
-                    text: 'Fadlan hubi in dhammaan 5-ta shuruudood ay cagaar noqdaan.',
-                    confirmButtonColor: '#00684a'
-                });
-            } else if (pInput.value !== cInput.value) {
-                e.preventDefault();
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'Cilad xaqiijin',
-                    text: 'Password-ka cusub iyo kan xaqiijinta waa inay isku mid noqdaan.',
+                    title: 'Sugitaan Amni!',
+                    text: 'Fadlan hubi in dhammaan 5-ta shuruudood ay cagaar noqdaan, password-yaduna ay isku mid yihiin.',
                     confirmButtonColor: '#00684a'
                 });
             }

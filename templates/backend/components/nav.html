@@ -292,35 +292,34 @@
                             </li>
                             <li class="nxl-item nxl-hasmenu">
                                 <a href="javascript:void(0);" class="nxl-link">
-                                    <span class="nxl-mtext">Error-404</span><span class="nxl-arrow"><i class="feather-chevron-right"></i></span>
+                                    <span class="nxl-mtext">Fee Reports</span><span class="nxl-arrow"><i class="feather-chevron-right"></i></span>
                                 </a>
                                 <ul class="nxl-submenu">
-                                    <li class="nxl-item"><a class="nxl-link" href="auth-404-cover.html">Cover</a></li>
-                                    <li class="nxl-item"><a class="nxl-link" href="auth-404-minimal.html">Minimal</a></li>
-                                    <li class="nxl-item"><a class="nxl-link" href="auth-404-creative.html">Creative</a></li>
+                                    <li class="nxl-item"><a class="nxl-link" href="{{ url_for('main.fee_payment_report') }}">Fee Payment Report</a></li>
+                                    <!-- <li class="nxl-item"><a class="nxl-link" href="auth-404-creative.html">Creative</a></li> -->
                                 </ul>
                             </li>
                             <li class="nxl-item nxl-hasmenu">
                                 <a href="javascript:void(0);" class="nxl-link">
-                                    <span class="nxl-mtext">Reset Pass</span><span class="nxl-arrow"><i class="feather-chevron-right"></i></span>
+                                    <span class="nxl-mtext">School Debts Report</span><span class="nxl-arrow"><i class="feather-chevron-right"></i></span>
                                 </a>
                                 <ul class="nxl-submenu">
-                                    <li class="nxl-item"><a class="nxl-link" href="auth-reset-cover.html">Cover</a></li>
-                                    <li class="nxl-item"><a class="nxl-link" href="auth-reset-minimal.html">Minimal</a></li>
-                                    <li class="nxl-item"><a class="nxl-link" href="auth-reset-creative.html">Creative</a></li>
+                                    <li class="nxl-item"><a class="nxl-link" href="{{ url_for('main.school_debts_report') }}">School Debts Report</a></li>
+                                    <!-- <li class="nxl-item"><a class="nxl-link" href="auth-reset-minimal.html">Minimal</a></li>
+                                    <li class="nxl-item"><a class="nxl-link" href="auth-reset-creative.html">Creative</a></li> -->
                                 </ul>
                             </li>
                             <li class="nxl-item nxl-hasmenu">
                                 <a href="javascript:void(0);" class="nxl-link">
-                                    <span class="nxl-mtext">Verify OTP</span><span class="nxl-arrow"><i class="feather-chevron-right"></i></span>
+                                    <span class="nxl-mtext">School Profit/Loss Report</span><span class="nxl-arrow"><i class="feather-chevron-right"></i></span>
                                 </a>
                                 <ul class="nxl-submenu">
-                                    <li class="nxl-item"><a class="nxl-link" href="auth-verify-cover.html">Cover</a></li>
-                                    <li class="nxl-item"><a class="nxl-link" href="auth-verify-minimal.html">Minimal</a></li>
-                                    <li class="nxl-item"><a class="nxl-link" href="auth-verify-creative.html">Creative</a></li>
+                                    <li class="nxl-item"><a class="nxl-link" href="{{ url_for('main.school_profit_loss_report') }}">Profit/Loss Report</a></li>
+                                    <!-- <li class="nxl-item"><a class="nxl-link" href="auth-verify-minimal.html">Minimal</a></li>
+                                    <li class="nxl-item"><a class="nxl-link" href="auth-verify-creative.html">Creative</a></li> -->
                                 </ul>
                             </li>
-                            <li class="nxl-item nxl-hasmenu">
+                            <!-- <li class="nxl-item nxl-hasmenu">
                                 <a href="javascript:void(0);" class="nxl-link">
                                     <span class="nxl-mtext">Maintenance</span><span class="nxl-arrow"><i class="feather-chevron-right"></i></span>
                                 </a>
@@ -329,21 +328,11 @@
                                     <li class="nxl-item"><a class="nxl-link" href="auth-maintenance-minimal.html">Minimal</a></li>
                                     <li class="nxl-item"><a class="nxl-link" href="auth-maintenance-creative.html">Creative</a></li>
                                 </ul>
-                            </li>
+                            </li> -->
                         </ul>
                     </li>
 
-                      <li class="nxl-item nxl-hasmenu">
-                        <a href="javascript:void(0);" class="nxl-link">
-                            <span class="nxl-micon"><i class="feather-alert-circle"></i></span>
-                            <span class="nxl-mtext">Manage Attendances</span><span class="nxl-arrow"><i class="feather-chevron-right"></i></span>
-                        </a>
-                        <ul class="nxl-submenu">
-                                <li class="nxl-item"><a class="nxl-link" href="{{ url_for('main.all_attendance') }}">All Attendance </a></li>
-                            <li class="nxl-item"><a class="nxl-link" href="{{ url_for('main.take_attendance') }}">Take Attendance </a></li>
-
-                        </ul>
-                    </li>
+                    
                     <li class="nxl-item nxl-hasmenu">
                         <a href="javascript:void(0);" class="nxl-link">
                             <span class="nxl-micon"><i class="feather-dollar-sign"></i></span>
@@ -538,15 +527,71 @@
 
                   
 
-                    <li class="nxl-item nxl-hasmenu">
+                      <li class="nxl-item nxl-hasmenu">
                         <a href="javascript:void(0);" class="nxl-link">
-                            <span class="nxl-micon"><i class="feather-dollar-sign"></i></span>
-                            <span class="nxl-mtext">Manage Fee Collections</span><span class="nxl-arrow"><i class="feather-chevron-right"></i></span>
+                            <span class="nxl-micon"><i class="feather-power"></i></span>
+                            <span class="nxl-mtext">Manage Finances</span><span class="nxl-arrow"><i class="feather-chevron-right"></i></span>
                         </a>
                         <ul class="nxl-submenu">
-                            <li class="nxl-item"><a class="nxl-link" href="{{ url_for('main.all_fee_collections') }}">All Student Fee </a></li>
-                            <li class="nxl-item"><a class="nxl-link" href="{{ url_for('main.add_fee_collection') }}">Add Fee Collection </a></li>
-                            <!-- <li class="nxl-item"><a class="nxl-link" href="projects-create.html">Projects Create</a></li> -->
+                            <li class="nxl-item nxl-hasmenu">
+                                <a href="javascript:void(0);" class="nxl-link">
+                                    <span class="nxl-mtext"> Fee Collections</span><span class="nxl-arrow"><i class="feather-chevron-right"></i></span>
+                                </a>
+                                <ul class="nxl-submenu">
+                                    <li class="nxl-item"><a class="nxl-link" href="{{ url_for('main.all_fee_collections') }}">All Student Fee</a></li>
+                                    <li class="nxl-item"><a class="nxl-link" href="{{ url_for('main.add_fee_collection') }}">Add Fee Collection</a></li>
+                                    <!-- <li class="nxl-item"><a class="nxl-link" href="auth-login-creative.html">Creative</a></li> -->
+                                </ul>
+                            </li>
+                            <li class="nxl-item nxl-hasmenu">
+                                <a href="javascript:void(0);" class="nxl-link">
+                                    <span class="nxl-mtext"> Expenses</span><span class="nxl-arrow"><i class="feather-chevron-right"></i></span>
+                                </a>
+                                <ul class="nxl-submenu">
+                                    <li class="nxl-item"><a class="nxl-link" href="{{ url_for('main.all_expenses') }}">All Expenses</a></li>
+                                    <li class="nxl-item"><a class="nxl-link" href="{{ url_for('main.add_expense') }}">Add Expense</a></li>
+                                    <!-- <li class="nxl-item"><a class="nxl-link" href="auth-register-creative.html">Creative</a></li> -->
+                                </ul>
+                            </li>
+                            <li class="nxl-item nxl-hasmenu">
+                                <a href="javascript:void(0);" class="nxl-link">
+                                    <span class="nxl-mtext">Fee Reports</span><span class="nxl-arrow"><i class="feather-chevron-right"></i></span>
+                                </a>
+                                <ul class="nxl-submenu">
+                                    <li class="nxl-item"><a class="nxl-link" href="{{ url_for('main.fee_payment_report') }}">Fee Payment Report</a></li>
+                                    <!-- <li class="nxl-item"><a class="nxl-link" href="auth-404-creative.html">Creative</a></li> -->
+                                </ul>
+                            </li>
+                            <li class="nxl-item nxl-hasmenu">
+                                <a href="javascript:void(0);" class="nxl-link">
+                                    <span class="nxl-mtext">School Debts Report</span><span class="nxl-arrow"><i class="feather-chevron-right"></i></span>
+                                </a>
+                                <ul class="nxl-submenu">
+                                    <li class="nxl-item"><a class="nxl-link" href="{{ url_for('main.school_debts_report') }}">School Debts Report</a></li>
+                                    <!-- <li class="nxl-item"><a class="nxl-link" href="auth-reset-minimal.html">Minimal</a></li>
+                                    <li class="nxl-item"><a class="nxl-link" href="auth-reset-creative.html">Creative</a></li> -->
+                                </ul>
+                            </li>
+                            <li class="nxl-item nxl-hasmenu">
+                                <a href="javascript:void(0);" class="nxl-link">
+                                    <span class="nxl-mtext">School Profit/Loss Report</span><span class="nxl-arrow"><i class="feather-chevron-right"></i></span>
+                                </a>
+                                <ul class="nxl-submenu">
+                                    <li class="nxl-item"><a class="nxl-link" href="{{ url_for('main.school_profit_loss_report') }}">Profit/Loss Report</a></li>
+                                    <!-- <li class="nxl-item"><a class="nxl-link" href="auth-verify-minimal.html">Minimal</a></li>
+                                    <li class="nxl-item"><a class="nxl-link" href="auth-verify-creative.html">Creative</a></li> -->
+                                </ul>
+                            </li>
+                            <!-- <li class="nxl-item nxl-hasmenu">
+                                <a href="javascript:void(0);" class="nxl-link">
+                                    <span class="nxl-mtext">Maintenance</span><span class="nxl-arrow"><i class="feather-chevron-right"></i></span>
+                                </a>
+                                <ul class="nxl-submenu">
+                                    <li class="nxl-item"><a class="nxl-link" href="auth-maintenance-cover.html">Cover</a></li>
+                                    <li class="nxl-item"><a class="nxl-link" href="auth-maintenance-minimal.html">Minimal</a></li>
+                                    <li class="nxl-item"><a class="nxl-link" href="auth-maintenance-creative.html">Creative</a></li>
+                                </ul>
+                            </li> -->
                         </ul>
                     </li>
                     

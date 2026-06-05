@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Profit or Loss Statement - {{ invoice_no }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --primary-blue: #0b2545;
+            --secondary-blue: #134074;
+            --gold-accent: #f4a261;
+            --light-bg: #f8fafc;
+            --dark-text: #1e293b;
+            --border-color: #cbd5e1;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: var(--dark-text);
+            background-color: #f1f5f9;
+            padding: 30px;
+        }
+
+        .invoice-box {
+            max-width: 1100px;
+            margin: 0 auto;
+            background: #ffffff;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            position: relative;
+            border: 1px solid #e2e8f0;
+        }
+
+        /* Top Header Corporate Design */
+        .header-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            border-bottom: 4px solid var(--primary-blue);
+            padding-bottom: 25px;
+            margin-bottom: 30px;
+        }
+
+        .school-branding {
+            display: flex;
+            align-items: center;
+            gap: 25px;
+        }
+
+        .school-logo {
+            width: 110px;
+            height: 110px;
+            object-fit: contain;
+            border: 1px solid #e2e8f0;
+            padding: 5px;
+            border-radius: 8px;
+            background: #fff;
+        }
+
+        .school-details h1 {
+            color: var(--primary-blue);
+            font-size: 26px;
+            font-weight: 800;
+            margin: 0;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .school-details p {
+            margin: 3px 0;
+            font-size: 13px;
+            color: #475569;
+        }
+
+        /* Top Right Metadata Block */
+        .invoice-title-block {
+            background-color: var(--primary-blue);
+            color: white;
+            padding: 18px;
+            border-radius: 8px;
+            min-width: 350px;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+        }
+
+        .invoice-title-block h2 {
+            font-size: 18px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            margin-bottom: 12px;
+            text-align: center;
+            border-bottom: 1px solid rgba(255,255,255,0.2);
+            padding-bottom: 8px;
+            text-transform: uppercase;
+        }
+
+        .invoice-meta-table {
+            width: 100%;
+            color: white;
+            font-size: 13px;
+        }
+
+        .invoice-meta-table td {
+            padding: 4px;
+            border: none;
+        }
+
+        .invoice-meta-table td:first-child {
+            font-weight: 600;
+            color: #94a3b8;
+        }
+
+        .bg-gold-header {
+            background-color: rgba(244, 162, 97, 0.15);
+            border-radius: 4px;
+        }
+        
+        .bg-gold-header td {
+            color: var(--gold-accent) !important;
+            font-weight: bold !important;
+        }
+
+        /* Cards Layout */
+        .info-section {
+            background: var(--light-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        .info-title {
+            background-color: var(--secondary-blue);
+            color: white;
+            padding: 8px 16px;
+            font-size: 13px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .info-body {
+            padding: 14px 16px;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        /* Financial Tables Layout */
+        .table-title-income {
+            color: #15803d;
+            font-weight: 700;
+            text-align: center;
+            text-transform: uppercase;
+            font-size: 14px;
+            letter-spacing: 0.5px;
+            padding: 10px;
+            border: 1px solid #bbf7d0;
+            background: #f0fdf4;
+            border-top-left-radius: 8px;
+            border-top-right-radius: 8px;
+        }
+
+        .table-title-expense {
+            color: #b91c1c;
+            font-weight: 700;
+            text-align: center;
+            text-transform: uppercase;
+            font-size: 14px;
+            letter-spacing: 0.5px;
+            padding: 10px;
+            border: 1px solid #fecaca;
+            background: #fef2f2;
+            border-top-left-radius: 8px;
+            border-top-right-radius: 8px;
+        }
+
+        .report-table {
+            width: 100%;
+            font-size: 13px;
+            border-collapse: collapse;
+        }
+
+        .report-table th {
+            background-color: var(--primary-blue);
+            color: white;
+            text-transform: uppercase;
+            padding: 10px 8px;
+            font-weight: 600;
+            font-size: 12px;
+            border: 1px solid var(--primary-blue);
+        }
+
+        .report-table td {
+            padding: 10px 8px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .report-table tbody tr:nth-child(even) {
+            background-color: #f8fafc;
+        }
+
+        .total-row-income {
+            font-weight: 700;
+            color: #15803d;
+            background-color: #dcfce7 !important;
+            border-top: 2px solid #16a34a;
+        }
+
+        .total-row-expense {
+            font-weight: 700;
+            color: #b91c1c;
+            background-color: #fee2e2 !important;
+            border-top: 2px solid #dc2626;
+        }
+
+        .no-data-text {
+            color: #64748b;
+            font-style: italic;
+            text-align: center;
+            padding: 15px !important;
+        }
+
+        /* Outcome Visual Display Block */
+        .result-box {
+            border: 2px dashed var(--border-color);
+            padding: 15px;
+            text-align: center;
+            border-radius: 8px;
+            background: #fff;
+        }
+
+        .result-status {
+            font-size: 24px;
+            font-weight: 900;
+            letter-spacing: 2px;
+        }
+
+        .bg-profit-status {
+            background-color: #f0fdf4;
+            border-color: #22c55e !important;
+        }
+
+        .bg-loss-status {
+            background-color: #fef2f2;
+            border-color: #ef4444 !important;
+        }
+
+        .text-profit { color: #16a34a; }
+        .text-loss { color: #dc2626; }
+
+        /* Signatures Layout */
+        .signature-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-end;
+            min-height: 80px;
+        }
+
+        .signature-img {
+            max-height: 55px;
+            max-width: 140px;
+            object-fit: contain;
+            margin-bottom: 5px;
+        }
+
+        .signature-line {
+            border-top: 1px solid #cbd5e1;
+            width: 100%;
+        }
+
+        .invoice-footer {
+            background-color: var(--primary-blue);
+            color: #94a3b8;
+            padding: 12px;
+            font-size: 12px;
+            text-align: center;
+            margin-top: 40px;
+            border-radius: 6px;
+        }
+
+        .invoice-footer strong {
+            color: #fff;
+        }
+
+        .actions-bar {
+            max-width: 1100px;
+            margin: 0 auto 20px auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        @media print {
+            body { background: white; padding: 0; }
+            .invoice-box { box-shadow: none; padding: 0; border: none; max-width: 100%; }
+            .actions-bar { display: none !important; }
+            .report-table th { background-color: #0b2545 !important; color: white !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .total-row-income { background-color: #dcfce7 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .total-row-expense { background-color: #fee2e2 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .invoice-title-block { background-color: #0b2545 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .bg-profit-status { background-color: #f0fdf4 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .bg-loss-status { background-color: #fef2f2 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Upper Actions Toolbar -->
+    <div class="actions-bar">
+        <a href="javascript:history.back()" class="btn btn-outline-secondary btn-sm shadow-sm">
+            <i class="fa fa-arrow-left me-2"></i>Back to Dashboard
+        </a>
+        <button onclick="window.print();" class="btn btn-primary shadow-sm px-4">
+            <i class="fa fa-print me-2"></i>Print Corporate Invoice
+        </button>
+    </div>
+
+    <div class="invoice-box">
+        
+        <!-- Header Section -->
+        <div class="header-container">
+            <div class="school-branding">
+                {% if settings and settings.main_logo %}
+                    <img src="{{ settings.main_logo }}" class="school-logo" alt="Official Logo">
+                {% else %}
+                    <img src="/static/backend/images/logo.png" onerror="this.src='https://placehold.co/120x120?text=NO+LOGO'" class="school-logo" alt="School Corporate Logo">
+                {% endif %}
+                
+                <div class="school-details">
+                    <h1>{{ school.name if school else 'BRIGHT FUTURE INTERNATIONAL SCHOOL' }}</h1>
+                    <p class="fw-bold text-secondary text-uppercase" style="letter-spacing: 0.5px;">
+                        {{ settings.site_title if (settings and settings.site_title) else 'Excellence in Education, Success in Life' }}
+                    </p>
+                    <p><i class="fa fa-map-marker-alt text-danger me-1"></i> 
+                        {{ branch.address if branch else (settings.address if settings else '123 Education Street, Headquarters Office') }}
+                    </p>
+                    <p>
+                        <i class="fa fa-phone text-primary me-1"></i> {{ branch.phone if branch else (settings.phone if settings else '+252 63 1234567') }} 
+                        <span class="mx-2">|</span> 
+                        <i class="fa fa-envelope text-primary me-1"></i> {{ school.email if school else (settings.email if settings else 'info@school.edu') }}
+                    </p>
+                </div>
+            </div>
+
+            <div class="invoice-title-block">
+                <h2>PROFIT OR LOSS INVOICE</h2>
+                <table class="invoice-meta-table">
+                    <tr class="bg-gold-header">
+                        <td>INVOICE NO:</td>
+                        <td class="text-end">{{ invoice_no }}</td>
+                    </tr>
+                    <tr>
+                        <td><i class="fa fa-calendar-alt me-2"></i>INVOICE DATE:</td>
+                        <td class="text-end">{{ invoice_date }}</td>
+                    </tr>
+                    <tr>
+                        <td><i class="fa fa-calendar-check me-2"></i>PERIOD FROM:</td>
+                        <td class="text-end">{{ period_from }}</td>
+                    </tr>
+                    <tr>
+                        <td><i class="fa fa-calendar-times me-2"></i>PERIOD TO:</td>
+                        <td class="text-end">{{ period_to }}</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        <!-- Metadata Section (Prepared For) -->
+        <div class="row g-3 mb-4">
+            <div class="col-6">
+                <div class="info-section">
+                    <div class="info-title"><i class="fa fa-user-tie me-2"></i>Bill To / Prepared For</div>
+                    <div class="info-body">
+                        <strong class="text-uppercase">{{ school.name if school else 'School Board Management' }}</strong><br>
+                        <span class="text-muted">Target Location:</span> {{ branch.name if branch else 'Consolidated Ledger (All Branches)' }}<br>
+                        <span class="text-muted">Generated By:</span> {{ user.fullname or user.username }} ({{ user.role.value|replace('_', ' ')|title }})
+                    </div>
+                </div>
+            </div>
+            <div class="col-6">
+                <div class="info-section">
+                    <div class="info-title"><i class="fa fa-school me-2"></i>School Information</div>
+                    <div class="info-body">
+                        <div class="row">
+                            <div class="col-5 text-muted">Scope Level</div><div class="col-7">: {{ 'Branch Specific' if branch else 'Global School Level' }}</div>
+                            <div class="col-5 text-muted">Core Currency</div><div class="col-7">: United States Dollar ($)</div>
+                            <div class="col-5 text-muted">System Status</div><div class="col-7">: <span class="badge bg-success">Audited Ledger</span></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Financial Tables Container -->
+        <div class="row g-3 mb-4">
+          <div class="col-6">
+    <div class="table-title-income">Income (Revenue)</div>
+    <table class="report-table">
+        <thead>
+            <tr>
+                <th class="text-center" style="width: 12%;">No.</th>
+                <th style="width: 58%;">Type / Description</th>
+                <th class="text-end" style="width: 30%;">Amount (USD)</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% set inc_count = namespace(value=1) %}
+            {% for cat, amt in income_items.items() %}
+            <tr>
+                <td class="text-center text-muted">{{ inc_count.value }}</td>
+                <td class="fw-semibold text-uppercase" style="font-size: 12px;">{{ cat }}</td>
+                <td class="text-end fw-bold text-success">${{ "%.2f"|format(amt) }}</td>
+            </tr>
+            {% set inc_count.value = inc_count.value + 1 %}
+            {% else %}
+            <tr>
+                <td colspan="3" class="no-data-text">No active income recorded in this timeframe.</td>
+            </tr>
+            {% endfor %}
+            
+            {# Dynamic Blank Rows padding for balancing visuals #}
+            {% if income_items|length < 6 and income_items|length > 0 %}
+                {% for i in range(6 - income_items|length) %}
+                <tr style="height: 41px;">
+                    <td class="border-0"></td>
+                    <td class="border-0"></td>
+                    <td class="border-0"></td>
+                </tr>
+                {% endfor %}
+            {% endif %}
+
+            <tr class="total-row-income">
+                <td colspan="2" class="text-uppercase">Total Income</td>
+                <td class="text-end">${{ "%.2f"|format(total_income) }}</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+            <!-- Dynamic Expense Side -->
+            <div class="col-6">
+                <div class="table-title-expense">Expenses</div>
+                <table class="report-table">
+                    <thead>
+                        <tr>
+                            <th class="text-center" style="width: 12%;">No.</th>
+                            <th style="width: 58%;">Type / Description</th>
+                            <th class="text-end" style="width: 30%;">Amount (USD)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% set exp_count = namespace(value=1) %}
+                        {% for cat, amt in expense_items.items() %}
+                        <tr>
+                            <td class="text-center text-muted">{{ exp_count.value }}</td>
+                            <td class="fw-semibold text-uppercase" style="font-size: 12px;">{{ cat }}</td>
+                            <td class="text-end fw-bold text-danger">${{ "%.2f"|format(amt) }}</td>
+                        </tr>
+                        {% set exp_count.value = exp_count.value + 1 %}
+                        {% else %}
+                        <tr>
+                            <td colspan="3" class="no-data-text">No active expenses recorded in this timeframe.</td>
+                        </tr>
+                        {% endfor %}
+
+                        {# Dynamic Blank Rows padding #}
+                        {% if expense_items|length < 6 and expense_items|length > 0 %}
+                            {% for i in range(6 - expense_items|length) %}
+                            <tr style="height: 41px;"><td class="border-0"></td><td class="border-0"></td><td class="border-0"></td></tr>
+                            {% endfor %}
+                        {% endif %}
+
+                        <tr class="total-row-expense">
+                            <td colspan="2" class="text-uppercase">Total Expenses</td>
+                            <td class="text-end">${{ "%.2f"|format(total_expenses) }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Financial Summary Dashboard & Numbers to Words -->
+        <div class="row g-3 mb-4">
+            <div class="col-6">
+                <div class="info-section">
+                    <div class="info-title"><i class="fa fa-chart-line me-2"></i>Profit / Loss Summary</div>
+                    <div class="info-body py-2">
+                        <div class="d-flex justify-content-between border-bottom py-2">
+                            <span class="text-muted">Total Income</span>
+                            <span class="text-success fw-bold">${{ "%.2f"|format(total_income) }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between border-bottom py-2">
+                            <span class="text-muted">Total Expenses</span>
+                            <span class="text-danger fw-bold">${{ "%.2f"|format(total_expenses) }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between py-2 bg-white px-2 mt-1 rounded border">
+                            <span class="fw-bold text-primary">Net Profit / (Loss)</span>
+                            <span class="{% if financial_result == 'PROFIT' %}text-success{% else %}text-danger{% endif %} fw-bold">${{ "%.2f"|format(net_profit_loss) }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-6">
+                <div class="info-section">
+                    <div class="info-title"><i class="fa fa-comment-dollar me-2"></i>Summary in Words</div>
+                    <div class="info-body d-flex align-items-center justify-content-center bg-white" style="height: 110px;">
+                        <h6 id="summary-words" class="text-center fw-bold text-uppercase text-secondary px-2" style="font-size: 13px; line-height: 1.5; letter-spacing: 0.3px;">
+                            Translating totals into words...
+                        </h6>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Outcome Status Banner -->
+        <div class="row g-3 mb-4 align-items-center">
+            <div class="col-4 text-center fw-bold text-uppercase text-secondary" style="font-size: 13px; letter-spacing: 1px;">
+                Financial Result
+            </div>
+            <div class="col-8">
+                <div class="result-box {% if financial_result == 'PROFIT' %}bg-profit-status{% else %}bg-loss-status{% endif %}">
+                    <span class="result-status {% if financial_result == 'PROFIT' %}text-profit{% else %}text-loss{% endif %}">
+                        {{ financial_result }} 
+                        <i class="fa {% if financial_result == 'PROFIT' %}fa-arrow-trend-up{% else %}fa-arrow-trend-down{% endif %} ms-2"></i>
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- System Disclosure Info -->
+        <div class="p-3 border rounded bg-light mb-5 text-muted" style="font-size: 11px; line-height: 1.5;">
+            <i class="fa fa-info-circle text-primary me-1"></i> <strong>NOTE:</strong> 
+            This invoice shows the Profit or Loss statement for the period specified above. The ledger calculations have been cross-checked through system records automatically.
+        </div>
+
+        <!-- Signatures Footer Blocks -->
+        <div class="row text-center mt-5" style="font-size: 12px; letter-spacing: 0.5px;">
+            <div class="col-4">
+                <div class="signature-container">
+                    <span class="text-muted mb-2" style="font-family: 'Courier New', monospace; font-size: 11px;">Digital Audit Logged</span>
+                </div>
+                <div class="signature-line"></div>
+                <p class="mt-2 fw-bold text-uppercase text-secondary"><i class="fa fa-user-edit text-muted me-1"></i> Prepared By</p>
+            </div>
+            <div class="col-4">
+                <div class="signature-container">
+                    {% if settings and settings.sign_logo %}
+                        <img src="{{ settings.sign_logo }}" class="signature-img" alt="Internal Stamp">
+                    {% endif %}
+                </div>
+                <div class="signature-line"></div>
+                <p class="mt-2 fw-bold text-uppercase text-secondary"><i class="fa fa-user-check text-muted me-1"></i> Checked By</p>
+            </div>
+            <div class="col-4">
+                <div class="signature-container"></div>
+                <div class="signature-line"></div>
+                <p class="mt-2 fw-bold text-uppercase text-secondary"><i class="fa fa-user-tie text-muted me-1"></i> Approved By</p>
+            </div>
+        </div>
+
+        <!-- Enterprise Branding Footer -->
+        <div class="invoice-footer">
+            {{ settings.short_desc if (settings and settings.short_desc) else 'Building Brighter Futures Through Quality Education' }} 
+            <br><span style="font-size: 10px; color: #64748b;">Powered by <strong>School Management System ERP</strong></span>
+        </div>
+
+    </div>
+
+    <!-- Live Legal Words Parser Engine -->
+    <script>
+        function convertNumberToWords(amount) {
+            const words = {
+                0: 'Zero', 1: 'One', 2: 'Two', 3: 'Three', 4: 'Four', 5: 'Five', 6: 'Six', 7: 'Seven', 8: 'Eight', 9: 'Nine',
+                10: 'Ten', 11: 'Eleven', 12: 'Twelve', 13: 'Thirteen', 14: 'Fourteen', 15: 'Fifteen', 16: 'Sixteen', 17: 'Seventeen', 18: 'Eighteen', 19: 'Nineteen',
+                20: 'Twenty', 30: 'Thirty', 40: 'Forty', 50: 'Fifty', 60: 'Sixty', 70: 'Seventy', 80: 'Eighty', 90: 'Ninety'
+            };
+
+            function generateWords(num) {
+                let str = '';
+                if (num >= 1000000) {
+                    str += generateWords(Math.floor(num / 1000000)) + ' Million ';
+                    num %= 1000000;
+                }
+                if (num >= 1000) {
+                    str += generateWords(Math.floor(num / 1000)) + ' Thousand ';
+                    num %= 1000;
+                }
+                if (num >= 100) {
+                    str += words[Math.floor(num / 100)] + ' Hundred ';
+                    num %= 100;
+                }
+                if (num > 0) {
+                    if (str !== '') str += 'and ';
+                    if (num < 20) str += words[num];
+                    else {
+                        str += words[Math.floor(num / 10) * 10];
+                        if (num % 10 > 0) str += '-' + words[num % 10];
+                    }
+                }
+                return str.trim();
+            }
+
+            if (amount === 0) return 'Zero United States Dollars Only';
+
+            let absoluteAmount = Math.abs(amount);
+            let mainPart = Math.floor(absoluteAmount);
+            let centsPart = Math.round((absoluteAmount - mainPart) * 100);
+
+            let resultString = '';
+            if (amount < 0) {
+                resultString += 'Minus ';
+            }
+
+            if (mainPart > 0) {
+                resultString += generateWords(mainPart) + ' United States Dollars';
+            }
+
+            if (centsPart > 0) {
+                if (mainPart > 0) resultString += ' and ';
+                resultString += generateWords(centsPart) + ' Cents';
+            }
+
+            return resultString.trim() + ' Only';
+        }
+
+        const netAmountRaw = parseFloat("{{ net_profit_loss }}") || 0;
+        document.getElementById('summary-words').innerText = convertNumberToWords(netAmountRaw);
+    </script>
+</body>
+</html>

@@ -1,0 +1,192 @@
+{% extends 'backend/home/base.html' %}
+
+{% block title %}Daymaha Dugsiga lagu leeyahay | Advanced Report{% endblock %}
+
+{% block content %}
+
+<!-- Page Header -->
+<div class="page-header d-flex justify-content-between align-items-center">
+    <div class="page-header-left d-flex align-items-center">
+        <div class="page-header-title">
+            <h5 class="m-b-10">Daymaha Dugsiga lagu leeyahay iyo Kuwa uu Leeyahay</h5>
+        </div>
+        <ul class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Home</a></li>
+            <li class="breadcrumb-item">Advanced Debt Analytics</li>
+        </ul>
+    </div>
+    <div class="page-header-right ms-auto">
+        <button onclick="window.print();" class="btn btn-danger shadow-sm">
+            <i class="feather-printer me-2"></i> Print Report
+        </button>
+    </div>
+</div>
+
+<div class="main-content">
+    
+    <!-- Summary Widget -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card bg-gradient-danger text-white border-0 shadow-sm" style="background: linear-gradient(135deg, #dc3545, #921c26);">
+                <div class="card-body p-4 d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-uppercase mb-1" style="opacity: 0.9; letter-spacing: 1px;">Wadarta Guud ee Daymaha dhabta ah ee Dugsiga Ka Maqan</h6>
+                        <h1 class="mb-0 fw-bold">${{ "%.2f"|format(total_receivables) }}</h1>
+                    </div>
+                    <div class="display-3" style="opacity: 0.2;">
+                        <i class="feather-activity"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Advanced Filter Card -->
+    <div class="row mb-4">
+        <div class="col-lg-12">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-light py-3">
+                    <h6 class="mb-0 text-dark font-weight-bold"><i class="feather-filter me-2"></i>Kala Sifeey Daymaha (Advanced Filters)</h6>
+                </div>
+                <div class="card-body p-4">
+                    <form method="GET" action="{{ url_for('main.school_debts_report') }}" class="row g-3">
+                        
+                     
+
+                        <!-- Class Filter -->
+                        <div class="col-md-2">
+                            <label class="form-label font-weight-bold">Fasalka</label>
+                            <select name="class_id" class="form-select">
+                                <option value="">-- Dhammaan --</option>
+                                {% for cls in available_classes %}
+                                    <option value="{{ cls.id }}" {% if current_class == cls.id %}selected{% endif %}>{{ cls.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <!-- Section Filter -->
+                        <div class="col-md-2">
+                            <label class="form-label font-weight-bold">Qaybta</label>
+                            <select name="section_id" class="form-select">
+                                <option value="">-- Dhammaan --</option>
+                                {% for sec in available_sections %}
+                                    <option value="{{ sec.id }}" {% if current_section == sec.id %}selected{% endif %}>{{ sec.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <!-- Status Filter -->
+                        <div class="col-md-2">
+                            <label class="form-label font-weight-bold">Xaaladda</label>
+                            <select name="status" class="form-select">
+                                <option value="">-- Daymo oo Dhan --</option>
+                                <option value="Pending" {% if current_status == 'Pending' %}selected{% endif %}>Pending (Aan bixin)</option>
+                                <option value="Partial" {% if current_status == 'Partial' %}selected{% endif %}>Partial (Qabyo)</option>
+                            </select>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="col-md-3 d-flex align-items-end gap-2">
+                            <button type="submit" class="btn btn-primary w-100 py-2">
+                                <i class="feather-search"></i> Sifeey
+                            </button>
+                            <a href="{{ url_for('main.school_debts_report') }}" class="btn btn-outline-secondary w-100 py-2">
+                                <i class="feather-refresh-cw"></i> Reset
+                            </a>
+                        </div>
+
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Data Table -->
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-3">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle" id="advancedDebtTable">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>#</th>
+                                    <th>Ardayga (Student)</th>
+                                    <th>Fasalka (Class)</th>
+                                    <th>Qaybta (Section)</th>
+                                    {% if user.role.value == 'school_admin' %}
+                                        <th>Laanta (Branch)</th>
+                                    {% endif %}
+                                    <th>Laga Rabo (Due)</th>
+                                    <th>Bixiyay (Paid)</th>
+                                    <th>Daymada (Debt)</th>
+                                    <th>Xaaladda (Status)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for fc in debt_collections %}
+                                {% if fc.id in report_details %}
+                                {% set details = report_details[fc.id] %}
+                                <tr>
+                                    <td>{{ loop.index }}</td>
+                                    <td><strong class="text-dark">{{ details.student.full_name }}</strong></td>
+                                    <td><span class="badge bg-light text-dark">{{ details.class.name if details.class else 'N/A' }}</span></td>
+                                    <td>{{ details.section.name if details.section else 'Full Class' }}</td>
+                                    {% if user.role.value == 'school_admin' %}
+                                        <td><span class="text-muted fs-12">{{ details.branch.name if details.branch else 'Main School' }}</span></td>
+                                    {% endif %}
+                                    <td>${{ "%.2f"|format(details.amount_due) }}</td>
+                                    <td class="text-success">${{ "%.2f"|format(details.amount_paid) }}</td>
+                                    <td class="text-danger fw-bold fs-5">${{ "%.2f"|format(details.remaining_balance) }}</td>
+                                    <td>
+                                        {% if details.status == 'Partial' %}
+                                            <span class="badge bg-soft-warning text-warning border border-warning p-2 w-100">Partial</span>
+                                        {% else %}
+                                            <span class="badge bg-soft-danger text-danger border border-danger p-2 w-100">Pending</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endif %}
+                                {% endfor %}
+                            </tbody>
+                        </table>
+
+                        {% if not report_details %}
+                        <div class="p-5 text-center text-muted">
+                            <i class="feather-smile display-4 d-block mb-3 text-success"></i>
+                            Wax daymo ah laguma helin xogta halkan ku jirta! Dhammaan biilasha waa la wada bixiyay.
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        if ($.fn.DataTable.isDataTable('#advancedDebtTable')) {
+            $('#advancedDebtTable').DataTable().destroy();
+        }
+        $('#advancedDebtTable').DataTable({
+            responsive: true,
+            pageLength: 25,
+            searching: true,
+            ordering: true,
+            order: [[{{ 7 if user.role.value == 'school_admin' else 6 }}, 'desc']], 
+            language: {
+                search: "_INPUT_",
+                searchPlaceholder: "Raadi daymaha..."
+            }
+        });
+    });
+</script>
+<style>
+    .bg-soft-warning { background-color: rgba(255, 193, 7, 0.1); }
+    .bg-soft-danger { background-color: rgba(220, 53, 69, 0.1); }
+</style>
+{% endblock %}
+
+{% endblock %}
